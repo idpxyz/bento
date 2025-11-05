@@ -1,0 +1,140 @@
+# 可观测性配置
+# 提供指标监控、分布式追踪和与日志系统的集成的配置
+
+# 默认配置，所有环境都会继承这些配置
+default:
+  # 服务配置
+  service_name: idp-service
+  flush_interval: 15.0  # 数据刷新间隔(秒)
+  batch_size: 100  # 批量上报大小
+  request_timeout: 30.0  # 监控数据上报超时时间(秒)
+  
+  # 指标监控配置
+  metrics:
+    enabled: true
+    recorder_type: PROMETHEUS  # 指标记录器类型：PROMETHEUS, MEMORY, POSTGRES
+    prometheus_port: 9090
+    name_prefix: app
+    aggregation_interval: 60  # 指标聚合间隔(秒)
+    buckets:
+      http_request_duration_seconds: [0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0]
+      db_operation_duration_seconds: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
+      default: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+    # PostgreSQL特定配置
+    postgres_connection: null
+    postgres_schema: public
+    postgres_metrics_table: observability_metrics
+    postgres_metadata_table: observability_metric_metadata
+    postgres_retention_days: 30
+  
+  # 链路追踪配置
+  tracing:
+    enabled: true
+    tracer_type: MEMORY  # 追踪器类型：MEMORY, SENTRY, POSTGRES
+    sample_rate: 1.0
+    # OpenTelemetry配置
+    otel_endpoint: null
+    # Sentry配置
+    sentry_dsn: "https://a717fb1c8639f35bc78f4b60340ccc88@o4507072299991040.ingest.us.sentry.io/4507072302678016"  # 默认Sentry DSN
+    # PostgreSQL特定配置
+    postgres_connection: null
+    postgres_schema: public
+    postgres_spans_table: observability_spans
+    postgres_events_table: observability_span_events
+    postgres_retention_days: 30
+    postgres_flush_interval: 5.0
+    # 忽略的路径
+    ignored_paths:
+      - /health
+      - /metrics
+      - /docs
+      - /openapi.json
+  
+  # PostgreSQL持久化统一配置
+  # 如果设置，将同时用于指标和追踪
+  postgres:
+    enabled: false
+    common:
+      connection: null  # PostgreSQL连接字符串
+      schema: public
+      retention_days: 30
+      batch_size: 100
+    metrics_table: observability_metrics
+    metrics_metadata_table: observability_metric_metadata
+    spans_table: observability_spans
+    span_events_table: observability_span_events
+    flush_interval: 5.0
+
+# 开发环境配置
+dev:
+  service_name: idp-service-dev
+  metrics:
+    name_prefix: app_dev
+    recorder_type: MEMORY  # 开发环境使用内存记录器
+  tracing:
+    tracer_type: MEMORY  # 开发环境使用内存追踪器
+    sample_rate: 1.0
+    sentry_dsn: "https://a717fb1c8639f35bc78f4b60340ccc88@o4507072299991040.ingest.us.sentry.io/4507072302678016"
+  # 开发环境可选启用PostgreSQL持久化
+  postgres:
+    enabled: false
+    common:
+      connection: "postgresql://postgres:postgres@localhost:5432/observability"
+      schema: observability_dev
+
+# 测试环境配置
+test:
+  service_name: idp-service-test
+  metrics:
+    name_prefix: app_test
+    recorder_type: PROMETHEUS
+  tracing:
+    tracer_type: SENTRY
+    sample_rate: 0.5
+    sentry_dsn: "https://a717fb1c8639f35bc78f4b60340ccc88@o4507072299991040.ingest.us.sentry.io/4507072302678016"
+  # 测试环境启用PostgreSQL持久化（可选）
+  postgres:
+    enabled: false
+    common:
+      connection: "postgresql://postgres:postgres@postgres:5432/observability_test"
+      schema: observability_test
+      retention_days: 7  # 测试环境保留数据时间较短
+
+# 预生产环境配置
+staging:
+  service_name: idp-service-staging
+  metrics:
+    name_prefix: app_staging
+    recorder_type: PROMETHEUS
+  tracing:
+    tracer_type: SENTRY
+    sample_rate: 0.5
+    sentry_dsn: "${SENTRY_DSN}"
+  # 预生产环境启用PostgreSQL持久化
+  postgres:
+    enabled: true
+    common:
+      connection: "${POSTGRES_CONNECTION}"
+      schema: observability_staging
+      retention_days: 30
+      batch_size: 100
+
+# 生产环境配置
+prod:
+  service_name: idp-service-prod
+  metrics:
+    aggregation_interval: 30
+    name_prefix: app_prod
+    recorder_type: PROMETHEUS
+  tracing:
+    tracer_type: SENTRY
+    sample_rate: 0.2  # 生产环境降低采样率以减少开销
+    sentry_dsn: "${SENTRY_DSN}"  # 从环境变量获取
+  # 生产环境启用PostgreSQL持久化
+  postgres:
+    enabled: true
+    common:
+      connection: "${POSTGRES_CONNECTION}"
+      schema: observability_prod
+      retention_days: 90  # 生产环境保留数据更长时间
+      batch_size: 200  # 生产环境批量大小更大，减少数据库连接次数 

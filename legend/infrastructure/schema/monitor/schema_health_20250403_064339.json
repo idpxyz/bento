@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-04-03T06:43:39.109444",
+  "healthy": true,
+  "results": [
+    {
+      "schema_name": "UserRegistered",
+      "topic": "persistent://public/default/user.registered",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.073142"
+    },
+    {
+      "schema_name": "OrderCreated",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.079237"
+    },
+    {
+      "schema_name": "PaymentProcessed",
+      "topic": "persistent://public/default/payment.processed",
+      "format": "json",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.084915"
+    },
+    {
+      "schema_name": "ProductAdded",
+      "topic": "persistent://public/default/product.added",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.090442"
+    },
+    {
+      "schema_name": "ProductUpdated",
+      "topic": "persistent://idp/framework/product.updated",
+      "format": "avro",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.096448"
+    },
+    {
+      "schema_name": "UserActivity",
+      "topic": "persistent://idp/framework/user.activity",
+      "format": "json",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.103245"
+    },
+    {
+      "schema_name": "OrderCreatedV2",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "error": null,
+      "status_code": 200,
+      "checked_at": "2025-04-03T06:43:39.109161"
+    }
+  ]
+}

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Schema 文档索引 - IDP Schema Center</title>
+<style>
+        :root {
+            --primary-color: #4285f4;
+            --text-color: #333;
+            --bg-color: #fff;
+            --header-bg: #4285f4;
+            --sidebar-bg: #f5f5f5;
+            --border-color: #e0e0e0;
+            --code-bg: rgba(27, 31, 35, 0.05);
+            --pre-bg: #f6f8fa;
+            --sidebar-width: 280px;
+            --toc-width: 240px;
+            --header-height: 60px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        
+        [data-theme="dark"] {
+            --primary-color: #64b5f6;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --header-bg: #1a1a1a;
+            --sidebar-bg: #1e1e1e;
+            --border-color: #333;
+            --code-bg: rgba(240, 246, 252, 0.15);
+            --pre-bg: #282c34;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+        
+        header {
+            height: var(--header-height);
+            background-color: var(--header-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+        
+        .logo {
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin-right: 20px;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+            margin-top: var(--header-height);
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            flex-shrink: 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .content-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .content {
+            flex-grow: 1;
+            width: 0;
+            overflow-y: auto;
+            padding: 40px;
+            margin: 0 auto;
+        }
+        
+        .toc {
+            width: var(--toc-width);
+            padding: 20px;
+            border-left: 1px solid var(--border-color);
+            flex-shrink: 0;
+            overflow-y: auto;
+            transition: border-color 0.3s ease;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        h1 {
+            font-size: 2em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 0;
+            transition: border-color 0.3s ease;
+        }
+        
+        h2 {
+            font-size: 1.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+        
+        h3 {
+            font-size: 1.25em;
+        }
+        
+        p, ul, ol {
+            margin-bottom: 16px;
+        }
+        
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        code {
+            font-family: var(--font-mono);
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+            transition: background-color 0.3s ease;
+        }
+        
+        pre {
+            background-color: var(--pre-bg);
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+            margin-bottom: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 90%;
+            word-break: normal;
+            white-space: pre;
+            overflow: visible;
+            line-height: inherit;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        table th, table td {
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+        
+        table th {
+            background-color: var(--pre-bg);
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        
+        table tr:nth-child(2n) {
+            background-color: var(--pre-bg);
+            transition: background-color 0.3s ease;
+        }
+        
+        img {
+            max-width: 100%;
+        }
+        
+        blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid var(--border-color);
+            margin-bottom: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: var(--border-color);
+            border: 0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .nav-list {
+            list-style: none;
+        }
+        
+        .nav-list li {
+            margin-bottom: 8px;
+        }
+        
+        .nav-list li a {
+            display: block;
+            padding: 4px 0;
+        }
+        
+        .nav-category {
+            margin-top: 16px;
+            font-weight: bold;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        @media (max-width: 1200px) {
+            .toc {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        /* 主题切换 */
+        .theme-toggle {
+            cursor: pointer;
+            margin-left: auto;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 链接样式优化 */
+        .content a:not(:hover) {
+            text-decoration: none;
+            border-bottom: 1px solid rgba(66, 133, 244, 0.3);
+        }
+        
+        .content a:hover {
+            border-bottom-color: var(--primary-color);
+        }
+        
+        /* 代码高亮 */
+        .codehilite {
+            background: var(--pre-bg);
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .codehilite pre {
+            padding: 1em;
+            margin: 0;
+            overflow: auto;
+        }
+
+        /* Center - 居中 */
+        div[align="center"] {
+            text-align: center;
+            margin: 1.5em 0;
+        }
+        
+        /* 目录项目样式 */
+        .toc ul {
+            list-style: none;
+            padding-left: 1em;
+        }
+        
+        .toc > ul {
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin-bottom: 0.5em;
+        }
+        
+        .toc-title {
+            font-weight: bold;
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+<body>
+<header>
+<div class="logo">IDP Schema Center</div>
+<nav>
+<a href="index.html" style="color: white; margin-right: 15px;">首页</a>
+<a href="usage.html" style="color: white; margin-right: 15px;">使用指南</a>
+<a href="proto.html" style="color: white; margin-right: 15px;">Proto</a>
+<a href="avro.html" style="color: white; margin-right: 15px;">Avro</a>
+<a href="json.html" style="color: white; margin-right: 15px;">JSON</a>
+</nav>
+<div class="theme-toggle" id="theme-toggle">🔆</div>
+</header>
+<div class="main-container">
+<aside class="sidebar">
+<div class="search-box">
+<input id="search-input" placeholder="搜索..." type="text"/>
+</div>
+<div class="nav-category">文档</div>
+<ul class="nav-list">
+<li><a href="index.html">首页</a></li>
+<li><a href="usage.html">使用指南</a></li>
+<li><a href="proto.html">Proto 事件</a></li>
+<li><a href="avro.html">Avro 事件</a></li>
+<li><a href="json.html">JSON 事件</a></li>
+</ul>
+<div class="nav-category">指南</div>
+<ul class="nav-list guides-list">
+<li><a href="event_bus_integration.html">Event Bus 集成</a></li>
+<li><a href="registry.html">Registry</a></li>
+<li><a href="usage.html">使用指南</a></li>
+</ul>
+<div class="nav-category">Schema 列表</div>
+<ul class="nav-list schema-list">
+<li><a href="ordercreated.html">OrderCreated</a></li>
+<li><a href="ordercreatedv2.html">OrderCreatedV2</a></li>
+<li><a href="paymentprocessed.html">PaymentProcessed</a></li>
+<li><a href="productadded.html">ProductAdded</a></li>
+<li><a href="productupdated.html">ProductUpdated</a></li>
+<li><a href="useractivity.html">UserActivity</a></li>
+<li><a href="userregistered.html">UserRegistered</a></li>
+</ul>
+</aside>
+<div class="content-container">
+<main class="content">
+<h1>Schema 文档索引</h1>
+<h2>事件类型</h2>
+<ul>
+<li><a href="proto.html">Protocol Buffers 事件</a></li>
+<li><a href="avro.html">Avro 事件</a></li>
+<li><a href="json.html">JSON Schema 事件</a></li>
+</ul>
+<h2>所有事件列表</h2>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>格式</th>
+<th>描述</th>
+<th>文档</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UserRegistered</td>
+<td>PROTO</td>
+<td>用户注册事件</td>
+<td><a href="userregistered.html">查看文档</a></td>
+</tr>
+<tr>
+<td>OrderCreated</td>
+<td>PROTO</td>
+<td>订单创建事件</td>
+<td><a href="ordercreated.html">查看文档</a></td>
+</tr>
+<tr>
+<td>PaymentProcessed</td>
+<td>JSON</td>
+<td>支付处理完成事件</td>
+<td><a href="paymentprocessed.html">查看文档</a></td>
+</tr>
+<tr>
+<td>ProductAdded</td>
+<td>PROTO</td>
+<td>新增产品事件</td>
+<td><a href="productadded.html">查看文档</a></td>
+</tr>
+<tr>
+<td>ProductUpdated</td>
+<td>AVRO</td>
+<td>产品更新事件</td>
+<td><a href="productupdated.html">查看文档</a></td>
+</tr>
+<tr>
+<td>UserActivity</td>
+<td>JSON</td>
+<td>用户活动事件</td>
+<td><a href="useractivity.html">查看文档</a></td>
+</tr>
+<tr>
+<td>OrderCreatedV2</td>
+<td>PROTO</td>
+<td>订单创建事件</td>
+<td><a href="ordercreatedv2.html">查看文档</a></td>
+</tr>
+</tbody>
+</table>
+</main>
+<div class="toc">
+<div class="toc-title">目录</div>
+<div id="toc-content"></div>
+</div>
+</div>
+</div>
+<script>
+    // 主题切换功能
+    (function() {
+        const toggleButton = document.getElementById('theme-toggle');
+        const body = document.documentElement;
+        
+        // 检查本地存储的主题偏好
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            body.setAttribute('data-theme', savedTheme);
+            toggleButton.textContent = savedTheme === 'dark' ? '🌙' : '🔆';
+        }
+        
+        // 添加点击事件
+        toggleButton.addEventListener('click', function() {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // 更新图标
+            toggleButton.textContent = newTheme === 'dark' ? '🌙' : '🔆';
+        });
+    })();
+    
+    // 生成目录
+    (function() {
+        const content = document.querySelector('.content');
+        const headings = content.querySelectorAll('h2, h3, h4');
+        const tocContent = document.getElementById('toc-content');
+        
+        if (headings.length === 0) {
+            document.querySelector('.toc').style.display = 'none';
+            return;
+        }
+        
+        const toc = document.createElement('ul');
+        tocContent.appendChild(toc);
+        
+        headings.forEach((heading, index) => {
+            // 为每个标题添加 ID
+            if (!heading.id) {
+                heading.id = `heading-${index}`;
+            }
+            
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `#${heading.id}`;
+            a.textContent = heading.textContent;
+            
+            if (heading.tagName === 'H3') {
+                li.style.marginLeft = '1em';
+            } else if (heading.tagName === 'H4') {
+                li.style.marginLeft = '2em';
+            }
+            
+            li.appendChild(a);
+            toc.appendChild(li);
+        });
+    })();
+    
+    // 搜索功能
+    (function() {
+        const searchInput = document.getElementById('search-input');
+        
+        if (searchInput) {
+            const schemaItems = document.querySelectorAll('.schema-list li');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                schemaItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

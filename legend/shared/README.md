@@ -1,0 +1,1 @@
+Shared Kernel（跨限界上下文复用）

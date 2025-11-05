@@ -1,0 +1,27 @@
+# 日志配置
+
+# 默认配置
+default:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_size: 10
+  backup_count: 5
+  console_output: true
+
+# 开发环境
+dev:
+  level: "DEBUG"
+  file_path: "logs/dev.log"
+  console_output: true
+
+# 测试环境
+test:
+  level: "DEBUG"
+  file_path: "logs/test.log"
+  console_output: true
+
+# 生产环境
+prod:
+  level: "WARNING"
+  file_path: "logs/prod.log"
+  console_output: false

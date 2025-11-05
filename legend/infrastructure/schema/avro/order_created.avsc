@@ -1,0 +1,81 @@
+{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.idp.events",
+  "doc": "订单创建事件",
+  "fields": [
+    {
+      "name": "order_id",
+      "type": "string",
+      "doc": "订单ID"
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "doc": "客户ID"
+    },
+    {
+      "name": "items",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "OrderItem",
+          "fields": [
+            {"name": "product_id", "type": "string", "doc": "产品ID"},
+            {"name": "quantity", "type": "int", "doc": "数量"},
+            {"name": "price", "type": "double", "doc": "单价"},
+            {"name": "discount", "type": ["null", "double"], "default": null, "doc": "折扣"}
+          ]
+        }
+      },
+      "doc": "订单项目"
+    },
+    {
+      "name": "total_amount",
+      "type": "double",
+      "doc": "订单总金额"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "OrderStatus",
+        "symbols": ["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]
+      },
+      "doc": "订单状态"
+    },
+    {
+      "name": "created_at",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "创建时间"
+    },
+    {
+      "name": "shipping_address",
+      "type": {
+        "type": "record",
+        "name": "Address",
+        "fields": [
+          {"name": "street", "type": "string"},
+          {"name": "city", "type": "string"},
+          {"name": "state", "type": "string"},
+          {"name": "zip", "type": "string"},
+          {"name": "country", "type": "string"}
+        ]
+      },
+      "doc": "配送地址"
+    },
+    {
+      "name": "metadata",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "doc": "元数据",
+      "default": {}
+    }
+  ]
+} 

@@ -1,0 +1,9 @@
+topics:
+  - persistent://public/default/user.registered
+  - persistent://public/default/user.deleted
+
+handlers:
+  - app.handlers.user_handlers
+  - app.handlers.admin_handlers
+
+observer: default  # or "prometheus", "sentry", "custom"

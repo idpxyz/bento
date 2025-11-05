@@ -1,0 +1,32 @@
+[
+    {
+        "code": "100101",
+        "message": "用户已存在",
+        "http_status": 409
+    },
+    {
+        "code": "100102",
+        "message": "用户未找到",
+        "http_status": 404
+    },
+    {
+        "code": "200101",
+        "message": "无效的令牌",
+        "http_status": 401
+    },
+    {
+        "code": "200102",
+        "message": "权限不足",
+        "http_status": 403
+    },
+    {
+        "code": "300101",
+        "message": "数据库连接失败",
+        "http_status": 500
+    },
+    {
+        "code": "300102",
+        "message": "缓存服务不可用",
+        "http_status": 503
+    }
+]

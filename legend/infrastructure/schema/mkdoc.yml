@@ -1,0 +1,26 @@
+site_name: 事件 Schema 中心
+site_description: IDP 框架的事件 Schema 定义与文档
+theme:
+  name: material
+  language: zh
+docs_dir: docs
+nav:
+  - 首页: index.md
+  - Schema 文档:
+    - 概述: schemas/index.md
+    - Proto 事件: schemas/proto.md
+    - Avro 事件: schemas/avro.md 
+    - JSON 事件: schemas/json.md
+  - 开发指南:
+    - 如何添加新事件: guides/add_event.md
+    - 与 Event Bus 集成: guides/event_bus_integration.md
+    - Schema 版本管理: guides/schema_versioning.md
+markdown_extensions:
+  - toc
+  - codehilite
+  - tables
+  - admonition
+  - attr_list
+plugins:
+  - search
+

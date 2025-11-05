@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: omnia-ddd }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: omnia-ddd } }
+  template:
+    metadata: { labels: { app: omnia-ddd } }
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/your/repo:latest
+          ports: [{ containerPort: 8000 }]

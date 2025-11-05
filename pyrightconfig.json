@@ -1,0 +1,34 @@
+{
+  "include": [
+    "src",
+    "applications",
+    "runtime",
+    "tests",
+    "examples"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.git",
+    "**/old",
+    "**/deploy",
+    "**/docs",
+    "**/.venv",
+    "**/venv",
+    "**/env",
+    "**/bento_framework.egg-info"
+  ],
+  "extraPaths": [
+    ".",
+    "src"
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImport": true,
+  "reportUnusedClass": true,
+  "reportUnusedFunction": true,
+  "reportUnusedVariable": true
+}
+

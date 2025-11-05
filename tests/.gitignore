@@ -1,0 +1,14 @@
+# Test outputs
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+.benchmarks/
+
+# Test databases
+*.db
+*.sqlite
+*.sqlite3
+

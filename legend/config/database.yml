@@ -1,0 +1,138 @@
+default:
+  type: "postgresql"
+  retry_attempts: 3
+  retry_interval: 1.0
+  statement_timeout: null
+  enable_statement_cache: true
+  statement_cache_size: 100
+  keep_alive: false
+  connection:
+    host: "localhost"
+    port: 5432
+    database: "idp_dev"
+    db_schema: "public"
+    ssl_mode: "disable"
+  credentials:
+    username: "postgres"
+    password: "thends"
+  pool:
+    min_size: 1
+    max_overflow: 10
+    timeout: 30
+    recycle: 3600
+    pre_ping: true
+    echo: false
+  read_write:
+    enable_read_write_split: false
+    read_write_ratio: 0.7
+    read_replicas: []
+    auto_failover: true
+    failover_retry_interval: 5
+  metrics:
+    enable_metrics: true
+    metrics_interval: 60
+    slow_query_threshold: 1.0
+    max_samples: 1000
+    logging:
+      enable_query_logging: true
+      log_slow_queries: true
+      log_queries: false
+    performance:
+      batch_size: 100
+      cache_ttl: 300
+      flush_interval: 1.0
+
+dev:
+  type: "postgresql"
+  connection:
+    host: "192.168.8.137"
+    port: 5438
+    database: "idp_framework"
+  credentials:
+    username: "topsx"
+    password: "thends"
+  read_write:
+    enable_read_write_split: true
+    read_write_ratio: 0.7
+    read_replicas:
+      - connection:
+          host: "192.168.8.137"
+          port: 5439
+          database: "idp_framework"
+          db_schema: "public"
+          ssl_mode: "disable"
+        credentials:
+          username: "topsx"
+          password: "thends"
+    auto_failover: true
+    failover_retry_interval: 5
+  pool:
+    min_size: 2
+    max_overflow: 20
+    timeout: 30
+    recycle: 1800
+    pre_ping: true
+    echo: true
+  metrics:
+    enable_metrics: true
+    metrics_interval: 60
+    slow_query_threshold: 0.5
+    max_samples: 1000
+    logging:
+      enable_query_logging: true
+      log_slow_queries: true
+      log_queries: false
+    performance:
+      batch_size: 100
+      cache_ttl: 300
+      flush_interval: 1.0
+
+test:
+  type: "postgresql"
+  connection:
+    host: "localhost"
+    port: 5432
+    database: "idp_test"
+  metrics:
+    enable_metrics: false
+
+prod:
+  type: "postgresql"
+  connection:
+    host: "localhost"
+    port: 54323
+    database: "idp_production"
+  read_write:
+    enable_read_write_split: true
+    read_replicas:
+      - connection:
+          host: "read-replica-1.example.com"
+          port: 5432
+          database: "idp_production"
+          db_schema: "public"
+          ssl_mode: "require"
+        credentials:
+          username: "readonly_user"
+          password: "readonly_password"
+      - connection:
+          host: "read-replica-2.example.com"
+          port: 5432
+          database: "idp_production"
+          db_schema: "public"
+          ssl_mode: "require"
+        credentials:
+          username: "readonly_user"
+          password: "readonly_password"
+  metrics:
+    enable_metrics: true
+    metrics_interval: 30
+    slow_query_threshold: 0.3
+    max_samples: 2000
+    logging:
+      enable_query_logging: true
+      log_slow_queries: true
+      log_queries: false
+    performance:
+      batch_size: 200
+      cache_ttl: 600
+      flush_interval: 0.5

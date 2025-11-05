@@ -1,0 +1,84 @@
+# 数据库配置
+
+# 默认配置
+default:
+  type: "postgresql"
+  connection:
+    host: "localhostdefault"
+    port: 5432
+    database: "idp"
+    db_schema: "public"
+    ssl_mode: "disable"
+    application_name: "IDP"
+  credentials:
+    username: "postgres"
+    password: "postgres"
+  pool:
+    min_size: 5
+    max_size: 20
+    max_queries: 100000
+    max_inactive_connection_lifetime: 600
+    timeout: 60
+    recycle: 7200
+    pre_ping: true
+    echo: false
+  monitor:
+    enable_metrics: true
+    metrics_interval: 30
+    slow_query_threshold: 1.0
+    enable_query_logging: true
+    log_slow_queries: true
+    log_queries: false
+  retry_attempts: 5
+  retry_interval: 1.0
+  statement_timeout: 60
+  enable_statement_cache: true
+  statement_cache_size: 1000
+  keep_alive: true
+  debug_sql: false
+  enable_migration: true
+  migration_dir: "migrations"
+
+# 开发环境
+dev:
+  connection:
+    host: "localhostdev"
+    port: 5432
+    database: "idp_devs"
+  credentials:
+    username: "dev_user"
+    password: "dev_password"
+  debug_sql: true
+
+# 测试环境s
+test:
+  connection:
+    # host: "localhosttest"
+    port: 5432
+    database: "idp_test"
+  credentials:
+    username: "test_user"
+    password: "test_password"
+  pool:
+    max_size: 5
+  debug_sql: true
+
+# 生产环境
+prod:
+  connection:
+    host: "db.example.com"
+    port: 5432
+    database: "idp_prod"
+    ssl_mode: "require"
+  credentials:
+    username: "prod_user"
+    password: "prod_password"
+  pool:
+    min_size: 2
+    max_size: 20
+  monitor:
+    enable_metrics: true
+    metrics_interval: 30
+    slow_query_threshold: 0.5
+  statement_timeout: 10
+  debug_sql: false

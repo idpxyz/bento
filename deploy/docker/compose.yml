@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  # Bento Framework 应用
+  app:
+    build:
+      context: ../..  # 项目根目录
+      dockerfile: deploy/docker/Dockerfile
+    container_name: bento-app
+    ports:
+      - "8000:8000"
+    environment:
+      # 数据库配置
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/bento_db
+      # Redis 配置
+      REDIS_URL: redis://redis:6379/0
+      # 应用配置
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      # Python 路径
+      PYTHONPATH: /app:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # 持久化数据（如果需要）
+      - app_data:/app/data
+    restart: unless-stopped
+    networks:
+      - bento-network
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: bento-postgres
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: bento_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bento-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: bento-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bento-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  bento-network:
+    driver: bridge
+

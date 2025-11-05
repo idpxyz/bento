@@ -1,0 +1,109 @@
+# PostgreSQL 持久化示例配置
+# 此配置演示如何配置将指标和追踪数据持久化到 PostgreSQL
+
+# 默认环境配置
+default:
+  service_name: idp-service
+  flush_interval: 10.0  # 较短的刷新间隔，便于开发时观察
+  batch_size: 50  # 较小的批量大小，便于开发时观察
+  request_timeout: 30.0
+  
+  # 使用统一的 PostgreSQL 配置
+  postgres:
+    enabled: true
+    common:
+      connection: "postgresql://postgres:postgres@localhost:5432/observability"
+      schema: "observability"
+      retention_days: 30
+      batch_size: 50
+    metrics_table: "app_metrics"
+    metrics_metadata_table: "app_metric_metadata"
+    spans_table: "app_spans"
+    span_events_table: "app_span_events"
+    flush_interval: 5.0
+  
+  # 指标配置 - 会使用上面的统一PostgreSQL配置
+  metrics:
+    enabled: true
+    name_prefix: "app"
+    aggregation_interval: 60
+    # 由于使用了统一配置，下面特定配置不需要设置，仅作为参考
+    # recorder_type: POSTGRES  # 使用统一配置时会自动设置为POSTGRES
+    # postgres_connection: "postgresql://postgres:postgres@localhost:5432/observability"
+    # postgres_schema: "observability"
+    # postgres_metrics_table: "app_metrics"
+    # postgres_metadata_table: "app_metric_metadata"
+    # postgres_retention_days: 30
+  
+  # 追踪配置 - 会使用上面的统一PostgreSQL配置
+  tracing:
+    enabled: true
+    service_name: "idp-service"
+    sample_rate: 1.0
+    # 由于使用了统一配置，下面特定配置不需要设置，仅作为参考
+    # tracer_type: POSTGRES  # 使用统一配置时会自动设置为POSTGRES
+    # postgres_connection: "postgresql://postgres:postgres@localhost:5432/observability"
+    # postgres_schema: "observability"
+    # postgres_spans_table: "app_spans"
+    # postgres_events_table: "app_span_events"
+    # postgres_retention_days: 30
+    # postgres_flush_interval: 5.0
+    ignored_paths:
+      - /health
+      - /metrics
+      - /docs
+      - /openapi.json
+
+# 开发环境配置 - 使用单独的PostgreSQL配置（不使用统一配置）
+dev_separate:
+  service_name: idp-service-dev
+  postgres:
+    enabled: false  # 禁用统一配置
+  
+  # 单独配置指标使用PostgreSQL
+  metrics:
+    enabled: true
+    name_prefix: "app_dev"
+    recorder_type: POSTGRES
+    postgres_connection: "postgresql://postgres:postgres@localhost:5432/observability"
+    postgres_schema: "observability_metrics"
+    postgres_metrics_table: "dev_metrics"
+    postgres_metadata_table: "dev_metric_metadata"
+    postgres_retention_days: 7
+  
+  # 单独配置追踪使用内存记录器（不使用PostgreSQL）
+  tracing:
+    enabled: true
+    service_name: "idp-service-dev"
+    tracer_type: MEMORY
+    sample_rate: 1.0
+
+# Docker Compose 环境配置
+docker:
+  service_name: idp-service-docker
+  
+  # 配置PostgreSQL使用Docker环境中的服务名
+  postgres:
+    enabled: true
+    common:
+      connection: "postgresql://postgres:postgres@postgres:5432/observability"
+      schema: "observability"
+      retention_days: 30
+      batch_size: 100
+
+# 使用环境变量配置的示例
+env_vars:
+  service_name: "${SERVICE_NAME}"
+  
+  postgres:
+    enabled: true
+    common:
+      connection: "${POSTGRES_CONNECTION}"
+      schema: "${POSTGRES_SCHEMA:-observability}"
+      retention_days: "${POSTGRES_RETENTION_DAYS:-30}"
+      batch_size: "${POSTGRES_BATCH_SIZE:-100}"
+    metrics_table: "${POSTGRES_METRICS_TABLE:-app_metrics}"
+    metrics_metadata_table: "${POSTGRES_METRICS_METADATA_TABLE:-app_metric_metadata}"
+    spans_table: "${POSTGRES_SPANS_TABLE:-app_spans}"
+    span_events_table: "${POSTGRES_SPAN_EVENTS_TABLE:-app_span_events}"
+    flush_interval: "${POSTGRES_FLUSH_INTERVAL:-5.0}" 

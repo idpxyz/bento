@@ -1,0 +1,101 @@
+version: "3.9"
+
+# 开发环境配置 - 扩展 compose.yml
+#
+# Docker Compose 多文件配置说明：
+# - compose.yml: 基础配置（生产环境），包含所有核心服务的完整定义
+# - compose.dev.yaml: 开发环境覆盖文件，只包含需要修改或新增的配置
+#
+# 合并规则：后指定的文件会覆盖先指定文件中相同的配置项
+#
+# 使用方式：
+#   开发环境: docker compose -f compose.yml -f compose.dev.yaml up
+#   生产环境: docker compose -f compose.yml up
+#
+# 开发环境的主要差异：
+# 1. app 服务：添加代码挂载（热重载）、开发模式环境变量、--reload 参数
+# 2. postgres：使用标准镜像（非 alpine），独立的开发数据卷
+# 3. redis：使用标准镜像（非 alpine）
+# 4. 新增：redpanda（消息队列）、minio（对象存储）
+
+services:
+  # 覆盖 app 服务为开发模式
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: builder  # 开发环境使用构建阶段
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/bento_db
+      PYTHONPATH: /app:/app/src
+    volumes:
+      # 挂载代码以实现热重载
+      - ../../:/app
+      - /app/.venv  # 排除虚拟环境，使用容器内的
+    command: ["uvicorn", "examples.minimal_app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+
+  # 开发环境服务
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: bento_db
+    ports: ["5432:5432"]
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  # 可选：开发环境消息队列
+  redpanda:
+    image: redpandadata/redpanda:v24.1.12
+    container_name: bento-redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr=internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr=internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr=internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --smp=1
+      - --memory=1G
+      - --mode=dev-container
+      - --default-log-level=info
+    ports:
+      - "19092:19092"  # Kafka API (external)
+      - "18081:18081"  # Schema Registry
+      - "18082:18082"  # Pandaproxy
+    networks:
+      - bento-network
+
+  # 可选：开发环境对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: bento-minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_dev_data:/data
+    networks:
+      - bento-network
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  minio_dev_data:
+    driver: local

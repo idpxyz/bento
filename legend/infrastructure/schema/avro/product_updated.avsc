@@ -1,0 +1,63 @@
+{
+  "type": "record",
+  "name": "ProductUpdated",
+  "namespace": "com.idp.events",
+  "doc": "产品更新事件",
+  "fields": [
+    {
+      "name": "product_id",
+      "type": "string",
+      "doc": "产品ID"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "产品名称"
+    },
+    {
+      "name": "description",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "产品描述"
+    },
+    {
+      "name": "price",
+      "type": "double",
+      "doc": "价格"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "doc": "货币"
+    },
+    {
+      "name": "categories",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "分类"
+    },
+    {
+      "name": "attributes",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "doc": "属性"
+    },
+    {
+      "name": "in_stock",
+      "type": "boolean",
+      "doc": "是否有库存"
+    },
+    {
+      "name": "updated_at",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "更新时间"
+    }
+  ]
+} 

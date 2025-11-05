@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-04-03T06:13:07.334295",
+  "healthy": false,
+  "results": [
+    {
+      "schema_name": "UserRegistered",
+      "topic": "persistent://public/default/user.registered",
+      "format": "proto",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/public/default/user.registered/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.311167"
+    },
+    {
+      "schema_name": "OrderCreated",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/idp/framework/order.created/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.314530"
+    },
+    {
+      "schema_name": "PaymentProcessed",
+      "topic": "persistent://public/default/payment.processed",
+      "format": "json",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/public/default/payment.processed/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.318279"
+    },
+    {
+      "schema_name": "ProductAdded",
+      "topic": "persistent://public/default/product.added",
+      "format": "proto",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/public/default/product.added/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.321996"
+    },
+    {
+      "schema_name": "ProductUpdated",
+      "topic": "persistent://idp/framework/product.updated",
+      "format": "avro",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/idp/framework/product.updated/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.326311"
+    },
+    {
+      "schema_name": "UserActivity",
+      "topic": "persistent://idp/framework/user.activity",
+      "format": "json",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/idp/framework/user.activity/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.330049"
+    },
+    {
+      "schema_name": "OrderCreatedV2",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": null,
+      "version": null,
+      "status": "error",
+      "error": "192.168.8.137:8080/admin/v2/schemas/idp/framework/order.created/schema",
+      "status_code": null,
+      "checked_at": "2025-04-03T06:13:07.333997"
+    }
+  ]
+}

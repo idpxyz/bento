@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Event Bus Integration - IDP Schema Center</title>
+<style>
+        :root {
+            --primary-color: #4285f4;
+            --text-color: #333;
+            --bg-color: #fff;
+            --header-bg: #4285f4;
+            --sidebar-bg: #f5f5f5;
+            --border-color: #e0e0e0;
+            --code-bg: rgba(27, 31, 35, 0.05);
+            --pre-bg: #f6f8fa;
+            --sidebar-width: 280px;
+            --toc-width: 240px;
+            --header-height: 60px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        
+        [data-theme="dark"] {
+            --primary-color: #64b5f6;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --header-bg: #1a1a1a;
+            --sidebar-bg: #1e1e1e;
+            --border-color: #333;
+            --code-bg: rgba(240, 246, 252, 0.15);
+            --pre-bg: #282c34;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+        
+        header {
+            height: var(--header-height);
+            background-color: var(--header-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+        
+        .logo {
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin-right: 20px;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+            margin-top: var(--header-height);
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            flex-shrink: 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .content-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .content {
+            flex-grow: 1;
+            width: 0;
+            overflow-y: auto;
+            padding: 40px;
+            margin: 0 auto;
+        }
+        
+        .toc {
+            width: var(--toc-width);
+            padding: 20px;
+            border-left: 1px solid var(--border-color);
+            flex-shrink: 0;
+            overflow-y: auto;
+            transition: border-color 0.3s ease;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        h1 {
+            font-size: 2em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 0;
+            transition: border-color 0.3s ease;
+        }
+        
+        h2 {
+            font-size: 1.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+        
+        h3 {
+            font-size: 1.25em;
+        }
+        
+        p, ul, ol {
+            margin-bottom: 16px;
+        }
+        
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        code {
+            font-family: var(--font-mono);
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+            transition: background-color 0.3s ease;
+        }
+        
+        pre {
+            background-color: var(--pre-bg);
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+            margin-bottom: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 90%;
+            word-break: normal;
+            white-space: pre;
+            overflow: visible;
+            line-height: inherit;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        table th, table td {
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+        
+        table th {
+            background-color: var(--pre-bg);
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        
+        table tr:nth-child(2n) {
+            background-color: var(--pre-bg);
+            transition: background-color 0.3s ease;
+        }
+        
+        img {
+            max-width: 100%;
+        }
+        
+        blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid var(--border-color);
+            margin-bottom: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: var(--border-color);
+            border: 0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .nav-list {
+            list-style: none;
+        }
+        
+        .nav-list li {
+            margin-bottom: 8px;
+        }
+        
+        .nav-list li a {
+            display: block;
+            padding: 4px 0;
+        }
+        
+        .nav-category {
+            margin-top: 16px;
+            font-weight: bold;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        @media (max-width: 1200px) {
+            .toc {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        /* 主题切换 */
+        .theme-toggle {
+            cursor: pointer;
+            margin-left: auto;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 链接样式优化 */
+        .content a:not(:hover) {
+            text-decoration: none;
+            border-bottom: 1px solid rgba(66, 133, 244, 0.3);
+        }
+        
+        .content a:hover {
+            border-bottom-color: var(--primary-color);
+        }
+        
+        /* 代码高亮 */
+        .codehilite {
+            background: var(--pre-bg);
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .codehilite pre {
+            padding: 1em;
+            margin: 0;
+            overflow: auto;
+        }
+
+        /* Center - 居中 */
+        div[align="center"] {
+            text-align: center;
+            margin: 1.5em 0;
+        }
+        
+        /* 目录项目样式 */
+        .toc ul {
+            list-style: none;
+            padding-left: 1em;
+        }
+        
+        .toc > ul {
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin-bottom: 0.5em;
+        }
+        
+        .toc-title {
+            font-weight: bold;
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+<body>
+<header>
+<div class="logo">IDP Schema Center</div>
+<nav>
+<a href="index.html" style="color: white; margin-right: 15px;">首页</a>
+<a href="usage.html" style="color: white; margin-right: 15px;">使用指南</a>
+<a href="proto.html" style="color: white; margin-right: 15px;">Proto</a>
+<a href="avro.html" style="color: white; margin-right: 15px;">Avro</a>
+<a href="json.html" style="color: white; margin-right: 15px;">JSON</a>
+</nav>
+<div class="theme-toggle" id="theme-toggle">🔆</div>
+</header>
+<div class="main-container">
+<aside class="sidebar">
+<div class="search-box">
+<input id="search-input" placeholder="搜索..." type="text"/>
+</div>
+<div class="nav-category">文档</div>
+<ul class="nav-list">
+<li><a href="index.html">首页</a></li>
+<li><a href="usage.html">使用指南</a></li>
+<li><a href="proto.html">Proto 事件</a></li>
+<li><a href="avro.html">Avro 事件</a></li>
+<li><a href="json.html">JSON 事件</a></li>
+</ul>
+<div class="nav-category">指南</div>
+<ul class="nav-list guides-list">
+<li><a href="event_bus_integration.html">Event Bus 集成</a></li>
+<li><a href="registry.html">Registry</a></li>
+<li><a href="usage.html">使用指南</a></li>
+</ul>
+<div class="nav-category">Schema 列表</div>
+<ul class="nav-list schema-list">
+<li><a href="ordercreated.html">OrderCreated</a></li>
+<li><a href="ordercreatedv2.html">OrderCreatedV2</a></li>
+<li><a href="paymentprocessed.html">PaymentProcessed</a></li>
+<li><a href="productadded.html">ProductAdded</a></li>
+<li><a href="productupdated.html">ProductUpdated</a></li>
+<li><a href="useractivity.html">UserActivity</a></li>
+<li><a href="userregistered.html">UserRegistered</a></li>
+</ul>
+</aside>
+<div class="content-container">
+<main class="content">
+<h1>与 Event Bus 集成指南</h1>
+<p>本文档介绍如何将 Schema 中心与 Event Bus 框架集成，实现基于 Schema 的事件发布和订阅。</p>
+<h2>概述</h2>
+<p>Schema 中心与 Event Bus 集成的基本流程如下：</p>
+<ol>
+<li>Schema 中心定义和管理事件结构</li>
+<li>Schema 中心将 schema 注册到 Schema Registry</li>
+<li>Schema 中心生成 Pydantic 模型</li>
+<li>Event Bus 框架使用这些模型处理事件</li>
+</ol>
+<h2>导入 Registry</h2>
+<p>在 Event Bus 初始化时，您需要导入 Schema Registry：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.event_bus</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventBus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_registry</span>
+
+<span class="c1"># 加载注册表</span>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">load_registry</span><span class="p">()</span>
+
+<span class="c1"># 初始化事件总线，并传入注册表</span>
+<span class="n">event_bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+</code></pre></div>
+<h2>注册事件处理器</h2>
+<p>可以使用两种方式注册事件处理器：</p>
+<h3>1. 基于 Schema 名称注册</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.event_bus</span><span class="w"> </span><span class="kn">import</span> <span class="n">event_handler</span>
+
+<span class="nd">@event_handler</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="s2">"UserRegistered"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_user_registered</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="c1"># event 是一个 UserRegistered Pydantic 模型的实例</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"新用户注册: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">username</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1"># 所有字段都有类型提示和验证</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">user_id</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">email</span>
+</code></pre></div>
+<h3>2. 基于 Pydantic 模型注册</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.event_bus</span><span class="w"> </span><span class="kn">import</span> <span class="n">event_handler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.schema.models.user_registered</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserRegistered</span>
+
+<span class="nd">@event_handler</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">UserRegistered</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_user_registered</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">UserRegistered</span><span class="p">):</span>
+    <span class="c1"># 显式类型注解提供更好的 IDE 支持</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"新用户注册: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">username</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h2>发布事件</h2>
+<p>发布事件时，您可以使用 Schema 中心生成的 Pydantic 模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.event_bus</span><span class="w"> </span><span class="kn">import</span> <span class="n">publish_event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.schema.models.order_created</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderCreated</span><span class="p">,</span> <span class="n">OrderItem</span><span class="p">,</span> <span class="n">Address</span>
+
+<span class="c1"># 创建事件对象</span>
+<span class="n">order_event</span> <span class="o">=</span> <span class="n">OrderCreated</span><span class="p">(</span>
+    <span class="n">order_id</span><span class="o">=</span><span class="s2">"ORD-12345"</span><span class="p">,</span>
+    <span class="n">customer_id</span><span class="o">=</span><span class="s2">"CUST-789"</span><span class="p">,</span>
+    <span class="n">items</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">OrderItem</span><span class="p">(</span>
+            <span class="n">product_id</span><span class="o">=</span><span class="s2">"PROD-001"</span><span class="p">,</span>
+            <span class="n">quantity</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">price</span><span class="o">=</span><span class="mf">99.99</span>
+        <span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">total_amount</span><span class="o">=</span><span class="mf">199.98</span><span class="p">,</span>
+    <span class="n">status</span><span class="o">=</span><span class="s2">"PENDING"</span><span class="p">,</span>
+    <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+    <span class="n">shipping_address</span><span class="o">=</span><span class="n">Address</span><span class="p">(</span>
+        <span class="n">street</span><span class="o">=</span><span class="s2">"123 Main St"</span><span class="p">,</span>
+        <span class="n">city</span><span class="o">=</span><span class="s2">"Beijing"</span><span class="p">,</span>
+        <span class="n">state</span><span class="o">=</span><span class="s2">"Beijing"</span><span class="p">,</span>
+        <span class="nb">zip</span><span class="o">=</span><span class="s2">"100000"</span><span class="p">,</span>
+        <span class="n">country</span><span class="o">=</span><span class="s2">"China"</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># 发布事件</span>
+<span class="k">await</span> <span class="n">publish_event</span><span class="p">(</span><span class="n">order_event</span><span class="p">)</span>
+</code></pre></div>
+<h2>模式验证与错误处理</h2>
+<p>Pydantic 自动提供了模式验证，无效的事件数据会引发 <code>ValidationError</code>：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="c1"># 创建事件，但缺少必要字段</span>
+    <span class="n">invalid_event</span> <span class="o">=</span> <span class="n">UserRegistered</span><span class="p">(</span>
+        <span class="c1"># 缺少 user_id 字段</span>
+        <span class="n">username</span><span class="o">=</span><span class="s2">"john_doe"</span><span class="p">,</span>
+        <span class="n">email</span><span class="o">=</span><span class="s2">"john@example.com"</span>
+    <span class="p">)</span>
+<span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"事件验证失败: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h2>完整示例</h2>
+<p>下面是一个完整的集成示例：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.event_bus</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventBus</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">,</span> <span class="n">publish_event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_registry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.schema.models.user_registered</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserRegistered</span>
+
+<span class="c1"># 初始化</span>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">load_registry</span><span class="p">()</span>
+<span class="n">event_bus</span> <span class="o">=</span> <span class="n">EventBus</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+
+<span class="c1"># 注册处理器</span>
+<span class="nd">@event_handler</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="s2">"UserRegistered"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log_user_registered</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"用户已注册: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">username</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="nd">@event_handler</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="s2">"OrderCreated"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_order</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"处理订单: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">order_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># 启动事件总线</span>
+<span class="k">await</span> <span class="n">event_bus</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="c1"># 发布事件</span>
+<span class="n">user_event</span> <span class="o">=</span> <span class="n">UserRegistered</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"123"</span><span class="p">,</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">"zhang_san"</span><span class="p">,</span>
+    <span class="n">email</span><span class="o">=</span><span class="s2">"zhang_san@example.com"</span>
+<span class="p">)</span>
+<span class="k">await</span> <span class="n">publish_event</span><span class="p">(</span><span class="n">user_event</span><span class="p">)</span>
+
+<span class="c1"># 关闭事件总线</span>
+<span class="k">await</span> <span class="n">event_bus</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</code></pre></div>
+<h2>进阶主题</h2>
+<h3>配置 Schema Registry 连接</h3>
+<p>如果需要自定义 Schema Registry 的连接信息：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_registry</span>
+
+<span class="n">registry</span> <span class="o">=</span> <span class="n">load_registry</span><span class="p">(</span>
+    <span class="n">registry_url</span><span class="o">=</span><span class="s2">"http://schema-registry:8081"</span><span class="p">,</span>
+    <span class="n">auth</span><span class="o">=</span><span class="p">(</span><span class="s2">"username"</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3>手动加载特定 Schema</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_schema</span>
+
+<span class="c1"># 加载特定的 schema</span>
+<span class="n">user_schema</span> <span class="o">=</span> <span class="n">load_schema</span><span class="p">(</span><span class="s2">"UserRegistered"</span><span class="p">)</span>
+</code></pre></div>
+<h3>处理 Schema 版本变更</h3>
+<p>当 Schema 版本发生变化时，可以设置兼容模式：</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@event_handler</span><span class="p">(</span>
+    <span class="n">schema</span><span class="o">=</span><span class="s2">"UserRegistered"</span><span class="p">,</span> 
+    <span class="n">compatibility_mode</span><span class="o">=</span><span class="s2">"BACKWARD"</span>  <span class="c1"># 支持向后兼容</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_user_registered</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="c1"># 处理可能包含不同版本字段的事件</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">"new_field"</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"New field value: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">new_field</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h2>Schema 文档链接</h2>
+<p>Schema Center 为每个事件 Schema 提供了可跳转的 HTML 文档链接，开发人员可以通过这些链接快速查看事件结构和使用方法。</p>
+<h3>获取文档链接</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_schema_doc_url</span>
+
+<span class="c1"># 获取指定事件的文档 URL</span>
+<span class="n">order_created_doc_url</span> <span class="o">=</span> <span class="n">get_schema_doc_url</span><span class="p">(</span><span class="s2">"OrderCreated"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OrderCreated 事件文档: </span><span class="si">{</span><span class="n">order_created_doc_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># 在处理事件时提供文档链接</span>
+<span class="nd">@event_bus</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="s2">"order.created"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_order_created</span><span class="p">(</span><span class="n">event_data</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 处理事件逻辑</span>
+        <span class="c1"># ...</span>
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># 获取文档链接用于错误消息</span>
+        <span class="n">doc_url</span> <span class="o">=</span> <span class="n">get_schema_doc_url</span><span class="p">(</span><span class="s2">"OrderCreated"</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"事件验证失败，请参考文档: </span><span class="si">{</span><span class="n">doc_url</span><span class="si">}</span><span class="s2">，错误: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<h3>在应用中集成文档链接</h3>
+<p>在开发环境或管理界面中，可以集成 Schema 文档链接，方便开发人员快速访问：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 获取所有已订阅主题的 Schema 文档链接</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">idp.framework.infrastructure.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_registry</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_all_schema_doc_urls</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""获取所有 Schema 的文档链接"""</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">load_registry</span><span class="p">()</span>
+    <span class="n">doc_urls</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">schema</span> <span class="ow">in</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'schemas'</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span>
+        <span class="n">doc_url</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'doc_url'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">doc_url</span><span class="p">:</span>
+            <span class="n">doc_urls</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">doc_url</span>
+
+    <span class="k">return</span> <span class="n">doc_urls</span>
+
+<span class="c1"># 在应用启动时收集所有文档链接</span>
+<span class="n">schema_docs</span> <span class="o">=</span> <span class="n">get_all_schema_doc_urls</span><span class="p">()</span>
+
+<span class="c1"># 在 API 中提供文档链接</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/api/schemas/docs"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_schema_docs</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">schema_docs</span>
+</code></pre></div>
+<p>通过将 Schema 文档链接集成到应用中，开发人员可以随时查阅事件结构，确保事件的正确使用和处理。 </p>
+</main>
+<div class="toc">
+<div class="toc-title">目录</div>
+<div id="toc-content"></div>
+</div>
+</div>
+</div>
+<script>
+    // 主题切换功能
+    (function() {
+        const toggleButton = document.getElementById('theme-toggle');
+        const body = document.documentElement;
+        
+        // 检查本地存储的主题偏好
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            body.setAttribute('data-theme', savedTheme);
+            toggleButton.textContent = savedTheme === 'dark' ? '🌙' : '🔆';
+        }
+        
+        // 添加点击事件
+        toggleButton.addEventListener('click', function() {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // 更新图标
+            toggleButton.textContent = newTheme === 'dark' ? '🌙' : '🔆';
+        });
+    })();
+    
+    // 生成目录
+    (function() {
+        const content = document.querySelector('.content');
+        const headings = content.querySelectorAll('h2, h3, h4');
+        const tocContent = document.getElementById('toc-content');
+        
+        if (headings.length === 0) {
+            document.querySelector('.toc').style.display = 'none';
+            return;
+        }
+        
+        const toc = document.createElement('ul');
+        tocContent.appendChild(toc);
+        
+        headings.forEach((heading, index) => {
+            // 为每个标题添加 ID
+            if (!heading.id) {
+                heading.id = `heading-${index}`;
+            }
+            
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `#${heading.id}`;
+            a.textContent = heading.textContent;
+            
+            if (heading.tagName === 'H3') {
+                li.style.marginLeft = '1em';
+            } else if (heading.tagName === 'H4') {
+                li.style.marginLeft = '2em';
+            }
+            
+            li.appendChild(a);
+            toc.appendChild(li);
+        });
+    })();
+    
+    // 搜索功能
+    (function() {
+        const searchInput = document.getElementById('search-input');
+        
+        if (searchInput) {
+            const schemaItems = document.querySelectorAll('.schema-list li');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                schemaItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

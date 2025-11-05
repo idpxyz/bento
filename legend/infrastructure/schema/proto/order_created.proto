@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package events;
+
+import "google/protobuf/timestamp.proto";
+
+// 订单创建事件
+message OrderCreated {
+    string order_id = 1;                        // 订单ID
+    string customer_id = 2;                     // 客户ID
+    repeated OrderItem items = 3;               // 订单项目
+    double total_amount = 4;                    // 总金额
+    string currency = 5;                        // 货币
+    string status = 6;                          // 订单状态
+    google.protobuf.Timestamp created_at = 7;   // 创建时间
+}
+
+// 订单项目
+message OrderItem {
+    string product_id = 1;                      // 产品ID
+    string product_name = 2;                    // 产品名称
+    int32 quantity = 3;                         // 数量
+    double unit_price = 4;                      // 单价
+    double subtotal = 5;                        // 小计
+} 

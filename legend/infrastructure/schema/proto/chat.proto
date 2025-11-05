@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package events;
+
+import "google/protobuf/timestamp.proto";
+
+// 聊天消息
+message Chat {
+    string id = 1;                             // 唯一ID
+    string data = 2;                           // 示例数据字段
+    google.protobuf.Timestamp created_at = 3;  // 创建时间
+}

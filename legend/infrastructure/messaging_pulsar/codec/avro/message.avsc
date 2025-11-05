@@ -1,0 +1,12 @@
+{
+  "namespace": "idp.messaging",
+  "type": "record",
+  "name": "MessageEnvelope",
+  "fields": [
+    {"name": "event_type", "type": "string"},
+    {"name": "payload", "type": {"type": "map", "values": "string"}},
+    {"name": "occurred_at", "type": "string"},
+    {"name": "source", "type": "string"},
+    {"name": "correlation_id", "type": "string"}
+  ]
+} 

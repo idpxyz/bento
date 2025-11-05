@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+dist/
+build/
+*.so
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OS - Linux
+*~
+.directory
+.Trash-*
+
+# OS - Windows (for cross-platform compatibility)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+logs/
+*.log
+log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+backups/
+*.sql.gz
+
+# Temporary files
+tmp/
+temp/
+*.tmp

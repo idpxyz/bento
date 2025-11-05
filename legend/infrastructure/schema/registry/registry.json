@@ -1,0 +1,1 @@
+{"schemas": [{"name": "TestOrder", "description": "测试订单事件", "format": "json", "topic": "test.order", "file": "test_schema.json", "version": 1}], "options": {"docs_base_url": "/schemas/"}}

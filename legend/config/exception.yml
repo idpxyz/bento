@@ -1,0 +1,22 @@
+# 异常处理配置
+exception:
+  # 调试模式设置
+  debug_mode: true
+  
+  # Sentry集成配置
+  sentry:
+    enabled: true
+    dsn: ""
+    environment: "dev"
+    project: "idp-framework"
+    default_level: "error"
+    sample_rate: 1.0
+    send_default_pii: true
+    include_cause: true
+    expose_message: true
+    
+    # 分类采样率配置
+    sample_rate_domain: 1.0
+    sample_rate_application: 1.0
+    sample_rate_infrastructure: 1.0
+    sample_rate_interface: 1.0 

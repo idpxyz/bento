@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package events;
+
+import "google/protobuf/timestamp.proto";
+
+// ProductAdded: 新增产品事件
+message ProductAdded {
+  string product_id = 1;           // 产品ID
+  string name = 2;                 // 产品名称
+  string description = 3;          // 产品描述
+  double price = 4;                // 价格
+  repeated string categories = 5;  // 产品分类
+  repeated ProductImage images = 6; // 产品图片
+  ProductStatus status = 7;        // 产品状态
+  google.protobuf.Timestamp created_at = 8;  // 创建时间
+  string created_by = 9;           // 创建人ID
+  
+  // 产品图片
+  message ProductImage {
+    string url = 1;                // 图片URL
+    string alt = 2;                // 替代文本
+    bool is_primary = 3;           // 是否主图
+  }
+  
+  // 产品状态枚举
+  enum ProductStatus {
+    DRAFT = 0;        // 草稿
+    ACTIVE = 1;       // 已上架
+    INACTIVE = 2;     // 已下架
+    DELETED = 3;      // 已删除
+  }
+} 

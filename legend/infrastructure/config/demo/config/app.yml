@@ -1,0 +1,37 @@
+# 应用配置
+
+# 默认配置
+default:
+  name: "IDP DEFAULT"
+  version: "1.0.0"
+  debug: false
+  secret_key: "default-secret-key"
+  allowed_hosts:
+    - "*"
+
+# 开发环境
+dev:
+  name: "IDP-DEV"
+  debug: true
+  secret_key: "dev-secret-key"
+  allowed_hosts:
+    - "localhost"
+    - "127.0.0.1"
+
+# 测试环境
+test:
+  name: "IDP-TEST"
+  debug: true
+  secret_key: "test-secret-key"
+  allowed_hosts:
+    - "localhost"
+    - "testserver"
+
+# 生产环境
+prod:
+  name: "IDP-PROD"
+  debug: false
+  secret_key: "prod-secret-key"
+  allowed_hosts:
+    - "example.com"
+    - "api.example.com"

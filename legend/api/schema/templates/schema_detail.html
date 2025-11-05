@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <!-- 使用 Tailwind CSS 进行样式设计 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+    <!-- 代码高亮 -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/json.min.js"></script>
+    <style>
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        pre {
+            border-radius: 8px;
+            margin: 0;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- 导航 -->
+        <nav class="flex items-center mb-6">
+            <a href="/" class="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回监控面板</span>
+            </a>
+        </nav>
+
+        <!-- Schema 信息 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 id="schemaName" class="text-2xl font-bold text-gray-800">{{ schema_name }}</h1>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span id="schemaStatus" class="badge bg-gray-100 text-gray-800">
+                            <i class="fas fa-circle-notch fa-spin mr-1"></i> 加载中...
+                        </span>
+                        <span id="schemaType" class="badge bg-blue-100 text-blue-800">-</span>
+                        <span id="schemaFormat" class="badge bg-purple-100 text-purple-800">-</span>
+                    </div>
+                </div>
+                <div>
+                    <button id="refreshBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>刷新</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <p class="text-gray-600 text-sm mb-1">Topic</p>
+                    <p id="schemaTopic" class="font-medium">-</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm mb-1">Tenant/Namespace</p>
+                    <p id="schemaNamespace" class="font-medium">-</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm mb-1">版本</p>
+                    <p id="schemaVersion" class="font-medium">-</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm mb-1">最后更新</p>
+                    <p id="schemaUpdated" class="font-medium">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选项卡 -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="border-b border-gray-200">
+                <div class="flex">
+                    <div class="tab active" data-tab="schema">Schema 定义</div>
+                    <div class="tab" data-tab="validation">验证规则</div>
+                    <div class="tab" data-tab="compatibility">兼容性检查</div>
+                    <div class="tab" data-tab="history">版本历史</div>
+                </div>
+            </div>
+
+            <!-- Schema 定义 -->
+            <div id="schema-tab" class="tab-content p-6 active">
+                <div class="mb-4 flex gap-2">
+                    <button id="copySchemaBtn"
+                        class="border border-gray-300 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">
+                        <i class="far fa-copy"></i>
+                        <span>复制</span>
+                    </button>
+                    <button id="downloadSchemaBtn"
+                        class="border border-gray-300 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">
+                        <i class="fas fa-download"></i>
+                        <span>下载</span>
+                    </button>
+                </div>
+                <pre><code id="schemaDefinition" class="language-json">加载中...</code></pre>
+            </div>
+
+            <!-- 验证规则 -->
+            <div id="validation-tab" class="tab-content p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium mb-2 text-gray-700">验证测试</h3>
+                    <div class="mb-4">
+                        <label for="validationInput" class="block text-sm font-medium text-gray-700 mb-1">测试数据 (JSON
+                            格式)</label>
+                        <textarea id="validationInput" rows="6"
+                            class="w-full border border-gray-300 rounded-md shadow-sm p-3 font-mono text-sm"></textarea>
+                    </div>
+                    <button id="validateBtn"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        <span>验证</span>
+                    </button>
+                </div>
+                <div id="validationResult" class="mt-4 hidden">
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="font-medium text-gray-700 mb-2">验证结果</h4>
+                        <div id="validationStatus" class="p-4 rounded-md mb-2"></div>
+                        <pre><code id="validationDetails" class="language-json"></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 兼容性检查 -->
+            <div id="compatibility-tab" class="tab-content p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium mb-2 text-gray-700">兼容性配置</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-gray-600 text-sm mb-1">兼容性策略</p>
+                            <p id="compatibilityMode" class="font-medium">-</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-sm mb-1">自动兼容性检查</p>
+                            <p id="autoCheck" class="font-medium">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium mb-2 text-gray-700">兼容性测试</h3>
+                    <div class="mb-4">
+                        <label for="compatibilityInput" class="block text-sm font-medium text-gray-700 mb-1">新 Schema 定义
+                            (JSON 格式)</label>
+                        <textarea id="compatibilityInput" rows="6"
+                            class="w-full border border-gray-300 rounded-md shadow-sm p-3 font-mono text-sm"></textarea>
+                    </div>
+                    <button id="checkCompatibilityBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>检查兼容性</span>
+                    </button>
+                </div>
+                <div id="compatibilityResult" class="mt-4 hidden">
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="font-medium text-gray-700 mb-2">兼容性结果</h4>
+                        <div id="compatibilityStatus" class="p-4 rounded-md mb-2"></div>
+                        <pre><code id="compatibilityDetails" class="language-json"></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 版本历史 -->
+            <div id="history-tab" class="tab-content p-6">
+                <div id="versionHistory" class="space-y-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-history text-3xl mb-2"></i>
+                        <p>加载版本历史...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 常量和全局变量
+        const schemaName = '{{ schema_name }}';
+        let schemaData = null;
+        let schemaHistory = [];
+
+        // 工具函数
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatJson(json) {
+            try {
+                if (typeof json === 'string') {
+                    json = JSON.parse(json);
+                }
+                return JSON.stringify(json, null, 2);
+            } catch (e) {
+                return json || '';
+            }
+        }
+
+        // 复制到剪贴板
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                console.error('无法复制到剪贴板', err);
+                return false;
+            }
+        }
+
+        // 加载 Schema 详情
+        async function loadSchemaDetail() {
+            try {
+                const url = `/schema-monitor/schema/${encodeURIComponent(schemaName)}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+
+                schemaData = await response.json();
+                updateSchemaInfo(schemaData);
+            } catch (error) {
+                console.error('加载Schema详情失败:', error);
+                updateErrorState(error.message);
+            }
+        }
+
+        // 加载版本历史
+        async function loadVersionHistory() {
+            try {
+                const url = `/schema-monitor/schema/${encodeURIComponent(schemaName)}/history`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+
+                schemaHistory = await response.json();
+                updateVersionHistory(schemaHistory);
+            } catch (error) {
+                console.error('加载版本历史失败:', error);
+                document.getElementById('versionHistory').innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+                        <p>加载版本历史失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 验证 Schema
+        async function validateData(data) {
+            try {
+                const url = `/schema-monitor/schema/${encodeURIComponent(schemaName)}/validate`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data: data })
+                });
+
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('验证数据失败:', error);
+                return {
+                    valid: false,
+                    errors: [{ message: `请求失败: ${error.message}` }]
+                };
+            }
+        }
+
+        // 检查兼容性
+        async function checkCompatibility(newSchema) {
+            try {
+                const url = `/schema-monitor/schema/${encodeURIComponent(schemaName)}/compatibility`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ schema: newSchema })
+                });
+
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('检查兼容性失败:', error);
+                return {
+                    compatible: false,
+                    errors: [{ message: `请求失败: ${error.message}` }]
+                };
+            }
+        }
+
+        // 更新 Schema 信息
+        function updateSchemaInfo(data) {
+            // 基本信息
+            document.getElementById('schemaType').textContent = data.type || '-';
+            document.getElementById('schemaFormat').textContent = data.format || '-';
+            document.getElementById('schemaTopic').textContent = data.topic || '-';
+            document.getElementById('schemaNamespace').textContent = data.namespace || '-';
+            document.getElementById('schemaVersion').textContent = data.version || '-';
+            document.getElementById('schemaUpdated').textContent = formatDateTime(data.timestamp);
+
+            // 状态
+            const statusEl = document.getElementById('schemaStatus');
+            if (data.status === 'available') {
+                statusEl.className = 'badge bg-green-100 text-green-800';
+                statusEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i> 可用';
+            } else {
+                statusEl.className = 'badge bg-red-100 text-red-800';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> 不可用';
+            }
+
+            // Schema 定义
+            const schemaDefinition = document.getElementById('schemaDefinition');
+            const formattedSchema = formatJson(data.schema_definition);
+            schemaDefinition.textContent = formattedSchema;
+            hljs.highlightElement(schemaDefinition);
+
+            // 兼容性设置
+            document.getElementById('compatibilityMode').textContent = data.compatibility_mode || 'UNDEFINED';
+            document.getElementById('autoCheck').textContent = data.auto_compatibility_check ? '启用' : '禁用';
+        }
+
+        // 更新错误状态
+        function updateErrorState(message) {
+            document.getElementById('schemaStatus').className = 'badge bg-red-100 text-red-800';
+            document.getElementById('schemaStatus').innerHTML = '<i class="fas fa-times-circle mr-1"></i> 错误';
+            document.getElementById('schemaDefinition').textContent = `加载失败: ${message}`;
+        }
+
+        // 更新版本历史
+        function updateVersionHistory(history) {
+            const historyEl = document.getElementById('versionHistory');
+
+            if (!history || history.length === 0) {
+                historyEl.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-info-circle text-3xl mb-2"></i>
+                        <p>暂无版本历史记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            for (const version of history) {
+                html += `
+                    <div class="border-b border-gray-200 pb-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-medium">版本 ${version.version}</h4>
+                                <p class="text-gray-500 text-sm">${formatDateTime(version.timestamp)}</p>
+                            </div>
+                            <button class="view-schema-btn text-blue-500 hover:text-blue-700 text-sm" 
+                                    data-version="${version.version}">
+                                查看Schema
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-gray-100 text-gray-800">${version.type || '未知类型'}</span>
+                            ${version.changes ? `<p class="text-sm mt-2">${version.changes}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            historyEl.innerHTML = html;
+
+            // 添加查看版本的事件
+            document.querySelectorAll('.view-schema-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const version = btn.getAttribute('data-version');
+                    showVersionSchema(version);
+                });
+            });
+        }
+
+        // 显示指定版本的Schema
+        function showVersionSchema(version) {
+            const versionData = schemaHistory.find(v => v.version.toString() === version);
+            if (!versionData || !versionData.schema_definition) {
+                alert('无法获取此版本的Schema定义');
+                return;
+            }
+
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50';
+
+            const formattedSchema = formatJson(versionData.schema_definition);
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium">版本 ${version} Schema 定义</h3>
+                        <button class="close-modal text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-4 overflow-auto flex-grow">
+                        <pre><code class="language-json">${formattedSchema}</code></pre>
+                    </div>
+                    <div class="p-4 border-t border-gray-200 flex justify-end">
+                        <button class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 高亮代码
+            modal.querySelectorAll('pre code').forEach(block => {
+                hljs.highlightElement(block);
+            });
+
+            // 关闭模态框
+            modal.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            });
+
+            // 点击背景关闭
+            modal.addEventListener('click', e => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 加载数据
+            loadSchemaDetail();
+            loadVersionHistory();
+
+            // 选项卡切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // 移除所有活动类
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    // 添加活动类到选定的选项卡
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+
+            // 复制按钮
+            document.getElementById('copySchemaBtn').addEventListener('click', async () => {
+                if (!schemaData || !schemaData.schema_definition) return;
+
+                const schema = typeof schemaData.schema_definition === 'string'
+                    ? schemaData.schema_definition
+                    : JSON.stringify(schemaData.schema_definition, null, 2);
+
+                const success = await copyToClipboard(schema);
+
+                if (success) {
+                    const btn = document.getElementById('copySchemaBtn');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i><span>已复制</span>';
+                    btn.classList.add('bg-green-100', 'text-green-700', 'border-green-300');
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('bg-green-100', 'text-green-700', 'border-green-300');
+                    }, 2000);
+                }
+            });
+
+            // 下载按钮
+            document.getElementById('downloadSchemaBtn').addEventListener('click', () => {
+                if (!schemaData || !schemaData.schema_definition) return;
+
+                const schema = typeof schemaData.schema_definition === 'string'
+                    ? schemaData.schema_definition
+                    : JSON.stringify(schemaData.schema_definition, null, 2);
+
+                const blob = new Blob([schema], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${schemaName}_schema.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                loadSchemaDetail();
+                loadVersionHistory();
+            });
+
+            // 验证按钮
+            document.getElementById('validateBtn').addEventListener('click', async () => {
+                const input = document.getElementById('validationInput').value.trim();
+                if (!input) return;
+
+                try {
+                    const data = JSON.parse(input);
+                    const result = await validateData(data);
+
+                    const validationResult = document.getElementById('validationResult');
+                    const validationStatus = document.getElementById('validationStatus');
+                    const validationDetails = document.getElementById('validationDetails');
+
+                    validationResult.classList.remove('hidden');
+
+                    if (result.valid) {
+                        validationStatus.className = 'p-4 bg-green-100 text-green-800 rounded-md mb-2';
+                        validationStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 数据验证通过';
+                        validationDetails.textContent = '数据符合Schema定义要求';
+                    } else {
+                        validationStatus.className = 'p-4 bg-red-100 text-red-800 rounded-md mb-2';
+                        validationStatus.innerHTML = '<i class="fas fa-times-circle mr-2"></i> 数据验证失败';
+
+                        const formattedErrors = formatJson(result.errors || []);
+                        validationDetails.textContent = formattedErrors;
+                    }
+
+                    hljs.highlightElement(validationDetails);
+                } catch (error) {
+                    alert('无效的JSON格式: ' + error.message);
+                }
+            });
+
+            // 兼容性检查按钮
+            document.getElementById('checkCompatibilityBtn').addEventListener('click', async () => {
+                const input = document.getElementById('compatibilityInput').value.trim();
+                if (!input) return;
+
+                try {
+                    const newSchema = JSON.parse(input);
+                    const result = await checkCompatibility(newSchema);
+
+                    const compatibilityResult = document.getElementById('compatibilityResult');
+                    const compatibilityStatus = document.getElementById('compatibilityStatus');
+                    const compatibilityDetails = document.getElementById('compatibilityDetails');
+
+                    compatibilityResult.classList.remove('hidden');
+
+                    if (result.compatible) {
+                        compatibilityStatus.className = 'p-4 bg-green-100 text-green-800 rounded-md mb-2';
+                        compatibilityStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 兼容性检查通过';
+                        compatibilityDetails.textContent = '新 Schema 与当前版本兼容';
+                    } else {
+                        compatibilityStatus.className = 'p-4 bg-red-100 text-red-800 rounded-md mb-2';
+                        compatibilityStatus.innerHTML = '<i class="fas fa-times-circle mr-2"></i> 兼容性检查失败';
+
+                        const formattedErrors = formatJson(result.errors || []);
+                        compatibilityDetails.textContent = formattedErrors;
+                    }
+
+                    hljs.highlightElement(compatibilityDetails);
+                } catch (error) {
+                    alert('无效的JSON格式: ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

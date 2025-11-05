@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package events;
+
+import "google/protobuf/timestamp.proto";
+
+// UserRegistered: 用户注册事件
+message UserRegistered {
+  string user_id = 1;              // 用户ID
+  string username = 2;             // 用户名
+  string email = 3;                // 邮箱
+  google.protobuf.Timestamp registered_at = 4;  // 注册时间
+  RegistrationType registration_type = 5;       // 注册类型
+  map<string, string> metadata = 6;             // 元数据
+  
+  // 注册类型枚举
+  enum RegistrationType {
+    STANDARD = 0;    // 标准注册
+    SOCIAL = 1;      // 社交媒体注册
+    INVITATION = 2;  // 邀请注册
+  }
+} 

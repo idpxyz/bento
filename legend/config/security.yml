@@ -1,0 +1,11 @@
+  # 安全设置
+  security:
+    secret_key: "${APP_SECRET_KEY}"
+    algorithm: "HS256"
+    access_token_expire_minutes: 30
+    refresh_token_expire_days: 7
+    password_min_length: 8
+    password_require_special: true
+    password_require_number: true
+    password_require_uppercase: true
+    password_hash_rounds: 12

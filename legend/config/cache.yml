@@ -1,0 +1,46 @@
+# 缓存基础配置
+cache:
+  # 缓存后端类型: redis, memory
+  backend: "redis"
+  
+  # 缓存读写策略: rw(读写), ro(只读), wo(只写), wt(write-through), wb(write-behind), wa(write-around), ra(refresh-ahead)
+  strategy: "rw"
+  
+  # 缓存淘汰策略: lru, lfu, adaptive
+  eviction_policy: "adaptive"
+  
+  # 容量和性能配置
+  max_size: 10000  # 最大缓存条目数
+  ttl: 3600       # 默认过期时间(秒)
+  prefix: "idp:"  # 缓存键前缀
+  
+  # Redis配置
+  redis:
+    url: "redis://localhost:6379/0"
+    pool_size: 10
+    pool_timeout: 30
+  
+  # 写后(Write-Behind)配置
+  write_behind:
+    enabled: true
+    batch_size: 100    # 批处理大小
+    delay: 5          # 延迟写入时间(秒)
+  
+  # 自适应策略配置
+  adaptive:
+    window_size: 1000  # 观察窗口大小
+    decay_time: 3600   # 访问计数衰减时间(秒)
+
+# 监控配置
+monitoring:
+  enabled: true
+  stats: true         # 是否启用缓存统计
+  metrics_path: "/metrics"
+  health_path: "/health"
+  prometheus: true    # 是否启用Prometheus指标收集
+
+# 限流设置
+rate_limit:
+  enabled: true
+  requests_per_minute: 60
+  behind_proxy: true

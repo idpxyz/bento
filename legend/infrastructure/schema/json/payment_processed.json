@@ -1,0 +1,95 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "PaymentProcessed",
+    "description": "支付处理完成事件",
+    "type": "object",
+    "required": [
+        "payment_id",
+        "order_id",
+        "amount",
+        "status",
+        "payment_method",
+        "processed_at"
+    ],
+    "properties": {
+        "payment_id": {
+            "type": "string",
+            "description": "支付ID"
+        },
+        "order_id": {
+            "type": "string",
+            "description": "关联的订单ID"
+        },
+        "transaction_id": {
+            "type": "string",
+            "description": "支付网关交易ID"
+        },
+        "amount": {
+            "type": "number",
+            "description": "支付金额"
+        },
+        "currency": {
+            "type": "string",
+            "default": "CNY",
+            "description": "货币类型"
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "SUCCEEDED",
+                "FAILED",
+                "PENDING",
+                "REFUNDED"
+            ],
+            "description": "支付状态"
+        },
+        "payment_method": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "CREDIT_CARD",
+                        "DEBIT_CARD",
+                        "ALIPAY",
+                        "WECHAT",
+                        "BANK_TRANSFER"
+                    ],
+                    "description": "支付方式类型"
+                },
+                "last4": {
+                    "type": "string",
+                    "description": "卡号末四位（如适用）"
+                },
+                "expiry_date": {
+                    "type": "string",
+                    "description": "过期日期（如适用）"
+                }
+            },
+            "description": "支付方式详情"
+        },
+        "processed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "处理时间"
+        },
+        "error_code": {
+            "type": "string",
+            "description": "错误代码（如果支付失败）"
+        },
+        "error_message": {
+            "type": "string",
+            "description": "错误消息（如果支付失败）"
+        },
+        "metadata": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            },
+            "description": "元数据"
+        }
+    }
+}

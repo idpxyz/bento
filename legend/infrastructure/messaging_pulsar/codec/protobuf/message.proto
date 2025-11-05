@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package idp.messaging;
+
+message MessageEnvelope {
+  string event_type = 1;
+  map<string, string> payload = 2;
+  string occurred_at = 3;
+  string source = 4;
+  string correlation_id = 5;
+} 

@@ -1,0 +1,67 @@
+default:
+  console:
+    enabled: true
+    level: INFO
+    format: json
+    queue_size: 1000
+
+  file:
+    enabled: true
+    level: INFO
+    file_path: logs/app.log
+    max_size: 10485760  # 10MB
+    backup_count: 5
+    queue_size: 1000
+
+  sentry:
+    enabled: false
+    level: ERROR
+    dsn: ""
+    environment: production
+    queue_size: 1000
+
+  logstash:
+    enabled: false
+    level: INFO
+    host: localhost
+    port: 5000
+    timeout: 5.0
+    queue_size: 1000
+
+  kafka:
+    enabled: false
+    level: INFO
+    bootstrap_servers: localhost:9092
+    topic: logs
+    client_id: app-logger
+    compression_type: gzip
+    queue_size: 1000
+    batch_size: 100
+
+dev:
+  console:
+    format: pretty  # 开发环境使用更易读的格式
+  
+  sentry:
+    environment: development
+
+prod:
+  console:
+    format: json
+  
+  sentry:
+    enabled: true
+    dsn: "${SENTRY_DSN}"
+    environment: production
+
+  logstash:
+    enabled: true
+    host: "${LOGSTASH_HOST}"
+    port: "${LOGSTASH_PORT}"
+
+test:
+  console:
+    format: pretty
+  
+  file:
+    file_path: logs/test.log 

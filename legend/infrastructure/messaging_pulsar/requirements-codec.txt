@@ -1,0 +1,12 @@
+# Basic dependencies
+pydantic>=2.4.0
+pulsar-client>=3.2.0
+
+# Protocol Buffer requirements
+protobuf>=4.25.0
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+
+# Avro requirements
+avro>=1.11.2
+avro-python3>=1.11.2 

@@ -1,0 +1,90 @@
+  # 默认配置（所有环境共享）
+default:
+  # 应用基础信息
+  name: "IDP Platform - IOT"
+  description: "Identity Provider Platform"
+  version: "1.0.0"
+  debug: false
+  timezone: "UTC"
+  
+  # 服务器配置
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+    reload: false
+    proxy_headers: true
+    timeout: 60
+    
+  # 中间件配置
+  middleware:
+    cors:
+      enabled: true
+      allow_origins: ["*"]
+      allow_methods: ["*"]
+      allow_headers: ["*"]
+      allow_credentials: false
+      max_age: 600
+    
+    compression:
+      enabled: true
+      minimum_size: 1024
+      
+    rate_limit:
+      enabled: true
+      rate: 100
+      burst: 200
+      timeframe: 60
+      
+  # API文档配置
+  docs:
+    enabled: true
+    title: "IDP Platform API"
+    description: "IDP Platform API Documentation"
+    version: "1.0.0"
+    openapi_url: "/openapi.json"
+    docs_url: "/docs"
+    redoc_url: "/redoc"
+    
+# 开发环境配置
+dev:
+  debug: true
+  server:
+    port: 8001
+    workers: 1
+    reload: true
+  middleware:
+    cors:
+      allow_origins: ["http://localhost:3000"]
+      allow_credentials: true
+  docs:
+    enabled: true
+    include_details: true
+
+# 测试环境配置
+test:
+  debug: true
+  server:
+    port: 8002
+    workers: 2
+  middleware:
+    cors:
+      allow_origins: ["https://test.example.com"]
+
+# 生产环境配置
+prod:
+  debug: false
+  server:
+    port: 8003
+    workers: 4
+    proxy_headers: true
+  middleware:
+    cors:
+      allow_origins: ["https://example.com"]
+      max_age: 3600
+    rate_limit:
+      rate: 1000
+      burst: 2000
+  docs:
+    enabled: false
+

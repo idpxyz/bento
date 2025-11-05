@@ -1,0 +1,69 @@
+{
+  "timestamp": "2025-04-03T05:05:00.780384",
+  "healthy": true,
+  "results": [
+    {
+      "schema": "UserRegistered",
+      "topic": "persistent://public/default/user.registered",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.731437"
+    },
+    {
+      "schema": "OrderCreated",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.738783"
+    },
+    {
+      "schema": "PaymentProcessed",
+      "topic": "persistent://public/default/payment.processed",
+      "format": "json",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.746425"
+    },
+    {
+      "schema": "ProductAdded",
+      "topic": "persistent://public/default/product.added",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.753485"
+    },
+    {
+      "schema": "ProductUpdated",
+      "topic": "persistent://idp/framework/product.updated",
+      "format": "avro",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.760726"
+    },
+    {
+      "schema": "UserActivity",
+      "topic": "persistent://idp/framework/user.activity",
+      "format": "json",
+      "type": "AVRO",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.768329"
+    },
+    {
+      "schema": "OrderCreatedV2",
+      "topic": "persistent://idp/framework/order.created",
+      "format": "proto",
+      "type": "PROTOBUF",
+      "version": 0,
+      "status": "available",
+      "checked_at": "2025-04-03T05:05:00.775011"
+    }
+  ]
+}
