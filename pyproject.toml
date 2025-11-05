@@ -19,7 +19,7 @@ dependencies = [
   "asyncpg>=0.29",                        # PostgreSQL async driver (production)
   "alembic>=1.13",                        # Database migrations
   # Phase 4: Cache dependencies
-  "redis>=5.0,<6.0",
+  "redis>=5.0,<8.0",
   # Phase 5: Messaging dependencies
   "pulsar-client>=3.4",                   # Apache Pulsar client (Ubuntu/Linux supported)
   # Utils
