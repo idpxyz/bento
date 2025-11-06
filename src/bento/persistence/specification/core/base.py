@@ -17,7 +17,7 @@ Key components:
 - Relation loading and aggregation
 """
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from bento.domain.ports.specification import Specification as ISpecification
 
@@ -34,7 +34,7 @@ from .types import (
 T = TypeVar("T")
 
 
-class CompositeSpecification(Generic[T], ISpecification[T]):
+class CompositeSpecification[T: Any](ISpecification[T]):
     """Composite specification that combines multiple filters and conditions.
 
     This class implements the Specification Protocol and provides:
