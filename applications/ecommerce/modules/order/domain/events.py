@@ -13,6 +13,10 @@ class OrderCreated(DomainEvent):
     Published when a new order is created.
     """
 
+    order_id: ID
+    customer_id: ID
+    total_amount: float
+
     def __init__(
         self,
         order_id: ID,
@@ -41,6 +45,11 @@ class OrderPaid(DomainEvent):
 
     Published when an order is successfully paid.
     """
+
+    order_id: ID
+    customer_id: ID
+    total_amount: float
+    paid_at: datetime
 
     def __init__(
         self,
@@ -73,6 +82,10 @@ class OrderCancelled(DomainEvent):
 
     Published when an order is cancelled.
     """
+
+    order_id: ID
+    customer_id: ID
+    reason: str | None
 
     def __init__(
         self,

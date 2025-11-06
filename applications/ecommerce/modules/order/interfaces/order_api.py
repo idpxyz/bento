@@ -5,18 +5,18 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from bento.core.error_handler import get_error_responses_schema
 from applications.ecommerce.modules.order.application import (
-    CreateOrderCommand,
-    CreateOrderUseCase,
-    PayOrderCommand,
-    PayOrderUseCase,
     CancelOrderCommand,
     CancelOrderUseCase,
+    CreateOrderCommand,
+    CreateOrderUseCase,
     GetOrderQuery,
     GetOrderUseCase,
     OrderItemDTO,
+    PayOrderCommand,
+    PayOrderUseCase,
 )
+from bento.core.error_handler import get_error_responses_schema
 
 # Create router
 router = APIRouter()
@@ -27,7 +27,7 @@ router = APIRouter()
 
 class OrderItemRequest(BaseModel):
     """Order item request model."""
-    
+
     product_id: str
     product_name: str
     quantity: int
@@ -36,19 +36,20 @@ class OrderItemRequest(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     """Create order request model."""
-    
+
     customer_id: str
     items: list[OrderItemRequest]
 
 
 class PayOrderRequest(BaseModel):
     """Pay order request model (empty for now)."""
+
     pass
 
 
 class CancelOrderRequest(BaseModel):
     """Cancel order request model."""
-    
+
     reason: str | None = None
 
 
@@ -57,12 +58,12 @@ class CancelOrderRequest(BaseModel):
 
 async def get_create_order_use_case() -> CreateOrderUseCase:
     """Get create order use case (dependency).
-    
+
     In a real application, this would get the UoW from a DI container.
     For now, this is a placeholder that will be implemented in bootstrap.
     """
     from applications.ecommerce.runtime.composition import get_unit_of_work
-    
+
     uow = await get_unit_of_work()
     return CreateOrderUseCase(uow)
 
@@ -70,7 +71,7 @@ async def get_create_order_use_case() -> CreateOrderUseCase:
 async def get_pay_order_use_case() -> PayOrderUseCase:
     """Get pay order use case (dependency)."""
     from applications.ecommerce.runtime.composition import get_unit_of_work
-    
+
     uow = await get_unit_of_work()
     return PayOrderUseCase(uow)
 
@@ -78,7 +79,7 @@ async def get_pay_order_use_case() -> PayOrderUseCase:
 async def get_cancel_order_use_case() -> CancelOrderUseCase:
     """Get cancel order use case (dependency)."""
     from applications.ecommerce.runtime.composition import get_unit_of_work
-    
+
     uow = await get_unit_of_work()
     return CancelOrderUseCase(uow)
 
@@ -86,7 +87,7 @@ async def get_cancel_order_use_case() -> CancelOrderUseCase:
 async def get_get_order_use_case() -> GetOrderUseCase:
     """Get get order use case (dependency)."""
     from applications.ecommerce.runtime.composition import get_unit_of_work
-    
+
     uow = await get_unit_of_work()
     return GetOrderUseCase(uow)
 
@@ -106,11 +107,11 @@ async def create_order(
     use_case: CreateOrderUseCase = Depends(get_create_order_use_case),
 ) -> dict[str, Any]:
     """Create a new order.
-    
+
     Args:
         request: Create order request
         use_case: Create order use case (injected)
-        
+
     Returns:
         Created order data
     """
@@ -125,15 +126,15 @@ async def create_order(
         )
         for item in request.items
     ]
-    
+
     command = CreateOrderCommand(
         customer_id=request.customer_id,
         items=items,
     )
-    
+
     # Execute use case
     order = await use_case.execute(command)
-    
+
     return order
 
 
@@ -149,11 +150,11 @@ async def get_order(
     use_case: GetOrderUseCase = Depends(get_get_order_use_case),
 ) -> dict[str, Any]:
     """Get an order by ID.
-    
+
     Args:
         order_id: Order identifier
         use_case: Get order use case (injected)
-        
+
     Returns:
         Order data
     """
@@ -175,12 +176,12 @@ async def pay_order(
     use_case: PayOrderUseCase = Depends(get_pay_order_use_case),
 ) -> dict[str, Any]:
     """Pay for an order.
-    
+
     Args:
         order_id: Order identifier
         request: Pay order request
         use_case: Pay order use case (injected)
-        
+
     Returns:
         Updated order data
     """
@@ -202,12 +203,12 @@ async def cancel_order(
     use_case: CancelOrderUseCase = Depends(get_cancel_order_use_case),
 ) -> dict[str, Any]:
     """Cancel an order.
-    
+
     Args:
         order_id: Order identifier
         request: Cancel order request
         use_case: Cancel order use case (injected)
-        
+
     Returns:
         Updated order data
     """
@@ -217,4 +218,3 @@ async def cancel_order(
     )
     order = await use_case.execute(command)
     return order
-

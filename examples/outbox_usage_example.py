@@ -148,7 +148,7 @@ async def start_projector_example():
     # Create Projector for each tenant
     projector_tenant1 = OutboxProjector(
         session_factory=session_factory,
-        message_bus=message_bus,
+        message_bus=message_bus,  # type: ignore[arg-type]
         tenant_id="tenant-123",
         batch_size=200,
     )

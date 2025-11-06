@@ -19,6 +19,16 @@ from applications.ecommerce.modules.order.errors import OrderErrors
 from applications.ecommerce.persistence.models import OrderModel
 from bento.core.errors import ApplicationError
 from bento.core.ids import ID
+from bento.persistence.specification import (
+    SortDirection,
+    SpecificationBuilder,
+)
+from bento.persistence.specification.criteria import (
+    BetweenCriterion,
+    EqualsCriterion,
+    GreaterEqualCriterion,
+    LessEqualCriterion,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +332,132 @@ class OrderQueryService:
 
         logger.info(f"Statistics: {statistics}")
         return statistics
+
+    async def list_orders_with_specification(
+        self,
+        *,
+        customer_id: str | None = None,
+        status: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        """List orders using Specification pattern.
+
+        This method demonstrates how to use the Specification pattern
+        for building complex queries in a clean, reusable way.
+
+        Args:
+            customer_id: Filter by customer ID
+            status: Filter by order status
+            min_amount: Minimum total amount
+            max_amount: Maximum total amount
+            page: Page number (1-based)
+            page_size: Items per page
+
+        Returns:
+            Dictionary with filtered and paginated results
+
+        Best Practices Demonstrated:
+        - Specification pattern for query building
+        - Fluent API for readable query construction
+        - Reusable filter logic
+        - Type-safe query building
+        """
+        logger.debug(
+            f"List orders with spec: customer={customer_id}, status={status}, "
+            f"amount_range=({min_amount},{max_amount}), page={page}"
+        )
+
+        # Build specification using fluent API
+        builder = SpecificationBuilder()
+
+        # Add filters using criteria
+        if customer_id:
+            builder = builder.add_criterion(EqualsCriterion("customer_id", customer_id))
+
+        if status:
+            builder = builder.add_criterion(EqualsCriterion("status", status))
+
+        # Amount range filtering
+        if min_amount is not None and max_amount is not None:
+            builder = builder.add_criterion(
+                BetweenCriterion("total_amount", min_amount, max_amount)
+            )
+        elif min_amount is not None:
+            builder = builder.add_criterion(GreaterEqualCriterion("total_amount", min_amount))
+        elif max_amount is not None:
+            builder = builder.add_criterion(LessEqualCriterion("total_amount", max_amount))
+
+        # Add sorting and pagination
+        spec = (
+            builder.order_by("created_at", SortDirection.DESC)
+            .paginate(page=page, size=min(page_size, 100))
+            .build()
+        )
+
+        # Apply specification to SQLAlchemy query
+        # NOTE: In a full implementation, you would have a helper method
+        # to convert Specification to SQLAlchemy filters
+        stmt = select(OrderModel).options(selectinload(OrderModel.items))
+
+        # Apply filters from specification
+        for filter in spec.filters:
+            if filter.field == "customer_id":
+                stmt = stmt.where(OrderModel.customer_id == filter.value)
+            elif filter.field == "status":
+                stmt = stmt.where(OrderModel.status == filter.value)
+            elif filter.field == "total_amount":
+                from bento.persistence.specification import FilterOperator
+
+                if filter.operator == FilterOperator.BETWEEN:
+                    stmt = stmt.where(
+                        OrderModel.total_amount.between(filter.value["start"], filter.value["end"])
+                    )
+                elif filter.operator == FilterOperator.GREATER_EQUAL:
+                    stmt = stmt.where(OrderModel.total_amount >= filter.value)
+                elif filter.operator == FilterOperator.LESS_EQUAL:
+                    stmt = stmt.where(OrderModel.total_amount <= filter.value)
+
+        # Apply sorting
+        for sort in spec.sorts:
+            if sort.field == "created_at":
+                stmt = stmt.order_by(
+                    OrderModel.created_at.desc()
+                    if sort.direction == SortDirection.DESC
+                    else OrderModel.created_at.asc()
+                )
+
+        # Apply pagination
+        if spec.page:
+            offset = (spec.page.page - 1) * spec.page.size
+            stmt = stmt.limit(spec.page.size).offset(offset)
+
+        # Execute query
+        result = await self._session.execute(stmt)
+        orders = result.scalars().all()
+
+        # Get total count (simplified for demo)
+        count_stmt = select(func.count()).select_from(OrderModel)
+        for filter in spec.filters:
+            if filter.field == "customer_id":
+                count_stmt = count_stmt.where(OrderModel.customer_id == filter.value)
+            elif filter.field == "status":
+                count_stmt = count_stmt.where(OrderModel.status == filter.value)
+
+        count_result = await self._session.execute(count_stmt)
+        total = count_result.scalar() or 0
+
+        logger.info(f"Found {len(orders)} orders using Specification (total: {total})")
+
+        return {
+            "items": [self._order_to_dict(order) for order in orders],
+            "total": total,
+            "page": spec.page.page if spec.page else 1,
+            "page_size": spec.page.size if spec.page else len(orders),
+            "total_pages": (total + spec.page.size - 1) // spec.page.size if spec.page else 1,
+        }
 
     def _order_to_dict(self, order_po: OrderModel) -> dict[str, Any]:
         """Convert OrderModel to dictionary (DTO).
