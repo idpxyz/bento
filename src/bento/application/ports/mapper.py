@@ -16,7 +16,7 @@ S = TypeVar("S")  # Source type
 T = TypeVar("T")  # Target type
 
 
-class Mapper(Protocol[S, T]):
+class Mapper[S, T](Protocol):
     """Protocol for one-way object mapping.
 
     Defines the interface for transforming objects from source type S to target type T.

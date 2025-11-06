@@ -1,7 +1,5 @@
-from typing import Protocol, TypeVar, Generic
+from typing import Protocol
 
-I = TypeVar("I")
-O = TypeVar("O")
 
-class UseCase(Protocol, Generic[I, O]):
+class UseCase[I, O](Protocol):
     async def __call__(self, inp: I) -> O: ...
