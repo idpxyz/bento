@@ -162,6 +162,7 @@ class OptimisticLockInterceptor(Interceptor[T]):
             Version field name
         """
         # Try to get from metadata registry
+        # Version field is stored directly as metadata, not under "fields"
         version_field = EntityMetadataRegistry.get_metadata(entity_type, "version_field")
         if version_field:
             return version_field
