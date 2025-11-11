@@ -12,6 +12,8 @@ from bento.domain.entity import Entity
 from ..criteria import (
     DateRangeCriterion,
     EqualsCriterion,
+    IsNotNullCriterion,
+    IsNullCriterion,
     LastNDaysCriterion,
     OnOrAfterCriterion,
     OnOrBeforeCriterion,
@@ -27,18 +29,42 @@ class EntitySpecificationBuilder(SpecificationBuilder[T]):
     This builder provides convenient methods for common entity query patterns:
     - Status queries (active, deleted, etc.)
     - Temporal queries (created_at, updated_at)
-    - Flag queries (is_active, is_deleted)
+    - Soft delete queries (deleted_at timestamp)
     - Tenant queries
+
+    Soft Delete Pattern:
+        By default, this builder AUTOMATICALLY filters out soft-deleted records
+        (WHERE deleted_at IS NULL). This is a safety feature to prevent
+        accidentally querying deleted data.
+
+        To include soft-deleted records, explicitly call .include_deleted().
+        To query ONLY soft-deleted records, call .include_deleted().only_deleted().
 
     Example:
         ```python
-        spec = (EntitySpecificationBuilder()
-            .is_active()
-            .created_in_last_days(30)
-            .order_by("created_at", "desc")
-            .build())
+        # Default: excludes soft-deleted records
+        spec = EntitySpecificationBuilder().is_active().build()
+        # WHERE is_active = true AND deleted_at IS NULL
+
+        # Include soft-deleted records
+        spec = EntitySpecificationBuilder().is_active().include_deleted().build()
+        # WHERE is_active = true
+
+        # Query only soft-deleted records
+        spec = EntitySpecificationBuilder().include_deleted().only_deleted().build()
+        # WHERE deleted_at IS NOT NULL
         ```
     """
+
+    def __init__(self):
+        """Initialize builder with default soft delete filter.
+
+        By default, filters out soft-deleted records (deleted_at IS NULL).
+        This is a safety feature following the "secure by default" principle.
+        """
+        super().__init__()
+        # Default: exclude soft-deleted records (secure by default)
+        self._criteria.append(IsNullCriterion("deleted_at"))
 
     def by_id(self, entity_id: Any) -> Self:
         """Filter by entity ID.
@@ -73,24 +99,47 @@ class EntitySpecificationBuilder(SpecificationBuilder[T]):
         """
         return self.add_criterion(EqualsCriterion("is_active", active))
 
-    def is_deleted(self, deleted: bool = False) -> Self:
-        """Filter by deleted status.
+    def include_deleted(self) -> Self:
+        """Include soft-deleted entities in the query.
 
-        Args:
-            deleted: Deleted status to match (default: False)
-
-        Returns:
-            Self for method chaining
-        """
-        return self.add_criterion(EqualsCriterion("is_deleted", deleted))
-
-    def not_deleted(self) -> Self:
-        """Filter out deleted entities.
+        Removes the default deleted_at IS NULL filter.
+        Use this when you need to query both deleted and non-deleted records.
 
         Returns:
             Self for method chaining
+
+        Example:
+            ```python
+            # Query all records (including soft-deleted)
+            spec = EntitySpecificationBuilder().include_deleted().build()
+            # WHERE ... (no deleted_at filter)
+            ```
         """
-        return self.is_deleted(False)
+        # Remove all deleted_at IS NULL criteria
+        self._criteria = [
+            c
+            for c in self._criteria
+            if not (isinstance(c, IsNullCriterion) and c.to_filter().field == "deleted_at")
+        ]
+        return self
+
+    def only_deleted(self) -> Self:
+        """Query only soft-deleted entities.
+
+        This method should be called AFTER include_deleted() to first remove
+        the default filter, then add the IS NOT NULL filter.
+
+        Returns:
+            Self for method chaining
+
+        Example:
+            ```python
+            # Query only soft-deleted records
+            spec = EntitySpecificationBuilder().include_deleted().only_deleted().build()
+            # WHERE deleted_at IS NOT NULL
+            ```
+        """
+        return self.add_criterion(IsNotNullCriterion("deleted_at"))
 
     def created_between(self, start_date: datetime | date, end_date: datetime | date) -> Self:
         """Filter by creation date range.

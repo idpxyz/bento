@@ -1,0 +1,454 @@
+{
+  "matrix": {
+    "乾_乾": "乾",
+    "乾_坎": "坤",
+    "乾_艮": "屯",
+    "乾_震": "蒙",
+    "乾_巽": "需",
+    "乾_离": "讼",
+    "乾_坤": "师",
+    "乾_兑": "比",
+    "坎_乾": "小畜",
+    "坎_坎": "履",
+    "坎_艮": "泰",
+    "坎_震": "否",
+    "坎_巽": "同人",
+    "坎_离": "大有",
+    "坎_坤": "谦",
+    "坎_兑": "豫",
+    "艮_乾": "随",
+    "艮_坎": "蛊",
+    "艮_艮": "临",
+    "艮_震": "观",
+    "艮_巽": "噬嗑",
+    "艮_离": "贲",
+    "艮_坤": "剥",
+    "艮_兑": "复",
+    "震_乾": "无妄",
+    "震_坎": "大畜",
+    "震_艮": "颐",
+    "震_震": "大过",
+    "震_巽": "坎",
+    "震_离": "离",
+    "震_坤": "咸",
+    "震_兑": "恒",
+    "巽_乾": "遁",
+    "巽_坎": "大壮",
+    "巽_艮": "晋",
+    "巽_震": "明夷",
+    "巽_巽": "家人",
+    "巽_离": "睽",
+    "巽_坤": "蹇",
+    "巽_兑": "解",
+    "离_乾": "损",
+    "离_坎": "益",
+    "离_艮": "夬",
+    "离_震": "姤",
+    "离_巽": "萃",
+    "离_离": "升",
+    "离_坤": "困",
+    "离_兑": "井",
+    "坤_乾": "革",
+    "坤_坎": "鼎",
+    "坤_艮": "震",
+    "坤_震": "艮",
+    "坤_巽": "渐",
+    "坤_离": "归妹",
+    "坤_坤": "丰",
+    "坤_兑": "旅",
+    "兑_乾": "巽",
+    "兑_坎": "兑",
+    "兑_艮": "涣",
+    "兑_震": "节",
+    "兑_巽": "中孚",
+    "兑_离": "小过",
+    "兑_坤": "既济",
+    "兑_兑": "未济"
+  },
+  "attributes": {
+    "乾": {
+      "name": "乾",
+      "nature": "阳",
+      "element": "金",
+      "meaning": "天行健，君子以自强不息"
+    },
+    "坤": {
+      "name": "坤",
+      "nature": "阴",
+      "element": "土",
+      "meaning": "地势坤，君子以厚德载物"
+    },
+    "屯": {
+      "name": "屯",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "蒙": {
+      "name": "蒙",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "需": {
+      "name": "需",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "讼": {
+      "name": "讼",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "师": {
+      "name": "师",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "比": {
+      "name": "比",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "小畜": {
+      "name": "小畜",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "履": {
+      "name": "履",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "泰": {
+      "name": "泰",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "否": {
+      "name": "否",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "同人": {
+      "name": "同人",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "大有": {
+      "name": "大有",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "谦": {
+      "name": "谦",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "豫": {
+      "name": "豫",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "随": {
+      "name": "随",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "蛊": {
+      "name": "蛊",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "临": {
+      "name": "临",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "观": {
+      "name": "观",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "噬嗑": {
+      "name": "噬嗑",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "贲": {
+      "name": "贲",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "剥": {
+      "name": "剥",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "复": {
+      "name": "复",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "无妄": {
+      "name": "无妄",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "大畜": {
+      "name": "大畜",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "颐": {
+      "name": "颐",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "大过": {
+      "name": "大过",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "坎": {
+      "name": "坎",
+      "nature": "阳",
+      "element": "水",
+      "meaning": "水，陷也"
+    },
+    "离": {
+      "name": "离",
+      "nature": "阴",
+      "element": "火",
+      "meaning": "火，丽也"
+    },
+    "咸": {
+      "name": "咸",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "恒": {
+      "name": "恒",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "遁": {
+      "name": "遁",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "大壮": {
+      "name": "大壮",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "晋": {
+      "name": "晋",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "明夷": {
+      "name": "明夷",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "家人": {
+      "name": "家人",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "睽": {
+      "name": "睽",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "蹇": {
+      "name": "蹇",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "解": {
+      "name": "解",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "损": {
+      "name": "损",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "益": {
+      "name": "益",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "夬": {
+      "name": "夬",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "姤": {
+      "name": "姤",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "萃": {
+      "name": "萃",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "升": {
+      "name": "升",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "困": {
+      "name": "困",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "井": {
+      "name": "井",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "革": {
+      "name": "革",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "鼎": {
+      "name": "鼎",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "震": {
+      "name": "震",
+      "nature": "阳",
+      "element": "木",
+      "meaning": "雷，动也"
+    },
+    "艮": {
+      "name": "艮",
+      "nature": "阳",
+      "element": "土",
+      "meaning": "山，止也"
+    },
+    "渐": {
+      "name": "渐",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "归妹": {
+      "name": "归妹",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "丰": {
+      "name": "丰",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "旅": {
+      "name": "旅",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "巽": {
+      "name": "巽",
+      "nature": "阴",
+      "element": "木",
+      "meaning": "风，入也"
+    },
+    "兑": {
+      "name": "兑",
+      "nature": "阴",
+      "element": "金",
+      "meaning": "泽，说也"
+    },
+    "涣": {
+      "name": "涣",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "节": {
+      "name": "节",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "中孚": {
+      "name": "中孚",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "小过": {
+      "name": "小过",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "既济": {
+      "name": "既济",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    },
+    "未济": {
+      "name": "未济",
+      "nature": "阴",
+      "element": "未知",
+      "meaning": "待补充"
+    }
+  }
+}

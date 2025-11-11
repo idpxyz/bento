@@ -17,7 +17,7 @@ Key components:
 - Relation loading and aggregation
 """
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from bento.domain.ports.specification import Specification as ISpecification
 
@@ -26,7 +26,7 @@ from .types import (
     FilterGroup,
     Having,
     LogicalOperator,
-    Page,
+    PageParams,
     Sort,
     Statistic,
 )
@@ -34,7 +34,7 @@ from .types import (
 T = TypeVar("T")
 
 
-class CompositeSpecification(Generic[T], ISpecification[T]):
+class CompositeSpecification[T: Any](ISpecification[T]):
     """Composite specification that combines multiple filters and conditions.
 
     This class implements the Specification Protocol and provides:
@@ -78,7 +78,7 @@ class CompositeSpecification(Generic[T], ISpecification[T]):
         filters: list[Filter] | None = None,
         groups: list[FilterGroup] | None = None,
         sorts: list[Sort] | None = None,
-        page: Page | None = None,
+        page: PageParams | None = None,
         fields: list[str] | None = None,
         includes: list[str] | None = None,
         statistics: list[Statistic] | None = None,
@@ -127,9 +127,22 @@ class CompositeSpecification(Generic[T], ISpecification[T]):
         return self._sorts
 
     @property
-    def page(self) -> Page | None:
+    def page(self) -> PageParams | None:
         """Get pagination parameters."""
         return self._page
+
+    # Convenience accessors for pagination (limit/offset)
+    # These provide an ergonomic API for callers that use limit/offset
+    # semantics while preserving the canonical PageParams storage.
+    @property
+    def limit(self) -> int | None:
+        """Get limit (alias for page.size) if pagination is set."""
+        return None if self._page is None else self._page.size
+
+    @property
+    def offset(self) -> int | None:
+        """Get offset (derived from page params) if pagination is set."""
+        return None if self._page is None else self._page.offset
 
     @property
     def fields(self) -> tuple[str, ...]:
@@ -327,7 +340,7 @@ class CompositeSpecification(Generic[T], ISpecification[T]):
             joins=list(self._joins),
         )
 
-    def with_page(self, page: Page) -> "CompositeSpecification[T]":
+    def with_page(self, page: PageParams) -> "CompositeSpecification[T]":
         """Create a new specification with pagination.
 
         Args:

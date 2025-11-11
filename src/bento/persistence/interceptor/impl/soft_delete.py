@@ -21,9 +21,12 @@ class SoftDeleteInterceptor(Interceptor[T]):
     as deleted rather than physically removing it from the database.
 
     Fields maintained:
-    - is_deleted: Boolean flag marking entity as deleted
-    - deleted_at: Timestamp of deletion
+    - deleted_at: Timestamp of deletion (NULL = not deleted)
     - deleted_by: Actor who performed the deletion
+
+    Note:
+        This interceptor does NOT use an is_deleted boolean field.
+        Soft delete status is determined by deleted_at IS NOT NULL.
 
     Priority: NORMAL (200)
 
@@ -37,7 +40,6 @@ class SoftDeleteInterceptor(Interceptor[T]):
             MyEntity,
             fields={
                 "soft_delete_fields": {
-                    "is_deleted": "is_archived",
                     "deleted_at": "archived_at",
                     "deleted_by": "archived_by"
                 }
@@ -48,7 +50,7 @@ class SoftDeleteInterceptor(Interceptor[T]):
     Example:
         ```python
         # Instead of: DELETE FROM users WHERE id = 1
-        # Executes: UPDATE users SET is_deleted = TRUE, deleted_at = NOW() WHERE id = 1
+        # Executes: UPDATE users SET deleted_at = NOW(), deleted_by = 'actor' WHERE id = 1
         ```
     """
 
@@ -89,13 +91,15 @@ class SoftDeleteInterceptor(Interceptor[T]):
             Dictionary mapping standard field names to actual field names
         """
         # Try to get from metadata registry
-        fields = EntityMetadataRegistry.get_metadata(entity_type, "soft_delete_fields")
-        if fields:
-            return fields
+        # Fields are stored under "fields" key, then "soft_delete_fields" sub-key
+        all_fields = EntityMetadataRegistry.get_metadata(entity_type, "fields")
+        if all_fields and isinstance(all_fields, dict):
+            soft_delete_fields = all_fields.get("soft_delete_fields")
+            if soft_delete_fields:
+                return soft_delete_fields
 
-        # Default field mapping
+        # Default field mapping (no is_deleted field, use deleted_at IS NOT NULL)
         return {
-            "is_deleted": "is_deleted",
             "deleted_at": "deleted_at",
             "deleted_by": "deleted_by",
         }
@@ -116,11 +120,11 @@ class SoftDeleteInterceptor(Interceptor[T]):
         if not context.entity:
             return False
 
-        # Check if entity has soft delete fields
+        # Check if entity has deleted_at field
         fields = self._get_soft_delete_fields(context.entity_type)
-        is_deleted_field = fields.get("is_deleted", "is_deleted")
+        deleted_at_field = fields.get("deleted_at", "deleted_at")
 
-        if not self.has_field(context.entity, is_deleted_field):
+        if not self.has_field(context.entity, deleted_at_field):
             return False
 
         # Check if enabled for this entity type
@@ -133,24 +137,18 @@ class SoftDeleteInterceptor(Interceptor[T]):
             entity: Entity instance
             entity_type: Entity class
         """
-        # Check if already deleted
-        is_deleted_field = self._get_soft_delete_fields(entity_type).get("is_deleted", "is_deleted")
-        if self.get_field_value(entity, is_deleted_field, False):
+        fields = self._get_soft_delete_fields(entity_type)
+
+        # Check if already deleted (deleted_at is not None)
+        deleted_at_field = fields.get("deleted_at", "deleted_at")
+        if self.get_field_value(entity, deleted_at_field, None) is not None:
             # Already deleted, skip
             return
 
         now = datetime.now(UTC)
         actor = self._actor
 
-        fields = self._get_soft_delete_fields(entity_type)
-
-        # Set deletion flag
-        is_deleted_field = fields.get("is_deleted", "is_deleted")
-        if self.has_field(entity, is_deleted_field):
-            self.set_field_value(entity, is_deleted_field, True)
-
         # Set deletion timestamp
-        deleted_at_field = fields.get("deleted_at", "deleted_at")
         if self.has_field(entity, deleted_at_field):
             self.set_field_value(entity, deleted_at_field, now)
 
@@ -182,9 +180,9 @@ class SoftDeleteInterceptor(Interceptor[T]):
             for entity in context.entities:
                 if self.is_enabled_for_entity(context.entity_type):
                     fields = self._get_soft_delete_fields(context.entity_type)
-                    is_deleted_field = fields.get("is_deleted", "is_deleted")
+                    deleted_at_field = fields.get("deleted_at", "deleted_at")
 
-                    if self.has_field(entity, is_deleted_field):
+                    if self.has_field(entity, deleted_at_field):
                         self._apply_soft_delete(entity, context.entity_type)
 
             # Mark as processed

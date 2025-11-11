@@ -1,0 +1,68 @@
+{
+  "乾": {
+    "symbol": "☰",
+    "stems": [
+      "甲",
+      "壬"
+    ],
+    "direction": "西北",
+    "english_name": "QIAN"
+  },
+  "坤": {
+    "symbol": "☷",
+    "stems": [
+      "乙",
+      "癸"
+    ],
+    "direction": "西南",
+    "english_name": "KUN"
+  },
+  "震": {
+    "symbol": "☳",
+    "stems": [
+      "庚"
+    ],
+    "direction": "东方",
+    "english_name": "ZHEN"
+  },
+  "巽": {
+    "symbol": "☴",
+    "stems": [
+      "辛"
+    ],
+    "direction": "东南",
+    "english_name": "XUN"
+  },
+  "坎": {
+    "symbol": "☵",
+    "stems": [
+      "戊"
+    ],
+    "direction": "北方",
+    "english_name": "KAN"
+  },
+  "离": {
+    "symbol": "☲",
+    "stems": [
+      "己"
+    ],
+    "direction": "南方",
+    "english_name": "LI"
+  },
+  "艮": {
+    "symbol": "☶",
+    "stems": [
+      "丙"
+    ],
+    "direction": "东北",
+    "english_name": "GEN"
+  },
+  "兑": {
+    "symbol": "☱",
+    "stems": [
+      "丁"
+    ],
+    "direction": "西方",
+    "english_name": "DUI"
+  }
+}

@@ -132,20 +132,20 @@ class TestSQLAlchemyUnitOfWork:
             assert aggregate in uow._tracked_aggregates
 
     async def test_uow_collect_events_pattern(self, mock_session, mock_outbox):
-        """Test event collection pattern with domain_events property."""
+        """Test event collection pattern with events property."""
         uow = SQLAlchemyUnitOfWork(
             session=mock_session,
             outbox=mock_outbox,
         )
 
-        # Create aggregate with domain_events property (UoW expects this)
+        # Create aggregate with events property (UoW expects this)
         class MockAggregate:
             def __init__(self):
                 self.id = "test-1"
                 self._events = []
 
             @property
-            def domain_events(self):
+            def events(self):
                 return self._events
 
             def clear_events(self):

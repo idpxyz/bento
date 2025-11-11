@@ -22,15 +22,28 @@ class AggregateSpecificationBuilder(EntitySpecificationBuilder[T]):
     - Aggregate identity queries
     - State management
 
+    Note: Aggregate roots typically do not use soft delete (deleted_at field).
+    If your aggregates do use soft delete, call .not_deleted() explicitly or use
+    EntitySpecificationBuilder instead.
+
     Example:
         ```python
         spec = (AggregateSpecificationBuilder()
             .by_id(aggregate_id)
             .with_minimum_version(5)
-            .not_deleted()
             .build())
         ```
     """
+
+    def __init__(self):
+        """Initialize builder without default soft delete filter.
+
+        Unlike EntitySpecificationBuilder, AggregateSpecificationBuilder does NOT
+        apply a default soft delete filter, as aggregate roots typically use
+        event sourcing or other patterns instead of soft deletion.
+        """
+        # Call SpecificationBuilder.__init__ directly, bypassing EntitySpecificationBuilder
+        super(EntitySpecificationBuilder, self).__init__()
 
     def by_aggregate_id(self, aggregate_id: Any) -> Self:
         """Filter by aggregate ID.

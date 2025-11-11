@@ -84,9 +84,12 @@ class AuditInterceptor(Interceptor[T]):
             Dictionary mapping standard field names to actual field names
         """
         # Try to get from metadata registry
-        fields = EntityMetadataRegistry.get_metadata(entity_type, "audit_fields")
-        if fields:
-            return fields
+        # Fields are stored under "fields" key, then "audit_fields" sub-key
+        all_fields = EntityMetadataRegistry.get_metadata(entity_type, "fields")
+        if all_fields and isinstance(all_fields, dict):
+            audit_fields = all_fields.get("audit_fields")
+            if audit_fields:
+                return audit_fields
 
         # Default field mapping
         return {

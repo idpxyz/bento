@@ -6,7 +6,7 @@ Following Bento's architecture principles and type safety.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
@@ -126,8 +126,7 @@ class Filter:
             except ValueError as e:
                 valid_operators = ", ".join(op.value for op in FilterOperator)
                 raise ValueError(
-                    f"Invalid operator: {self.operator}\n"
-                    f"Valid operators are: {valid_operators}"
+                    f"Invalid operator: {self.operator}\nValid operators are: {valid_operators}"
                 ) from e
 
         # Collection operators validation
@@ -137,9 +136,7 @@ class Filter:
             FilterOperator.ARRAY_CONTAINS,
             FilterOperator.ARRAY_OVERLAPS,
         ):
-            if not hasattr(self.value, "__iter__") or isinstance(
-                self.value, (str, bytes, dict)
-            ):
+            if not hasattr(self.value, "__iter__") or isinstance(self.value, (str, bytes, dict)):
                 raise ValueError(
                     f"Value for {self.operator} must be iterable (not string/bytes/dict)"
                 )
@@ -165,9 +162,7 @@ class Filter:
                 or "start" not in self.value
                 or "end" not in self.value
             ):
-                raise ValueError(
-                    "Value for BETWEEN must be a dict with 'start' and 'end' keys"
-                )
+                raise ValueError("Value for BETWEEN must be a dict with 'start' and 'end' keys")
             if self.value["start"] > self.value["end"]:
                 raise ValueError("Start value must be less than or equal to end value")
 
@@ -254,7 +249,7 @@ class PageParams:
         return self.size
 
 
-class Page(BaseModel, Generic[T]):
+class Page[T: Any](BaseModel):
     """Unified pagination result.
 
     Attributes:
@@ -395,7 +390,5 @@ class Having:
             except ValueError as e:
                 valid_operators = ", ".join(op.value for op in FilterOperator)
                 raise ValueError(
-                    f"Invalid operator: {self.operator}\n"
-                    f"Valid operators are: {valid_operators}"
+                    f"Invalid operator: {self.operator}\nValid operators are: {valid_operators}"
                 ) from e
-

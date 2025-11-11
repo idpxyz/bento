@@ -9,7 +9,8 @@ class EntityId:
     value: str
 
     @staticmethod
-    def new() -> "EntityId":
+    def generate() -> "EntityId":
+        """Generate a new unique identifier."""
         return EntityId(str(uuid.uuid4()))
 
 

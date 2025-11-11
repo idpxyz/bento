@@ -4,14 +4,33 @@
 
 ---
 
+## 🔥 最新动态（2025-11-06）
+
+### Legend 融合升级计划
+
+**重大升级**：将 Legend 框架的生产力优势融合到 Bento 中！
+
+**核心亮点**：
+- 🚀 **开发效率提升 60-90%**：简单场景 3 行代码搞定
+- 🎯 **三种开发模式**：自动化/手动/混合，自由选择
+- ✅ **保持架构优势**：严格的六边形架构不变
+
+**快速链接**：
+- 📋 [完整融合计划](./migration/FUSION_UPGRADE_PLAN.md) - 16周详细计划
+- ⚡ [快速开始指南](./migration/FUSION_QUICK_START.md) - 第一周行动指南
+- ✅ [执行检查清单](./migration/FUSION_CHECKLIST.md) - 任务追踪
+
+---
+
 ## 📚 文档导航
 
 ### 🎯 快速开始
 
 | 文档 | 说明 | 适合人群 |
 |------|------|---------|
-| [**QUICK_REFERENCE.md**](./QUICK_REFERENCE.md) | 快速参考和每日清单 | 所有人 ⭐ |
-| [**roadmap.md**](./roadmap.md) | 项目路线图 | 项目管理者 |
+| [**FUSION_QUICK_START.md**](./migration/FUSION_QUICK_START.md) | **融合升级快速开始** 🔥 | 所有人 ⭐⭐⭐⭐⭐ |
+| [**QUICK_REFERENCE.md**](./migration/QUICK_REFERENCE.md) | 快速参考和每日清单 | 所有人 ⭐ |
+| [**roadmap.md**](./migration/roadmap.md) | 项目路线图 | 项目管理者 |
 
 ### 🏗️ 架构文档
 
@@ -119,20 +138,20 @@
 gantt
     title Bento Framework 迁移时间线
     dateFormat  YYYY-MM-DD
-    
+
     section 准备
     Phase 0: 准备阶段           :p0, 2025-01-06, 1w
-    
+
     section 核心
     Phase 1: 端口层定义         :p1, after p0, 3w
     Phase 2: 持久化层迁移       :crit, p2, after p1, 6w
-    
+
     section 扩展
     Phase 3: Mapper 系统        :p3, after p2, 3w
     Phase 4: Cache 系统         :p4, after p3, 2w
     Phase 5: Messaging 系统     :p5, after p4, 3w
     Phase 6: 其他基础设施       :p6, after p5, 3w
-    
+
     section 完善
     Phase 7: 完善和优化         :p7, after p6, 3w
 ```
