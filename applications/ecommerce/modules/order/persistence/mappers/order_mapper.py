@@ -87,6 +87,8 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
         )
         # Register child entity mapper - items are automatically mapped
         self.register_child("items", OrderItemMapper(), parent_keys="order_id")
+        # If后续引入订单级金额字段（如 discount_amount/tax_amount），可一行注册 Decimal 覆盖：
+        # register_decimal_str_overrides(self, "discount_amount", "tax_amount")
 
     def _build_domain(self, d: dict) -> Order:
         """Domain factory: place to enforce invariants or polymorphic construction."""

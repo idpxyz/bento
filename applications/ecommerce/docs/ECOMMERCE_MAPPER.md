@@ -158,6 +158,17 @@ class InvoiceMapper(AutoMapper[Invoice, InvoiceModel]):
 说明：
 - 如果当前电商示例暂未引入 Decimal 字段，可在需要时按上面方式快速启用，无需在各 mapper 重复写覆盖函数。
 
+### 金额字段最佳实践
+
+- 领域层统一使用 `Decimal` 表示金额，避免浮点误差；构造时允许传入 `float`，内部规范化为 `Decimal(str(v))`。
+- PO 层优先以文本（String）存储金额，或使用数据库 Decimal 类型（若迁移成本允许）。示例中为通用性采用 String。
+- Mapper 层集中注册 `Decimal ↔ str` 覆盖，禁止各处散落手写转换。
+- 合计/小计一律在领域层以 Decimal 计算；展示时再格式化为字符串。
+- 若未来新增订单层面的 `discount_amount`、`tax_amount` 等字段，可直接在 `OrderMapper.__init__` 中：
+  ```python
+  register_decimal_str_overrides(self, "discount_amount", "tax_amount")
+  ```
+
 ## 迁移与扩展建议
 
 - 如需增加更多 `Shipment`/`Payment` 子类：
