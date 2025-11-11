@@ -155,6 +155,9 @@ class Order(AggregateRoot):
     # Explicit polymorphic objects (optional, for richer domain usage)
     payment: Payment | None
     shipment: Shipment | None
+    # Order-level money fields
+    discount_amount: Decimal | None
+    tax_amount: Decimal | None
 
     def __init__(
         self,
@@ -185,6 +188,9 @@ class Order(AggregateRoot):
         # Polymorphic objects default
         self.payment = None
         self.shipment = None
+        # Money fields default
+        self.discount_amount = Decimal("0")
+        self.tax_amount = Decimal("0")
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate

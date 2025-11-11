@@ -14,6 +14,8 @@ Note:
     Audit fields (created_at, updated_at, etc.) are populated by Interceptors.
 """
 
+from decimal import Decimal
+
 from applications.ecommerce.modules.order.domain.order import (
     Order,
     OrderItem,
@@ -88,7 +90,7 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
         # Register child entity mapper - items are automatically mapped
         self.register_child("items", OrderItemMapper(), parent_keys="order_id")
         # If后续引入订单级金额字段（如 discount_amount/tax_amount），可一行注册 Decimal 覆盖：
-        # register_decimal_str_overrides(self, "discount_amount", "tax_amount")
+        register_decimal_str_overrides(self, "discount_amount", "tax_amount")
 
     def _build_domain(self, d: dict) -> Order:
         """Domain factory: place to enforce invariants or polymorphic construction."""
@@ -154,10 +156,16 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             "shipment_carrier",
             "shipment_tracking_no",
             "shipment_service",
+            # order-level money fields
+            "discount_amount",
+            "tax_amount",
         ):
             dv = getattr(domain, name, None)
             if dv is not None and getattr(po, name, None) is None:
-                setattr(po, name, dv)
+                if name in ("discount_amount", "tax_amount") and isinstance(dv, Decimal):
+                    setattr(po, name, str(dv))
+                else:
+                    setattr(po, name, dv)
         # Heuristic inference when still missing
         if getattr(po, "payment_method", None) is None:
             if getattr(po, "payment_card_last4", None) or getattr(po, "payment_card_brand", None):
@@ -213,3 +221,8 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             pv = getattr(po, name, None)
             if pv is not None and getattr(domain, name, None) is None:
                 setattr(domain, name, pv)
+        # Money fields: always refresh from PO if present (convert to Decimal)
+        if getattr(po, "discount_amount", None) is not None:
+            domain.discount_amount = Decimal(str(po.discount_amount))
+        if getattr(po, "tax_amount", None) is not None:
+            domain.tax_amount = Decimal(str(po.tax_amount))
