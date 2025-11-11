@@ -41,6 +41,7 @@ class OrderModel(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFi
     # Order-level money fields (stored as string for precision)
     discount_amount: Mapped[str | None] = mapped_column(String, nullable=True)
     tax_amount: Mapped[str | None] = mapped_column(String, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     # Shipping address (flattened)
     shipping_address_line1: Mapped[str | None] = mapped_column(String, nullable=True)
     shipping_city: Mapped[str | None] = mapped_column(String, nullable=True)

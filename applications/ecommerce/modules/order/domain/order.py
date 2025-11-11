@@ -64,6 +64,14 @@ class Address:
         self.country = country
 
 
+class Money:
+    """Simple money value object with explicit currency."""
+
+    def __init__(self, amount: Decimal, currency: str) -> None:
+        self.amount = amount
+        self.currency = currency
+
+
 class OrderItem(Entity):
     """Order item entity.
 
@@ -169,6 +177,8 @@ class Order(AggregateRoot):
     tax_amount: Decimal | None
     # Address
     shipping_address: Address | None
+    # Currency for monetary values
+    currency: str
 
     def __init__(
         self,
@@ -204,6 +214,8 @@ class Order(AggregateRoot):
         self.tax_amount = Decimal("0")
         # Address default
         self.shipping_address = None
+        # Currency default
+        self.currency = "USD"
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate
@@ -215,6 +227,11 @@ class Order(AggregateRoot):
         for item in self.items:
             total += item.subtotal
         return total
+
+    @property
+    def total_money(self) -> Money:
+        """Return total as Money with order currency."""
+        return Money(self.total_amount, self.currency)
 
     @property
     def items_count(self) -> int:

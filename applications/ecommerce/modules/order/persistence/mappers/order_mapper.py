@@ -166,6 +166,8 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             # order-level money fields
             "discount_amount",
             "tax_amount",
+            # currency
+            "currency",
         ):
             dv = getattr(domain, name, None)
             if dv is not None and getattr(po, name, None) is None:
@@ -240,3 +242,6 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             domain.discount_amount = Decimal(str(po.discount_amount))
         if getattr(po, "tax_amount", None) is not None:
             domain.tax_amount = Decimal(str(po.tax_amount))
+        # Currency
+        if getattr(po, "currency", None):
+            domain.currency = po.currency
