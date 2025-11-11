@@ -1,5 +1,7 @@
-import argparse, pathlib
+import argparse
+import pathlib
 from string import Template
+
 
 def render(src: pathlib.Path, **ctx) -> str:
     txt = src.read_text(encoding="utf-8")

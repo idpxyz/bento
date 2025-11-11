@@ -28,7 +28,7 @@ class TestValueObject:
 
         assert vo != "test"
         assert vo != 123
-        assert vo != None
+        assert vo is not None
         assert vo != {"value": "test"}
 
     def test_value_object_hash(self):
@@ -79,7 +79,9 @@ class TestValueObject:
         vo = ValueObject(value="test")
 
         # Attempting to change value should raise an error
-        with pytest.raises(Exception):  # dataclass(frozen=True) raises FrozenInstanceError
+        from dataclasses import FrozenInstanceError
+
+        with pytest.raises(FrozenInstanceError):
             vo.value = "new_value"
 
     def test_value_object_with_complex_types(self):

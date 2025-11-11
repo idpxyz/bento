@@ -81,7 +81,9 @@ class TestDomainEvent:
         )
 
         # Attempting to change field should raise an error
-        with pytest.raises(Exception):  # FrozenInstanceError
+        from dataclasses import FrozenInstanceError
+
+        with pytest.raises(FrozenInstanceError):
             event.item_name = "New Widget"
 
     def test_domain_event_equality(self):

@@ -250,7 +250,7 @@ class TestResilienceIntegration:
         # Note: ConnectionError is not a SQLAlchemy error, so won't be retried
         # This is just a simulation test
         try:
-            result = await retry_on_db_error(flaky_operation, config=config)
+            await retry_on_db_error(flaky_operation, config=config)
             # If ConnectionError is not in retry list, this will raise
         except ConnectionError:
             # Expected - ConnectionError is not a database error

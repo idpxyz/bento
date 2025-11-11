@@ -3,8 +3,9 @@
 This module provides common fixtures and configuration for all tests.
 """
 
+from collections.abc import AsyncGenerator
+
 import pytest
-from typing import AsyncGenerator
 
 # ============================================================================
 # Async test configuration
