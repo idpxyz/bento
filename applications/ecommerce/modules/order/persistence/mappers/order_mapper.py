@@ -61,6 +61,24 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
 
     def __init__(self) -> None:
         """Initialize with automatic type analysis and child registration."""
-        super().__init__(Order, OrderModel)
+        super().__init__(
+            Order,
+            OrderModel,
+            # Wire factories now (straight-through); ready for future polymorphism
+            domain_factory=self._build_domain,
+            po_factory=self._build_po,
+        )
         # Register child entity mapper - items are automatically mapped
         self.register_child("items", OrderItemMapper(), parent_keys="order_id")
+
+    @staticmethod
+    def _build_domain(d: dict) -> Order:
+        """Domain factory: place to enforce invariants or polymorphic construction."""
+        # Straight-through for now; extend when adding polymorphic fields
+        return Order(**d)  # type: ignore[arg-type]
+
+    @staticmethod
+    def _build_po(d: dict) -> OrderModel:
+        """PO factory: place to construct ORM/Pydantic models or handle polymorphism."""
+        # Straight-through for now; extend when adding polymorphic fields
+        return OrderModel(**d)  # type: ignore[arg-type]
