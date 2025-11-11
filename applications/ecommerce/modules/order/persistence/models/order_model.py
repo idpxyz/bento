@@ -38,6 +38,16 @@ class OrderModel(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFi
     status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Polymorphic discriminators (payment/shipment)
+    payment_method: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    shipment_carrier: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # Common payment fields (minimal, optional)
+    payment_card_last4: Mapped[str | None] = mapped_column(String, nullable=True)
+    payment_card_brand: Mapped[str | None] = mapped_column(String, nullable=True)
+    payment_paypal_payer_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Common shipment fields (minimal, optional)
+    shipment_tracking_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    shipment_service: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     items: Mapped[list[OrderItemModel]] = relationship(
@@ -70,6 +80,14 @@ class OrderItemModel(Base):
     product_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
+    # Polymorphic discriminator for line item kinds
+    kind: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="simple",
+        server_default="simple",
+        index=True,
+    )
 
     # Relationships
     order: Mapped[OrderModel] = relationship("OrderModel", back_populates="items")
