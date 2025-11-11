@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from bento.persistence import (
@@ -79,7 +79,8 @@ class OrderItemModel(Base):
     product_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     product_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-    unit_price: Mapped[float] = mapped_column(Float, nullable=False)
+    # Store as string to preserve precision (Decimal ↔ str at Mapper level)
+    unit_price: Mapped[str] = mapped_column(String, nullable=False)
     # Polymorphic discriminator for line item kinds
     kind: Mapped[str] = mapped_column(
         String,
@@ -94,5 +95,7 @@ class OrderItemModel(Base):
 
     @property
     def subtotal(self) -> float:
-        """Calculate item subtotal."""
-        return self.unit_price * self.quantity
+        """Calculate item subtotal (for display only)."""
+        from decimal import Decimal
+
+        return float(Decimal(self.unit_price) * Decimal(self.quantity))

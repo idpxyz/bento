@@ -1,6 +1,7 @@
 """Order aggregate root and entities."""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from applications.ecommerce.modules.order.domain.events import (
@@ -65,7 +66,7 @@ class OrderItem(Entity):
         product_id: ID,
         product_name: str,
         quantity: int,
-        unit_price: float,
+        unit_price: Decimal | float,
     ) -> None:
         """Initialize order item.
 
@@ -87,7 +88,10 @@ class OrderItem(Entity):
                 error_code=OrderErrors.INVALID_QUANTITY, details={"quantity": quantity}
             )
 
-        if unit_price <= 0:
+        # normalize unit_price to Decimal for precision
+        if not isinstance(unit_price, Decimal):
+            unit_price = Decimal(str(unit_price))
+        if unit_price <= Decimal("0"):
             raise DomainException(
                 error_code=OrderErrors.INVALID_ORDER_AMOUNT, details={"unit_price": unit_price}
             )
@@ -95,12 +99,12 @@ class OrderItem(Entity):
         self.product_id = product_id
         self.product_name = product_name
         self.quantity = quantity
-        self.unit_price = unit_price
+        self.unit_price: Decimal = unit_price
 
     @property
-    def subtotal(self) -> float:
+    def subtotal(self) -> Decimal:
         """Calculate subtotal for this item."""
-        return self.quantity * self.unit_price
+        return Decimal(self.quantity) * self.unit_price
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -186,9 +190,12 @@ class Order(AggregateRoot):
         # to ensure total_amount is accurate
 
     @property
-    def total_amount(self) -> float:
+    def total_amount(self) -> Decimal:
         """Calculate total amount of the order."""
-        return sum(item.subtotal for item in self.items)
+        total = Decimal("0")
+        for item in self.items:
+            total += item.subtotal
+        return total
 
     @property
     def items_count(self) -> int:

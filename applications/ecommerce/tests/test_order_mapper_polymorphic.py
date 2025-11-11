@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from applications.ecommerce.modules.order.domain.order import (
     Order,
@@ -47,7 +48,9 @@ def test_order_mapper_payment_and_shipment_fields_roundtrip():
 
 def test_order_item_mapper_sets_default_kind():
     mapper = OrderItemMapper()
-    item = OrderItem(product_id=ID("p-1"), product_name="X", quantity=1, unit_price=10.0)
+    item = OrderItem(
+        product_id=ID("p-1"), product_name="X", quantity=1, unit_price=Decimal("10.00")
+    )
     po = mapper.map(item)
     assert isinstance(po, OrderItemModel)
     assert po.kind == "simple"

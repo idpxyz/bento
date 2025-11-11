@@ -26,6 +26,7 @@ from applications.ecommerce.modules.order.domain.order import (
 )
 from applications.ecommerce.modules.order.persistence.models import OrderItemModel, OrderModel
 from bento.application.mapper import AutoMapper
+from bento.application.mapper.overrides import register_decimal_str_overrides
 
 
 class OrderItemMapper(AutoMapper[OrderItem, OrderItemModel]):
@@ -42,6 +43,8 @@ class OrderItemMapper(AutoMapper[OrderItem, OrderItemModel]):
         super().__init__(OrderItem, OrderItemModel)
         # order_id will be set by parent mapper
         self.ignore_fields("order_id")
+        # unit_price: Decimal ↔ str
+        register_decimal_str_overrides(self, "unit_price")
 
     def after_map(self, domain: OrderItem, po: OrderItemModel) -> None:
         """Ensure kind has a sensible default when constructing transient PO."""
