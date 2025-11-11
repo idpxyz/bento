@@ -101,6 +101,15 @@ class Order(AggregateRoot):
         ```
     """
 
+    # Polymorphic/discriminator-ready fields (optional, declared for type analysis)
+    payment_method: str | None
+    payment_card_last4: str | None
+    payment_card_brand: str | None
+    payment_paypal_payer_id: str | None
+    shipment_carrier: str | None
+    shipment_tracking_no: str | None
+    shipment_service: str | None
+
     def __init__(
         self,
         order_id: ID,
@@ -119,6 +128,14 @@ class Order(AggregateRoot):
         self.created_at = datetime.now()
         self.paid_at: datetime | None = None
         self.cancelled_at: datetime | None = None
+        # Initialize optional discriminators
+        self.payment_method = None  # e.g., "card", "paypal", "cod"
+        self.payment_card_last4 = None
+        self.payment_card_brand = None
+        self.payment_paypal_payer_id = None
+        self.shipment_carrier = None  # e.g., "local", "fedex", "dhl"
+        self.shipment_tracking_no = None
+        self.shipment_service = None
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate
@@ -288,4 +305,11 @@ class Order(AggregateRoot):
             "created_at": self.created_at.isoformat(),
             "paid_at": self.paid_at.isoformat() if self.paid_at else None,
             "cancelled_at": self.cancelled_at.isoformat() if self.cancelled_at else None,
+            "payment_method": self.payment_method,
+            "payment_card_last4": self.payment_card_last4,
+            "payment_card_brand": self.payment_card_brand,
+            "payment_paypal_payer_id": self.payment_paypal_payer_id,
+            "shipment_carrier": self.shipment_carrier,
+            "shipment_tracking_no": self.shipment_tracking_no,
+            "shipment_service": self.shipment_service,
         }
