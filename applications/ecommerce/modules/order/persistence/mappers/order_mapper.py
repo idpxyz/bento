@@ -17,6 +17,7 @@ Note:
 from decimal import Decimal
 
 from applications.ecommerce.modules.order.domain.order import (
+    Address,
     Order,
     OrderItem,
     Payment,
@@ -147,6 +148,12 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
                 po.shipment_carrier = "local"
                 po.shipment_tracking_no = s.tracking_no
                 po.shipment_service = s.service
+        # Project shipping_address if present
+        if isinstance(getattr(domain, "shipping_address", None), Address):
+            a = domain.shipping_address  # type: ignore[assignment]
+            po.shipping_address_line1 = a.line1
+            po.shipping_city = a.city
+            po.shipping_country = a.country
 
         for name in (
             "payment_method",
@@ -209,6 +216,13 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             )
         else:
             domain.shipment = None
+        # Rebuild shipping_address if fields present
+        if po.shipping_address_line1 and po.shipping_city and po.shipping_country:
+            domain.shipping_address = Address(
+                line1=po.shipping_address_line1,
+                city=po.shipping_city,
+                country=po.shipping_country,
+            )
         for name in (
             "payment_method",
             "payment_card_last4",

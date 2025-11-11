@@ -55,6 +55,15 @@ class ShipmentLocal(Shipment):
         self.service = service
 
 
+class Address:
+    """Simple postal address value object."""
+
+    def __init__(self, line1: str, city: str, country: str) -> None:
+        self.line1 = line1
+        self.city = city
+        self.country = country
+
+
 class OrderItem(Entity):
     """Order item entity.
 
@@ -158,6 +167,8 @@ class Order(AggregateRoot):
     # Order-level money fields
     discount_amount: Decimal | None
     tax_amount: Decimal | None
+    # Address
+    shipping_address: Address | None
 
     def __init__(
         self,
@@ -191,6 +202,8 @@ class Order(AggregateRoot):
         # Money fields default
         self.discount_amount = Decimal("0")
         self.tax_amount = Decimal("0")
+        # Address default
+        self.shipping_address = None
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate
