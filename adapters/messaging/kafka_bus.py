@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Callable, Awaitable, Dict, List
+
+from collections.abc import Awaitable, Callable
+
 try:
-    from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+    from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 except Exception:  # pragma: no cover
     AIOKafkaProducer = AIOKafkaConsumer = None  # type: ignore
+
 
 class KafkaEventBus:
     def __init__(self, brokers: str = "localhost:9092", group_id: str = "omnia-ddd"):
@@ -11,7 +14,7 @@ class KafkaEventBus:
         self.producer = AIOKafkaProducer(bootstrap_servers=brokers)
         self.brokers = brokers
         self.group_id = group_id
-        self._handlers: Dict[str, List[Callable[[dict], Awaitable[None]]]] = {}
+        self._handlers: dict[str, list[Callable[[dict], Awaitable[None]]]] = {}
 
     async def start(self):
         await self.producer.start()
@@ -21,6 +24,7 @@ class KafkaEventBus:
 
     async def publish(self, topic: str, payload: dict) -> None:
         import json
+
         await self.producer.send_and_wait(topic, json.dumps(payload).encode("utf-8"))
 
     def subscribe(self, topic: str, handler: Callable[[dict], Awaitable[None]]) -> None:

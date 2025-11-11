@@ -230,6 +230,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         map_children_auto: bool = True,
         default_id_type: type = ID,
         id_factory: Callable[[str], Any] | None = None,
+        domain_factory: Callable[[dict[str, Any]], Domain] | None = None,
+        po_factory: Callable[[dict[str, Any]], PO] | None = None,
         context: MappingContext | None = None,
     ) -> None:
         """Initialize auto mapper with type analysis.
@@ -243,6 +245,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
             map_children_auto: Whether to automatically map child entities
             default_id_type: Default ID type to use when converting strings
             id_factory: Optional factory function for creating custom ID types
+            domain_factory: Optional factory to construct domain objects from dict
+            po_factory: Optional factory to construct PO objects from dict
             context: Optional mapping context for propagating tenant/org/actor info
         """
         super().__init__(
@@ -265,6 +269,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         self._debug_enabled: bool = debug
         self._logger = logging.getLogger(__name__)
         self._map_children_auto: bool = map_children_auto
+        self._domain_factory = domain_factory
+        self._po_factory = po_factory
 
         # 延迟初始化：首次使用时才分析类型（性能优化）
         # 如果 strict 模式，立即分析以便早期发现错误
@@ -586,6 +592,15 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         Returns:
             PO instance
         """
+        # Custom factory first (for Pydantic/ORM/special constructors)
+        if self._po_factory is not None:
+            try:
+                return self._po_factory(po_dict)
+            except Exception as e:
+                raise TypeError(
+                    f"AutoMapper: po_factory failed for {self._po_type.__name__} "
+                    f"with keys: {list(po_dict.keys())}. Error: {e}"
+                ) from e
         try:
             return self._po_type(**po_dict)
         except TypeError:
@@ -610,10 +625,17 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     return po
             else:
                 # Non-dataclass: no-arg constructor + setattr
-                po = self._po_type()
-                for k, v in po_dict.items():
-                    setattr(po, k, v)
-                return po
+                try:
+                    po = self._po_type()
+                    for k, v in po_dict.items():
+                        setattr(po, k, v)
+                    return po
+                except Exception as e:
+                    raise TypeError(
+                        f"AutoMapper: failed to construct {self._po_type.__name__} "
+                        f"from keys: {list(po_dict.keys())}. "
+                        f"Consider providing po_factory or override mapping. Error: {e}"
+                    ) from e
 
     def _instantiate_domain(self, domain_dict: dict[str, Any]) -> Domain:
         """Instantiate Domain object with fallback strategy.
@@ -629,6 +651,15 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         from dataclasses import fields as dataclass_fields
         from dataclasses import is_dataclass
 
+        # Custom factory first (enforce invariants/complex construction)
+        if self._domain_factory is not None:
+            try:
+                return self._domain_factory(domain_dict)
+            except Exception as e:
+                raise TypeError(
+                    f"AutoMapper: domain_factory failed for {self._domain_type.__name__} "
+                    f"with keys: {list(domain_dict.keys())}. Error: {e}"
+                ) from e
         try:
             return self._domain_type(**domain_dict)
         except TypeError:
@@ -653,10 +684,17 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     return domain
             else:
                 # Non-dataclass: no-arg constructor + setattr
-                domain = self._domain_type()
-                for k, v in domain_dict.items():
-                    setattr(domain, k, v)
-                return domain
+                try:
+                    domain = self._domain_type()
+                    for k, v in domain_dict.items():
+                        setattr(domain, k, v)
+                    return domain
+                except Exception as e:
+                    raise TypeError(
+                        f"AutoMapper: failed to construct {self._domain_type.__name__} "
+                        f"from keys: {list(domain_dict.keys())}. "
+                        f"Consider providing domain_factory or override mapping. Error: {e}"
+                    ) from e
 
     # -------------------------
     # Mapping (Domain -> PO)
