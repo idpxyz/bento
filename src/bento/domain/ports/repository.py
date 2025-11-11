@@ -29,19 +29,19 @@ class Repository[E: Entity, ID: EntityId](Protocol):
         ```python
         # Domain layer defines the contract
         class UserRepository(Protocol):
-            async def find_by_id(self, id: UserId) -> Optional[User]:
+            async def get(self, id: UserId) -> Optional[User]:
                 ...
 
         # Infrastructure layer implements it
         class SqlUserRepository:
-            async def find_by_id(self, id: UserId) -> Optional[User]:
+            async def get(self, id: UserId) -> Optional[User]:
                 # SQLAlchemy implementation
                 ...
         ```
     """
 
-    async def find_by_id(self, id: ID) -> E | None:
-        """Find an entity by its ID.
+    async def get(self, id: ID) -> E | None:
+        """Get an entity by its ID.
 
         Args:
             id: The entity ID to search for
@@ -51,7 +51,7 @@ class Repository[E: Entity, ID: EntityId](Protocol):
 
         Example:
             ```python
-            user = await repo.find_by_id(UserId("123"))
+            user = await repo.get(UserId("123"))
             if user:
                 print(f"Found: {user.name}")
             ```

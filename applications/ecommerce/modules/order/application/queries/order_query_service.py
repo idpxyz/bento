@@ -16,19 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from applications.ecommerce.modules.order.errors import OrderErrors
-from applications.ecommerce.persistence.models import OrderModel
+from applications.ecommerce.modules.order.persistence.models.order_model import OrderModel
 from bento.core.errors import ApplicationError
 from bento.core.ids import ID
-from bento.persistence.specification import (
-    SortDirection,
-    SpecificationBuilder,
-)
-from bento.persistence.specification.criteria import (
-    BetweenCriterion,
-    EqualsCriterion,
-    GreaterEqualCriterion,
-    LessEqualCriterion,
-)
+from bento.persistence.specification import SortDirection
+from bento.persistence.specification.builder import FluentSpecificationBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -226,11 +218,8 @@ class OrderQueryService:
         # Build query with filters
         stmt = select(OrderModel).options(selectinload(OrderModel.items))
 
-        # Amount range filter
-        if min_amount is not None:
-            stmt = stmt.where(OrderModel.total_amount >= min_amount)
-        if max_amount is not None:
-            stmt = stmt.where(OrderModel.total_amount <= max_amount)
+        # Note: Amount filtering is done in-memory after query
+        # because total_amount is computed from items
 
         # Date range filter
         if from_date:
@@ -241,35 +230,39 @@ class OrderQueryService:
         # Apply sorting
         stmt = stmt.order_by(OrderModel.created_at.desc())
 
-        # Get total count
+        # Get total count (without amount filter)
         count_stmt = select(func.count()).select_from(OrderModel)
-        if min_amount is not None:
-            count_stmt = count_stmt.where(OrderModel.total_amount >= min_amount)
-        if max_amount is not None:
-            count_stmt = count_stmt.where(OrderModel.total_amount <= max_amount)
         if from_date:
             count_stmt = count_stmt.where(OrderModel.created_at >= from_date)
         if to_date:
             count_stmt = count_stmt.where(OrderModel.created_at <= to_date)
 
-        count_result = await self._session.execute(count_stmt)
-        total = count_result.scalar() or 0
-
-        # Apply pagination
-        stmt = stmt.limit(limit).offset(offset)
-
-        # Execute query
+        # Execute query (no pagination yet, need to filter by amount first)
         result = await self._session.execute(stmt)
-        orders = result.scalars().all()
+        all_orders = result.scalars().all()
 
-        logger.info(f"Search found {len(orders)} orders (total: {total})")
+        # Filter by amount in memory
+        filtered_orders = []
+        for order in all_orders:
+            total = order.total_amount
+            if min_amount is not None and total < min_amount:
+                continue
+            if max_amount is not None and total > max_amount:
+                continue
+            filtered_orders.append(order)
+
+        # Apply pagination to filtered results
+        total = len(filtered_orders)
+        paginated_orders = filtered_orders[offset : offset + limit]
+
+        logger.info(f"Search found {len(paginated_orders)} orders (total: {total})")
 
         return {
-            "items": [self._order_to_dict(order) for order in orders],
+            "items": [self._order_to_dict(order) for order in paginated_orders],
             "total": total,
             "limit": limit,
             "offset": offset,
-            "has_more": offset + len(orders) < total,
+            "has_more": offset + len(paginated_orders) < total,
         }
 
     async def get_order_statistics(self, customer_id: str | None = None) -> dict[str, Any]:
@@ -292,26 +285,20 @@ class OrderQueryService:
         """
         logger.debug(f"Getting order statistics for customer: {customer_id}")
 
-        # Build base query
-        from sqlalchemy import case
-
-        base_query = select(OrderModel)
+        # Query all orders with items (need to calculate amounts)
+        stmt = select(OrderModel).options(selectinload(OrderModel.items))
         if customer_id:
-            base_query = base_query.where(OrderModel.customer_id == customer_id)
+            stmt = stmt.where(OrderModel.customer_id == customer_id)
 
-        # Total orders and revenue
-        stats_stmt = select(
-            func.count(OrderModel.id).label("total_orders"),
-            func.sum(case((OrderModel.status == "paid", OrderModel.total_amount), else_=0)).label(
-                "total_revenue"
-            ),
-            func.avg(OrderModel.total_amount).label("average_order_value"),
+        result = await self._session.execute(stmt)
+        orders = result.scalars().all()
+
+        # Calculate statistics in memory
+        total_orders = len(orders)
+        total_revenue = sum(order.total_amount for order in orders if order.status == "paid")
+        average_order_value = (
+            sum(order.total_amount for order in orders) / total_orders if total_orders > 0 else 0
         )
-        if customer_id:
-            stats_stmt = stats_stmt.where(OrderModel.customer_id == customer_id)
-
-        stats_result = await self._session.execute(stats_stmt)
-        stats_row = stats_result.one()
 
         # Status breakdown
         status_stmt = select(OrderModel.status, func.count(OrderModel.id).label("count")).group_by(
@@ -324,9 +311,9 @@ class OrderQueryService:
         status_breakdown = {row.status: row.count for row in status_result}
 
         statistics = {
-            "total_orders": stats_row.total_orders or 0,
-            "total_revenue": float(stats_row.total_revenue or 0),
-            "average_order_value": float(stats_row.average_order_value or 0),
+            "total_orders": total_orders,
+            "total_revenue": float(total_revenue),
+            "average_order_value": float(average_order_value),
             "status_breakdown": status_breakdown,
         }
 
@@ -370,29 +357,23 @@ class OrderQueryService:
             f"amount_range=({min_amount},{max_amount}), page={page}"
         )
 
-        # Build specification using fluent API
-        builder = SpecificationBuilder()
+        # Build specification using FluentSpecificationBuilder
+        builder = FluentSpecificationBuilder(OrderModel)
 
-        # Add filters using criteria
         if customer_id:
-            builder = builder.add_criterion(EqualsCriterion("customer_id", customer_id))
-
+            builder = builder.equals("customer_id", customer_id)
         if status:
-            builder = builder.add_criterion(EqualsCriterion("status", status))
+            builder = builder.equals("status", status)
 
-        # Amount range filtering
-        if min_amount is not None and max_amount is not None:
-            builder = builder.add_criterion(
-                BetweenCriterion("total_amount", min_amount, max_amount)
-            )
-        elif min_amount is not None:
-            builder = builder.add_criterion(GreaterEqualCriterion("total_amount", min_amount))
-        elif max_amount is not None:
-            builder = builder.add_criterion(LessEqualCriterion("total_amount", max_amount))
+        # Amount range filtering (emit separate constraints)
+        if min_amount is not None:
+            builder = builder.greater_than_or_equal("total_amount", min_amount)
+        if max_amount is not None:
+            builder = builder.less_than_or_equal("total_amount", max_amount)
 
-        # Add sorting and pagination
+        # Sorting and pagination
         spec = (
-            builder.order_by("created_at", SortDirection.DESC)
+            builder.order_by("created_at", descending=True)
             .paginate(page=page, size=min(page_size, 100))
             .build()
         )
@@ -402,23 +383,13 @@ class OrderQueryService:
         # to convert Specification to SQLAlchemy filters
         stmt = select(OrderModel).options(selectinload(OrderModel.items))
 
-        # Apply filters from specification
+        # Apply filters from specification (skip total_amount - computed property)
         for filter in spec.filters:
             if filter.field == "customer_id":
                 stmt = stmt.where(OrderModel.customer_id == filter.value)
             elif filter.field == "status":
                 stmt = stmt.where(OrderModel.status == filter.value)
-            elif filter.field == "total_amount":
-                from bento.persistence.specification import FilterOperator
-
-                if filter.operator == FilterOperator.BETWEEN:
-                    stmt = stmt.where(
-                        OrderModel.total_amount.between(filter.value["start"], filter.value["end"])
-                    )
-                elif filter.operator == FilterOperator.GREATER_EQUAL:
-                    stmt = stmt.where(OrderModel.total_amount >= filter.value)
-                elif filter.operator == FilterOperator.LESS_EQUAL:
-                    stmt = stmt.where(OrderModel.total_amount <= filter.value)
+            # Note: total_amount filtering will be done in-memory after query
 
         # Apply sorting
         for sort in spec.sorts:
@@ -429,33 +400,53 @@ class OrderQueryService:
                     else OrderModel.created_at.asc()
                 )
 
-        # Apply pagination
-        if spec.page:
-            offset = (spec.page.page - 1) * spec.page.size
-            stmt = stmt.limit(spec.page.size).offset(offset)
+        # Note: Pagination is applied AFTER in-memory filtering
 
         # Execute query
         result = await self._session.execute(stmt)
-        orders = result.scalars().all()
+        all_orders = result.scalars().all()
 
-        # Get total count (simplified for demo)
-        count_stmt = select(func.count()).select_from(OrderModel)
-        for filter in spec.filters:
-            if filter.field == "customer_id":
-                count_stmt = count_stmt.where(OrderModel.customer_id == filter.value)
-            elif filter.field == "status":
-                count_stmt = count_stmt.where(OrderModel.status == filter.value)
+        # Apply in-memory filters for total_amount
+        filtered_orders = []
+        for order in all_orders:
+            # Check amount filters from specification
+            passes_filter = True
+            for filter in spec.filters:
+                if filter.field == "total_amount":
+                    from bento.persistence.specification import FilterOperator
 
-        count_result = await self._session.execute(count_stmt)
-        total = count_result.scalar() or 0
+                    total = order.total_amount
+                    if filter.operator == FilterOperator.BETWEEN:
+                        if not (filter.value["start"] <= total <= filter.value["end"]):
+                            passes_filter = False
+                            break
+                    elif filter.operator == FilterOperator.GREATER_EQUAL:
+                        if not (total >= filter.value):
+                            passes_filter = False
+                            break
+                    elif filter.operator == FilterOperator.LESS_EQUAL:
+                        if not (total <= filter.value):
+                            passes_filter = False
+                            break
 
-        logger.info(f"Found {len(orders)} orders using Specification (total: {total})")
+            if passes_filter:
+                filtered_orders.append(order)
+
+        # Apply pagination to filtered results
+        total = len(filtered_orders)
+        if spec.page:
+            offset = (spec.page.page - 1) * spec.page.size
+            paginated_orders = filtered_orders[offset : offset + spec.page.size]
+        else:
+            paginated_orders = filtered_orders
+
+        logger.info(f"Found {len(paginated_orders)} orders using Specification (total: {total})")
 
         return {
-            "items": [self._order_to_dict(order) for order in orders],
+            "items": [self._order_to_dict(order) for order in paginated_orders],
             "total": total,
             "page": spec.page.page if spec.page else 1,
-            "page_size": spec.page.size if spec.page else len(orders),
+            "page_size": spec.page.size if spec.page else len(paginated_orders),
             "total_pages": (total + spec.page.size - 1) // spec.page.size if spec.page else 1,
         }
 

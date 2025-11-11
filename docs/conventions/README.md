@@ -52,20 +52,20 @@ class CreateOrderUseCase:
     def __init__(self, repo: OrderRepository, uow: UnitOfWork):
         self.repo = repo
         self.uow = uow
-    
+
     async def __call__(self, inp: CreateOrderInput) -> Result[OrderOutput, str]:
         # 1. 创建聚合（领域逻辑）
         order = Order.create(inp.customer_id, inp.items)
-        
+
         # 2. 验证业务规则（领域逻辑）
         if not order.validate():
             return Err("Invalid order")
-        
+
         # 3. 持久化（基础设施）
         async with self.uow:
             await self.repo.save(order)
             await self.uow.commit()
-        
+
         return Ok(OrderOutput.from_entity(order))
 ```
 
@@ -84,7 +84,7 @@ class InMemoryOrderRepository:
     async def save(self, order: Order) -> None:
         self._storage[order.id.value] = order
 
-# persistence/sqlalchemy/order_repo.py - 适配器2  
+# persistence/sqlalchemy/order_repo.py - 适配器2
 class SQLAlchemyOrderRepository:
     async def save(self, order: Order) -> None:
         await self.session.execute(...)
@@ -167,7 +167,7 @@ class GetOrderById(UseCase): ...  # 查询
 @dataclass
 class CreateOrderInput: ...
 
-@dataclass  
+@dataclass
 class OrderOutput: ...
 
 # Command/Query（可选，CQRS 风格）
@@ -302,17 +302,17 @@ class Order(Entity):
     customer_id: str
     items: List[OrderItem]
     status: OrderStatus
-    
+
     @staticmethod
     def create(customer_id: str, items: List[dict]) -> "Order":
         """工厂方法"""
         return Order(
-            id=EntityId.new(),
+            id=EntityId.generate(),
             customer_id=customer_id,
             items=[OrderItem.from_dict(i) for i in items],
             status=OrderStatus.PENDING,
         )
-    
+
     def cancel(self, reason: str) -> Result[None, str]:
         """业务方法"""
         if self.status == OrderStatus.COMPLETED:
@@ -337,12 +337,12 @@ from decimal import Decimal
 class Money(ValueObject):
     amount: Decimal
     currency: str = "USD"
-    
+
     def __post_init__(self):
         """验证不变量"""
         require(self.amount >= 0, "Amount must be non-negative")
         require(len(self.currency) == 3, "Invalid currency code")
-    
+
     def add(self, other: "Money") -> "Money":
         require(self.currency == other.currency, "Currency mismatch")
         return Money(self.amount + other.amount, self.currency)
@@ -364,13 +364,13 @@ class Order(AggregateRoot):  # 继承 AggregateRoot
     id: EntityId
     items: List[OrderItem]
     _events: List[DomainEvent] = field(default_factory=list, init=False, repr=False)
-    
+
     @staticmethod
     def create(customer_id: str) -> "Order":
-        order = Order(id=EntityId.new(), items=[])
+        order = Order(id=EntityId.generate(), items=[])
         order.record_event(OrderCreatedEvent(order_id=order.id.value))
         return order
-    
+
     def add_item(self, product: Product, quantity: int) -> None:
         item = OrderItem(product_id=product.id, quantity=quantity)
         self.items.append(item)
@@ -395,7 +395,7 @@ class OrderCreatedEvent(DomainEvent):
     order_id: str
     customer_id: str
     occurred_at: datetime = field(default_factory=now_utc)
-    
+
     def to_dict(self) -> dict:
         """序列化为字典（用于事件总线）"""
         return asdict(self)
@@ -422,14 +422,14 @@ class OrderRepository(Protocol):
 class SQLAlchemyOrderRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
-    
+
     async def get(self, id: EntityId) -> Optional[Order]:
         result = await self.session.execute(
             select(OrderModel).where(OrderModel.id == id.value)
         )
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     def _to_entity(self, model: OrderModel) -> Order:
         """ORM → Entity 转换"""
         ...
@@ -578,7 +578,7 @@ def test_create_order_with_invalid_items_returns_error(): ...
 def test_order_total_calculation():
     order = Order.create("customer-1")
     order.add_item(Product(id=..., price=Money(100, "USD")), quantity=2)
-    
+
     assert order.total_amount == Money(200, "USD")
 ```
 
@@ -589,12 +589,12 @@ async def test_create_order_usecase():
     repo = InMemoryOrderRepository()
     uow = InMemoryUnitOfWork()
     usecase = CreateOrder(repo, uow)
-    
+
     result = await usecase(CreateOrderInput(
         customer_id="customer-1",
         items=[{"product_id": "p1", "quantity": 2}]
     ))
-    
+
     assert result.is_ok
     order = await repo.get(result.unwrap().order_id)
     assert order is not None
@@ -608,10 +608,10 @@ async def test_order_api_creates_order_in_database(client: TestClient, db: Datab
         "customer_id": "customer-1",
         "items": [{"product_id": "p1", "quantity": 2}]
     })
-    
+
     assert response.status_code == 201
     order_id = response.json()["order_id"]
-    
+
     # 验证数据库
     order = await db.query(OrderModel).filter_by(id=order_id).first()
     assert order is not None
@@ -663,14 +663,14 @@ make lint
 ```python
 def create_order(customer_id: str, items: List[dict]) -> Result[Order, str]:
     """创建新订单。
-    
+
     Args:
         customer_id: 客户 ID
         items: 订单项列表，格式 [{"product_id": str, "quantity": int}]
-    
+
     Returns:
         成功时返回 Ok(Order)，失败时返回 Err(error_message)
-    
+
     Example:
         >>> result = create_order("c1", [{"product_id": "p1", "quantity": 2}])
         >>> if result.is_ok:

@@ -3,8 +3,10 @@
 from dataclasses import dataclass
 from typing import Any
 
+from applications.ecommerce.modules.order.domain.events import OrderCreated
 from applications.ecommerce.modules.order.domain.order import Order
 from bento.application.ports import IUnitOfWork
+from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -33,7 +35,7 @@ class CreateOrderCommand:
     items: list[OrderItemDTO]
 
 
-class CreateOrderUseCase:
+class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, dict[str, Any]]):
     """Create order use case.
 
     Handles order creation with validation and persistence.
@@ -59,48 +61,26 @@ class CreateOrderUseCase:
     """
 
     def __init__(self, uow: IUnitOfWork) -> None:
-        """Initialize use case.
+        super().__init__(uow)
 
-        Args:
-            uow: Unit of work for transaction management
-        """
-        self.uow = uow
-
-    async def execute(self, command: CreateOrderCommand) -> dict[str, Any]:
-        """Execute create order command.
-
-        Args:
-            command: Create order command
-
-        Returns:
-            Created order data
-
-        Raises:
-            ApplicationException: If validation fails
-        """
-        # Validate
+    async def validate(self, command: CreateOrderCommand) -> None:
         if not command.customer_id:
             raise ApplicationException(
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"field": "customer_id", "reason": "cannot be empty"},
             )
-
         if not command.items:
             raise ApplicationException(
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"field": "items", "reason": "must contain at least one item"},
             )
 
-        # Create order
+    async def handle(self, command: CreateOrderCommand) -> dict[str, Any]:
         order_id = ID.generate()
         customer_id = ID(command.customer_id)
 
-        order = Order(
-            order_id=order_id,
-            customer_id=customer_id,
-        )
+        order = Order(order_id=order_id, customer_id=customer_id)
 
-        # Add items
         for item_dto in command.items:
             order.add_item(
                 product_id=ID(item_dto.product_id),
@@ -109,15 +89,16 @@ class CreateOrderUseCase:
                 unit_price=item_dto.unit_price,
             )
 
-        # Persist
-        async with self.uow:
-            # Get order repository from UoW
-            order_repo = self.uow.repository(Order)
+        # Publish OrderCreated event after items are added (ensures correct total)
+        order.add_event(
+            OrderCreated(
+                order_id=ID(order.id.value),
+                customer_id=order.customer_id,
+                total_amount=order.total_amount,
+            )
+        )
 
-            # Save order (automatically tracks aggregate)
-            await order_repo.save(order)
-
-            # Commit transaction (automatically collects events and persists to outbox)
-            await self.uow.commit()
-
+        # Persist via repository inside UoW
+        order_repo = self.uow.repository(Order)
+        await order_repo.save(order)
         return order.to_dict()
