@@ -8,13 +8,10 @@ import asyncio
 import logging
 import random
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
 
 from bento.infrastructure.database.resilience.errors import is_database_error_retryable
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class RetryConfig:
@@ -62,7 +59,7 @@ class RetryConfig:
         return delay
 
 
-async def retry_on_db_error(
+async def retry_on_db_error[T](
     func: Callable[[], Awaitable[T]],
     config: RetryConfig | None = None,
     on_retry: Callable[[Exception, int], None] | None = None,

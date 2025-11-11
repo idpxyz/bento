@@ -6,6 +6,7 @@ from typing import Any
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.errors import OrderErrors
 from bento.application.ports import IUnitOfWork
+from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -22,7 +23,7 @@ class GetOrderQuery:
     order_id: str
 
 
-class GetOrderUseCase:
+class GetOrderUseCase(BaseUseCase[GetOrderQuery, dict[str, Any]]):
     """Get order use case.
 
     Retrieves an order by ID.
@@ -37,43 +38,23 @@ class GetOrderUseCase:
     """
 
     def __init__(self, uow: IUnitOfWork) -> None:
-        """Initialize use case.
+        super().__init__(uow)
 
-        Args:
-            uow: Unit of work for data access
-        """
-        self.uow = uow
-
-    async def execute(self, query: GetOrderQuery) -> dict[str, Any]:
-        """Execute get order query.
-
-        Args:
-            query: Get order query
-
-        Returns:
-            Order data
-
-        Raises:
-            ApplicationException: If order not found
-        """
-        # Validate
+    async def validate(self, query: GetOrderQuery) -> None:
         if not query.order_id:
             raise ApplicationException(
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
 
+    async def handle(self, query: GetOrderQuery) -> dict[str, Any]:
         order_id = ID(query.order_id)
+        order_repo = self.uow.repository(Order)
 
-        async with self.uow:
-            # Get order repository from UoW
-            order_repo = self.uow.repository(Order)
-
-            # Find order (using find_by_id for consistency with other use cases)
-            order = await order_repo.find_by_id(order_id)
-            if not order:
-                raise ApplicationException(
-                    error_code=OrderErrors.ORDER_NOT_FOUND, details={"order_id": query.order_id}
-                )
+        order = await order_repo.find_by_id(order_id)
+        if not order:
+            raise ApplicationException(
+                error_code=OrderErrors.ORDER_NOT_FOUND, details={"order_id": query.order_id}
+            )
 
         return order.to_dict()

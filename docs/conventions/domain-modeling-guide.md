@@ -95,13 +95,13 @@ class Order(AggregateRoot):
     id: EntityId
     items: List[OrderItem]  # 聚合内实体
     total: Money
-    
+
     def add_item(self, product_id: str, quantity: int) -> None:
         """添加订单项"""
         item = OrderItem(product_id=product_id, quantity=quantity)
         self.items.append(item)
         self._recalculate_total()  # 必须同步更新
-    
+
     def _recalculate_total(self) -> None:
         """保护不变量：total = sum(items)"""
         self.total = sum(item.price * item.quantity for item in self.items)
@@ -119,21 +119,21 @@ class Inventory(AggregateRoot):
     product_id: str
     quantity: int
     reserved: int
-    
+
     def reserve(self, amount: int) -> Result[None, str]:
         """预留库存 - 保护不变量：available >= 0"""
         available = self.quantity - self.reserved
-        
+
         if available < amount:
             return Err(f"Insufficient inventory: {available} < {amount}")
-        
+
         self.reserved += amount
         self.record_event(InventoryReservedEvent(
             inventory_id=self.id.value,
             amount=amount,
         ))
         return Ok(None)
-    
+
     def available_quantity(self) -> int:
         """可用数量 - 不变量"""
         return self.quantity - self.reserved
@@ -195,7 +195,7 @@ class Reservation(AggregateRoot):
     check_out: date
     nights: int
     total_price: Money
-    
+
     def __post_init__(self):
         """强不变量：nights 必须与日期一致"""
         calculated_nights = (self.check_out - self.check_in).days
@@ -234,20 +234,20 @@ class Order(AggregateRoot):
     items: List[OrderItem] = field(default_factory=list)
     status: OrderStatus = OrderStatus.PENDING
     total: Money = Money.zero()
-    
+
     # 领域事件集合（私有）
     _events: List[DomainEvent] = field(
         default_factory=list,
         init=False,
         repr=False
     )
-    
+
     # === 工厂方法 ===
     @staticmethod
     def create(customer_id: str) -> "Order":
         """创建新订单"""
         order = Order(
-            id=EntityId.new(),
+            id=EntityId.generate(),
             customer_id=customer_id,
         )
         order.record_event(OrderCreatedEvent(
@@ -255,7 +255,7 @@ class Order(AggregateRoot):
             customer_id=customer_id,
         ))
         return order
-    
+
     # === 业务方法 ===
     def add_item(
         self,
@@ -267,10 +267,10 @@ class Order(AggregateRoot):
         # 1. 验证前置条件
         if self.status != OrderStatus.PENDING:
             return Err("Cannot modify non-pending order")
-        
+
         if quantity <= 0:
             return Err("Quantity must be positive")
-        
+
         # 2. 修改状态
         item = OrderItem(
             product_id=product_id,
@@ -279,32 +279,32 @@ class Order(AggregateRoot):
         )
         self.items.append(item)
         self._recalculate_total()
-        
+
         # 3. 记录事件
         self.record_event(ItemAddedToOrderEvent(
             order_id=self.id.value,
             product_id=product_id,
             quantity=quantity,
         ))
-        
+
         return Ok(None)
-    
+
     def confirm(self) -> Result[None, str]:
         """确认订单"""
         if self.status != OrderStatus.PENDING:
             return Err(f"Cannot confirm order in status: {self.status}")
-        
+
         if not self.items:
             return Err("Cannot confirm empty order")
-        
+
         self.status = OrderStatus.CONFIRMED
         self.record_event(OrderConfirmedEvent(
             order_id=self.id.value,
             total=self.total.amount,
         ))
-        
+
         return Ok(None)
-    
+
     # === 不变量保护 ===
     def _recalculate_total(self) -> None:
         """私有方法：维护不变量"""
@@ -312,12 +312,12 @@ class Order(AggregateRoot):
             (item.unit_price * item.quantity for item in self.items),
             Money.zero()
         )
-    
+
     # === 查询方法 ===
     def can_be_cancelled(self) -> bool:
         """业务规则查询"""
         return self.status in [OrderStatus.PENDING, OrderStatus.CONFIRMED]
-    
+
     def item_count(self) -> int:
         """总商品数"""
         return sum(item.quantity for item in self.items)
@@ -365,10 +365,10 @@ async with uow:
 async with uow:
     order = await order_repo.get(order_id)
     order.confirm()
-    
+
     inventory = await inventory_repo.get(product_id)
     inventory.reserve(quantity)  # ❌ 跨聚合
-    
+
     await uow.commit()
 ```
 
@@ -406,7 +406,7 @@ class Customer(Entity):
     id: EntityId  # 唯一标识
     email: str
     name: str
-    
+
     def change_email(self, new_email: str) -> Result[None, str]:
         """可以修改属性"""
         if not self._is_valid_email(new_email):
@@ -438,17 +438,17 @@ from decimal import Decimal
 class Money(ValueObject):
     amount: Decimal
     currency: str = "USD"
-    
+
     def __post_init__(self):
         """验证不变量"""
         require(self.amount >= 0, "Amount cannot be negative")
         require(len(self.currency) == 3, "Invalid currency code")
-    
+
     def add(self, other: "Money") -> "Money":
         """操作返回新实例"""
         require(self.currency == other.currency, "Currency mismatch")
         return Money(self.amount + other.amount, self.currency)
-    
+
     @staticmethod
     def zero(currency: str = "USD") -> "Money":
         return Money(Decimal(0), currency)
@@ -476,7 +476,7 @@ class Address(ValueObject):
 @dataclass(frozen=True)
 class EmailAddress(ValueObject):
     value: str
-    
+
     def __post_init__(self):
         require("@" in self.value, "Invalid email format")
 
@@ -485,13 +485,13 @@ class EmailAddress(ValueObject):
 class DateRange(ValueObject):
     start: date
     end: date
-    
+
     def __post_init__(self):
         require(self.start <= self.end, "Start must be before end")
-    
+
     def days(self) -> int:
         return (self.end - self.start).days
-    
+
     def contains(self, date: date) -> bool:
         return self.start <= date <= self.end
 
@@ -533,7 +533,7 @@ PhoneNumber("13800138000").format()  # "+86 138-0013-8000"
 class User:  # ✅ 应该是 Entity
     id: EntityId
     email: str  # 会变化
-    
+
 # 有独立生命周期
 class Order:  # ✅ 应该是 Entity
     id: EntityId
@@ -564,18 +564,18 @@ from bento.core.clock import now_utc
 @dataclass(frozen=True)
 class OrderCreatedEvent(DomainEvent):
     """订单已创建事件"""
-    
+
     # 事件元数据
     name: str = "order.created"  # 事件名称
     occurred_at: datetime = field(default_factory=now_utc)  # 发生时间
-    
+
     # 事件数据（业务关心的信息）
     order_id: str
     customer_id: str
-    
+
     # 可选：聚合版本（用于事件溯源）
     aggregate_version: int = 1
-    
+
     def to_dict(self) -> dict:
         """序列化为字典"""
         return {
@@ -612,15 +612,15 @@ class Order(AggregateRoot):
     def confirm(self) -> Result[None, str]:
         if self.status != OrderStatus.PENDING:
             return Err("Cannot confirm")
-        
+
         self.status = OrderStatus.CONFIRMED
-        
+
         # ✅ 状态变化 → 发布事件
         self.record_event(OrderConfirmedEvent(
             order_id=self.id.value,
             confirmed_at=now_utc(),
         ))
-        
+
         return Ok(None)
 ```
 
@@ -629,7 +629,7 @@ class Order(AggregateRoot):
 class Inventory(AggregateRoot):
     def reserve(self, amount: int) -> Result[None, str]:
         # ...库存预留逻辑...
-        
+
         # ✅ 业务关心 → 发布事件
         self.record_event(InventoryReservedEvent(
             inventory_id=self.id.value,
@@ -644,7 +644,7 @@ class Inventory(AggregateRoot):
 class Order(AggregateRoot):
     def confirm(self) -> Result[None, str]:
         self.status = OrderStatus.CONFIRMED
-        
+
         # ✅ 触发其他聚合的操作
         self.record_event(OrderConfirmedEvent(
             order_id=self.id.value,
@@ -719,7 +719,7 @@ class EventUpgrader:
 # 场景：订单定价逻辑涉及多个因素
 class PricingService(DomainService):
     """定价领域服务"""
-    
+
     def calculate_order_price(
         self,
         items: List[OrderItem],
@@ -729,20 +729,20 @@ class PricingService(DomainService):
         """计算订单价格"""
         # 1. 基础价格
         subtotal = sum(item.unit_price * item.quantity for item in items)
-        
+
         # 2. 会员折扣
         if customer.is_vip:
             subtotal = subtotal * Decimal("0.95")
-        
+
         # 3. 促销折扣
         if promotion and promotion.is_active():
             subtotal = promotion.apply_discount(subtotal)
-        
+
         # 4. 运费计算
         shipping = self._calculate_shipping(items, customer.address)
-        
+
         return subtotal + shipping
-    
+
     def _calculate_shipping(
         self,
         items: List[OrderItem],
@@ -781,21 +781,21 @@ class CreateOrderUseCase:
         self.order_repo = order_repo
         self.pricing_service = pricing_service
         self.uow = uow
-    
+
     async def __call__(self, inp: CreateOrderInput) -> Result[Order, str]:
         """编排：调用领域服务 + 持久化"""
         # 1. 创建订单
         order = Order.create(inp.customer_id)
-        
+
         # 2. 调用领域服务
         price = self.pricing_service.calculate_price(inp.items)
         order.set_price(price)
-        
+
         # 3. 持久化
         async with self.uow:
             await self.order_repo.save(order)
             await self.uow.commit()
-        
+
         return Ok(order)
 ```
 
@@ -917,11 +917,11 @@ async def create_order(inp: CreateOrderInput) -> Result[Order, str]:
         order = Order.create(inp.customer_id)
         for item in inp.items:
             order.add_item(item.product_id, item.quantity)
-        
+
         await order_repo.save(order)
         await uow.commit()
         # 发布：OrderCreatedEvent
-    
+
     return Ok(order)
 
 # 步骤 2: 确认订单（触发库存预留）
@@ -931,11 +931,11 @@ async def confirm_order(order_id: str) -> Result[None, str]:
         result = order.confirm()
         if result.is_err:
             return result
-        
+
         await order_repo.save(order)
         await uow.commit()
         # 发布：OrderConfirmedEvent
-    
+
     return Ok(None)
 
 # 步骤 3: 处理订单确认事件（预留库存）
@@ -946,12 +946,12 @@ async def handle_order_confirmed(event: OrderConfirmedEvent):
         async with uow:
             inventory = await inventory_repo.get_by_product(item.product_id)
             result = inventory.reserve(item.quantity)
-            
+
             if result.is_err:
                 # 发布：InventoryReservationFailedEvent
                 # 触发补偿（取消订单）
                 pass
-            
+
             await inventory_repo.save(inventory)
             await uow.commit()
 ```
@@ -967,16 +967,16 @@ class Order(AggregateRoot):
     status: OrderStatus = OrderStatus.PENDING
     total: Money = Money.zero()
     _events: List[DomainEvent] = field(default_factory=list, init=False, repr=False)
-    
+
     @staticmethod
     def create(customer_id: str) -> "Order":
-        order = Order(id=EntityId.new(), customer_id=customer_id)
+        order = Order(id=EntityId.generate(), customer_id=customer_id)
         order.record_event(OrderCreatedEvent(
             order_id=order.id.value,
             customer_id=customer_id,
         ))
         return order
-    
+
     def add_item(
         self,
         product_id: str,
@@ -985,7 +985,7 @@ class Order(AggregateRoot):
     ) -> Result[None, str]:
         if self.status != OrderStatus.PENDING:
             return Err("Cannot modify confirmed order")
-        
+
         item = OrderItem(
             product_id=product_id,
             quantity=quantity,
@@ -993,22 +993,22 @@ class Order(AggregateRoot):
         )
         self.items.append(item)
         self._recalculate_total()
-        
+
         self.record_event(ItemAddedToOrderEvent(
             order_id=self.id.value,
             product_id=product_id,
             quantity=quantity,
         ))
-        
+
         return Ok(None)
-    
+
     def confirm(self) -> Result[None, str]:
         if self.status != OrderStatus.PENDING:
             return Err(f"Cannot confirm order in {self.status} status")
-        
+
         if not self.items:
             return Err("Cannot confirm empty order")
-        
+
         self.status = OrderStatus.CONFIRMED
         self.record_event(OrderConfirmedEvent(
             order_id=self.id.value,
@@ -1018,9 +1018,9 @@ class Order(AggregateRoot):
             ],
             total=self.total.amount,
         ))
-        
+
         return Ok(None)
-    
+
     def _recalculate_total(self) -> None:
         self.total = sum(
             (item.unit_price * item.quantity for item in self.items),

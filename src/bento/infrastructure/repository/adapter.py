@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from bento.application.ports.mapper import BidirectionalCollectionMapper
+from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
 from bento.domain.entity import Entity
 from bento.domain.ports.repository import Repository as IRepository
@@ -42,14 +42,14 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         ```python
         from sqlalchemy.ext.asyncio import AsyncSession
         from bento.infrastructure.repository import RepositoryAdapter
-        from bento.infrastructure.mapper import POMapper
+        from bento.application.mapper import MapperStrategy
         from bento.persistence.repository import BaseRepository
         from bento.persistence.interceptor import create_default_chain
 
         class UserRepository(RepositoryAdapter[User, UserPO, str]):
             def __init__(self, session: AsyncSession, actor: str = "system"):
-                # Create mapper
-                mapper = UserPOMapper()
+                # Create mapper (inherit from MapperStrategy)
+                mapper = UserMapper()  # Your custom Mapper[User, UserPO]
 
                 # Create base repository
                 base_repo = BaseRepository(
@@ -81,7 +81,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
     def __init__(
         self,
         repository: BaseRepository[PO, ID],
-        mapper: BidirectionalCollectionMapper[AR, PO],
+        mapper: Mapper[AR, PO],
     ) -> None:
         """Initialize repository adapter.
 
@@ -100,7 +100,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         return self._repository
 
     @property
-    def mapper(self) -> BidirectionalCollectionMapper[AR, PO]:
+    def mapper(self) -> Mapper[AR, PO]:
         """Get mapper."""
         return self._mapper
 
@@ -217,8 +217,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         """
         # Add limit 1 to specification
         page_params = PageParams(page=1, size=1)
-        page = Page.create(items=[], total=0, page=page_params.page, size=page_params.size)
-        limited_spec = specification.with_page(page)
+        limited_spec = specification.with_page(page_params)
         po_spec = self._convert_spec_to_po(limited_spec)
 
         pos = await self._repository.query_po_by_spec(po_spec)
@@ -272,8 +271,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
             return Page.create(items=[], total=0, page=1, size=page_params.size)
 
         # 2. Query page of results
-        page = Page.create(items=[], total=0, page=page_params.page, size=page_params.size)
-        paged_spec = specification.with_page(page)
+        paged_spec = specification.with_page(page_params)
         po_spec = self._convert_spec_to_po(paged_spec)
         pos = await self._repository.query_po_by_spec(po_spec)
 

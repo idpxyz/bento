@@ -76,9 +76,11 @@ class OutboxRecord(Base):
         schema_id = getattr(evt, "schema_id", None)
         schema_ver = getattr(evt, "schema_version", 1)
 
-        # Serialize payload
+        # Serialize payload (try multiple serialization methods)
         if hasattr(evt, "to_payload"):
             payload = evt.to_payload()
+        elif hasattr(evt, "to_dict"):
+            payload = evt.to_dict()  # type: ignore[attr-defined]
         else:
             from dataclasses import asdict, is_dataclass
 

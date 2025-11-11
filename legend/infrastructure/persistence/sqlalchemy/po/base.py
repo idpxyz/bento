@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import TIMESTAMP, Integer, String, func
@@ -23,12 +22,13 @@ class Base(DeclarativeBase):
     """Root declarative base – holds shared metadata."""
 
     @staticmethod
-    def _generate_id() -> str:               # UUID string pk
+    def _generate_id() -> str:  # UUID string pk
         return str(uuid4())
 
     @classmethod
     def __tablename__(cls):
         return cls.__name__.lower()
+
 
 # ------------------ Mix‑ins ---------------------------
 
@@ -36,8 +36,7 @@ class Base(DeclarativeBase):
 class SoftDeleteMixin:
     __abstract__ = True
 
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     deleted_by: Mapped[str | None] = mapped_column(String(50))
 
     @property
@@ -49,6 +48,7 @@ class SoftDeleteMixin:
         if self.is_deleted:  # idempotent
             return
         from idp.framework.shared.utils.date_time import utc_now
+
         self.deleted_at = utc_now()
         self.deleted_by = deleted_by
 
@@ -71,22 +71,26 @@ class OptimisticLockMixin:
     version: Mapped[int] = mapped_column(Integer, default=1)
     __mapper_args__ = {"version_id_col": version}
 
+
 # ------------------ Core BasePO -----------------------
 
 
 class BasePO(Base):
     __abstract__ = True
 
-    id: Mapped[str] = mapped_column(
-        String(50), primary_key=True, default=Base._generate_id)
+    id: Mapped[str] = mapped_column(String(50), primary_key=True, default=Base._generate_id)
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now())
+        TIMESTAMP(timezone=True), server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
 
 # ------------------ Full Feature ----------------------
 
 
 class FullFeatureBasePO(BasePO, SoftDeleteMixin, OperatorMixin, OptimisticLockMixin):
     """For tables requiring softdelete + auditing + optimistic locking."""
+
     __abstract__ = True

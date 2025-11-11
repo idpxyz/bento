@@ -6,6 +6,7 @@ from typing import Any
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.errors import OrderErrors
 from bento.application.ports import IUnitOfWork
+from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -24,7 +25,7 @@ class CancelOrderCommand:
     reason: str | None = None
 
 
-class CancelOrderUseCase:
+class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, dict[str, Any]]):
     """Cancel order use case.
 
     Handles order cancellation.
@@ -42,52 +43,25 @@ class CancelOrderUseCase:
     """
 
     def __init__(self, uow: IUnitOfWork) -> None:
-        """Initialize use case.
+        super().__init__(uow)
 
-        Args:
-            uow: Unit of work for transaction management
-        """
-        self.uow = uow
-
-    async def execute(self, command: CancelOrderCommand) -> dict[str, Any]:
-        """Execute cancel order command.
-
-        Args:
-            command: Cancel order command
-
-        Returns:
-            Updated order data
-
-        Raises:
-            ApplicationException: If order not found
-        """
-        # Validate
+    async def validate(self, command: CancelOrderCommand) -> None:
         if not command.order_id:
             raise ApplicationException(
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
 
+    async def handle(self, command: CancelOrderCommand) -> dict[str, Any]:
         order_id = ID(command.order_id)
+        order_repo = self.uow.repository(Order)
 
-        async with self.uow:
-            # Get order repository from UoW
-            order_repo = self.uow.repository(Order)
+        order = await order_repo.find_by_id(order_id)
+        if not order:
+            raise ApplicationException(
+                error_code=OrderErrors.ORDER_NOT_FOUND, details={"order_id": command.order_id}
+            )
 
-            # Find order
-            order = await order_repo.find_by_id(order_id)
-            if not order:
-                raise ApplicationException(
-                    error_code=OrderErrors.ORDER_NOT_FOUND, details={"order_id": command.order_id}
-                )
-
-            # Cancel order (domain logic)
-            order.cancel(reason=command.reason)
-
-            # Save order (automatically tracks aggregate)
-            await order_repo.save(order)
-
-            # Commit transaction (automatically collects events and persists to outbox)
-            await self.uow.commit()
-
+        order.cancel(reason=command.reason)
+        await order_repo.save(order)
         return order.to_dict()
