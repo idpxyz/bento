@@ -117,9 +117,43 @@
   - `OrderMapper` 接入 `domain_factory/po_factory`，在 `before_map_reverse` 捕获 PO，用于工厂补齐构造必需参数（如 `id -> order_id`、`customer_id`）
   - Domain→PO：若存在显式 `payment/shipment` 对象，投影为判别+扁平字段；否则保留自动推断与兜底拷贝
   - PO→Domain：按判别重建 `payment/shipment` 对象；兼容不完整数据（判别缺失时保持 `None`）
-  - `OrderItemMapper.after_map`：若 `kind` 缺失，默认 `simple`
+  - `OrderItemMapper`：
+    - Domain→PO：`after_map` 按子类设置 `kind`：`LineBundle → "bundle"`、`LineCustom → "custom"`、默认 `"simple"`。
+    - PO→Domain：`domain_factory` 按 `kind` 分派构造 `LineSimple/LineBundle/LineCustom`。
+    - 兜底：在父级 `OrderMapper.after_map` 中二次确保 `po.items[i].kind` 不为空；在 `after_map_reverse` 的回退重建中，同样按 `kind` 构造对应子类。
+  - `DiscountMapper` / `TaxLineMapper`：
+    - 将 `Money` 的 `amount` 映射为 `Decimal(18,2)`；`order_id` 由父映射回填。
 - 测试
   - 增补往返映射、默认推断、显式对象往返的测试用例（全部通过）
+  - 新增 `OrderItem` 多态单测：默认 simple、bundle、以及从 PO `kind="custom"` 反向构造 `LineCustom`
+
+## OrderItem 多态与 kind 分派（实现摘录）
+
+- 领域子类：`LineSimple/LineBundle/LineCustom`（继承自 `OrderItem`）
+- `OrderItemMapper` 关键点：
+  - `ignore_fields("order_id","kind")`，`only_fields("product_id","product_name","quantity","unit_price")`
+  - `after_map` 设置 `po.kind`
+  - `domain_factory` 从 `kind` 选择构造器（`"bundle"|"custom"|"simple"`）
+  - 兼容 SQLAlchemy `Mapped[...]` 场景的字段覆写（`product_id`、`quantity`、`unit_price`）
+- `OrderMapper` 兜底：
+  - Domain→PO：若子映射未设置 `kind`，在父级对齐 `kind`；若子映射失败，回退手动构造 `OrderItemModel` 列表并补齐 `order_id`
+  - PO→Domain：若子反向映射被跳过，按 `item_po.kind` 构造 `Line*` 子类列表
+
+## 折扣/税行（Discount/TaxLine）子映射
+
+- 新增表：`order_discounts`、`order_tax_lines`（`amount: Numeric(18,2)`、`order_id` 外键索引）
+- 映射：
+  - `OrderMapper.register_child("discounts", OrderDiscountMapper(), parent_keys="order_id")`
+  - `OrderMapper.register_child("tax_lines", OrderTaxLineMapper(), parent_keys="order_id")`
+  - `OrderDiscountMapper/OrderTaxLineMapper` 统一把 `Money.amount` ↔ `Decimal` 映射，`order_id` 由父回填
+
+## 迁移（Alembic）
+
+- 配置：`applications/ecommerce/alembic.ini`
+- 环境：`applications/ecommerce/migrations/env.py`（`target_metadata = Base.metadata`）
+- 版本脚本：`applications/ecommerce/migrations/versions/20251111_1_add_order_discounts_tax_lines.py`
+- 运行（需要 `DATABASE_URL`）：
+  - `uv run alembic -c applications/ecommerce/alembic.ini upgrade head`
 
 ## 多态映射实操要点
 

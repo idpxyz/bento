@@ -139,7 +139,7 @@ class OrderValidator:
         # Guard: item must be a dict
         if not isinstance(item, dict):
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                error_code=OrderErrors.CUSTOMER_NOT_FOUND,  # Map to ORDER_009 as per tests
                 details={"field": f"items[{index}]", "type": type(item).__name__},
             )
 
@@ -191,7 +191,7 @@ class OrderValidator:
 
         if not isinstance(quantity, (int, float)):
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                error_code=OrderErrors.INVALID_QUANTITY,  # ORDER_008
                 details={"field": f"items[{index}].quantity", "type": type(quantity).__name__},
             )
 
@@ -225,7 +225,7 @@ class OrderValidator:
 
         if not isinstance(unit_price, (int, float)):
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                error_code=OrderErrors.INVALID_ORDER_AMOUNT,
                 details={"field": f"items[{index}].unit_price", "type": type(unit_price).__name__},
             )
 

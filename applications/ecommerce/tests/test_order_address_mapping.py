@@ -18,5 +18,3 @@ def test_shipping_address_roundtrip():
     assert domain.shipping_address.line1 == "1 Infinite Loop"
     assert domain.shipping_address.city == "Cupertino"
     assert domain.shipping_address.country == "US"
-
-

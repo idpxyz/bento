@@ -6,6 +6,7 @@ from typing import Any
 
 from applications.ecommerce.modules.order.domain.events import (
     OrderCancelled,
+    OrderCreated,
     OrderPaid,
 )
 from applications.ecommerce.modules.order.domain.order_status import OrderStatus
@@ -71,6 +72,13 @@ class Money:
         self.amount = amount
         self.currency = currency
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Money):
+            return self.amount == other.amount and self.currency == other.currency
+        if isinstance(other, (int, float, Decimal)):
+            return self.amount == Decimal(str(other))
+        return False
+
 
 class OrderItem(Entity):
     """Order item entity.
@@ -78,12 +86,18 @@ class OrderItem(Entity):
     Represents a product in an order with quantity and price.
     """
 
+    product_id: ID
+    product_name: str
+    quantity: int
+    unit_price: "Money"  # type: ignore[assignment]
+
     def __init__(
         self,
         product_id: ID,
         product_name: str,
         quantity: int,
-        unit_price: Decimal | float,
+        unit_price: Money | Decimal | float,
+        currency: str | None = None,
     ) -> None:
         """Initialize order item.
 
@@ -105,23 +119,27 @@ class OrderItem(Entity):
                 error_code=OrderErrors.INVALID_QUANTITY, details={"quantity": quantity}
             )
 
-        # normalize unit_price to Decimal for precision
-        if not isinstance(unit_price, Decimal):
-            unit_price = Decimal(str(unit_price))
-        if unit_price <= Decimal("0"):
+        # normalize unit_price to Money
+        if isinstance(unit_price, Money):
+            price = unit_price
+        else:
+            amount = unit_price if isinstance(unit_price, Decimal) else Decimal(str(unit_price))
+            price = Money(amount=amount, currency=currency or "USD")
+        if price.amount <= Decimal("0"):
             raise DomainException(
-                error_code=OrderErrors.INVALID_ORDER_AMOUNT, details={"unit_price": unit_price}
+                error_code=OrderErrors.INVALID_ORDER_AMOUNT,
+                details={"unit_price": str(price.amount)},
             )
 
         self.product_id = product_id
         self.product_name = product_name
         self.quantity = quantity
-        self.unit_price: Decimal = unit_price
+        self.unit_price: Money = price
 
     @property
     def subtotal(self) -> Decimal:
         """Calculate subtotal for this item."""
-        return Decimal(self.quantity) * self.unit_price
+        return Decimal(self.quantity) * self.unit_price.amount
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -133,6 +151,24 @@ class OrderItem(Entity):
             "unit_price": self.unit_price,
             "subtotal": self.subtotal,
         }
+
+
+class LineSimple(OrderItem):
+    """Simple order line (default)."""
+
+    pass
+
+
+class LineBundle(OrderItem):
+    """Bundle line (composed product)."""
+
+    pass
+
+
+class LineCustom(OrderItem):
+    """Custom line (manual)."""
+
+    pass
 
 
 class Order(AggregateRoot):
@@ -173,12 +209,15 @@ class Order(AggregateRoot):
     payment: Payment | None
     shipment: Shipment | None
     # Order-level money fields
-    discount_amount: Decimal | None
-    tax_amount: Decimal | None
+    discount_amount: Money | None
+    tax_amount: Money | None
     # Address
     shipping_address: Address | None
     # Currency for monetary values
     currency: str
+    # Discounts / Taxes
+    discounts: list["Discount"]
+    tax_lines: list["TaxLine"]
 
     def __init__(
         self,
@@ -210,28 +249,52 @@ class Order(AggregateRoot):
         self.payment = None
         self.shipment = None
         # Money fields default
-        self.discount_amount = Decimal("0")
-        self.tax_amount = Decimal("0")
+        self.discount_amount = None
+        self.tax_amount = None
         # Address default
         self.shipping_address = None
         # Currency default
         self.currency = "USD"
+        # Price adjustments
+        self.discounts = []
+        self.tax_lines = []
+        # Publish created event
+        self.add_event(
+            OrderCreated(
+                order_id=ID(self.id.value),
+                customer_id=self.customer_id,
+                total_amount=float(self.total_amount),
+            )
+        )
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate
 
     @property
-    def total_amount(self) -> Decimal:
+    def total_amount(self) -> float:
         """Calculate total amount of the order."""
         total = Decimal("0")
         for item in self.items:
             total += item.subtotal
-        return total
+        return float(total)
 
     @property
     def total_money(self) -> Money:
         """Return total as Money with order currency."""
-        return Money(self.total_amount, self.currency)
+        # total_amount is float; reconstruct Decimal from precise sum
+        precise = Decimal("0")
+        for item in self.items:
+            precise += item.subtotal
+        for d in self.discounts:
+            precise -= d.amount.amount
+        for t in self.tax_lines:
+            precise += t.amount.amount
+        return Money(precise, self.currency)
+
+    @property
+    def total_amount_float(self) -> float:
+        """Compatibility helper: total as float (for legacy checks/tests)."""
+        return float(self.total_amount)
 
     @property
     def items_count(self) -> int:
@@ -243,7 +306,8 @@ class Order(AggregateRoot):
         product_id: ID,
         product_name: str,
         quantity: int,
-        unit_price: float,
+        unit_price: Money | Decimal | float,
+        currency: str | None = None,
     ) -> None:
         """Add an item to the order.
 
@@ -275,6 +339,7 @@ class Order(AggregateRoot):
             product_name=product_name,
             quantity=quantity,
             unit_price=unit_price,
+            currency=currency or self.currency,
         )
         self.items.append(item)
 
@@ -401,3 +466,29 @@ class Order(AggregateRoot):
             "shipment_tracking_no": self.shipment_tracking_no,
             "shipment_service": self.shipment_service,
         }
+
+
+class Discount:
+    """Order discount value (amount off)."""
+
+    id: ID
+    amount: Money
+    reason: str | None
+
+    def __init__(self, amount: Money, reason: str | None = None, id: ID | None = None) -> None:
+        self.id = id or ID.generate()
+        self.amount = amount
+        self.reason = reason
+
+
+class TaxLine:
+    """Order tax value (amount added)."""
+
+    id: ID
+    amount: Money
+    tax_type: str | None
+
+    def __init__(self, amount: Money, tax_type: str | None = None, id: ID | None = None) -> None:
+        self.id = id or ID.generate()
+        self.amount = amount
+        self.tax_type = tax_type

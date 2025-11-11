@@ -17,5 +17,7 @@ def test_order_discount_and_tax_decimal_roundtrip():
     assert po.tax_amount == "5.66"
 
     domain = mapper.map_reverse(po)
-    assert domain.discount_amount == Decimal("12.34")
-    assert domain.tax_amount == Decimal("5.66")
+    assert domain.discount_amount is not None
+    assert domain.tax_amount is not None
+    assert domain.discount_amount.amount == Decimal("12.34")
+    assert domain.tax_amount.amount == Decimal("5.66")
