@@ -14,7 +14,16 @@ Note:
     Audit fields (created_at, updated_at, etc.) are populated by Interceptors.
 """
 
-from applications.ecommerce.modules.order.domain.order import Order, OrderItem
+from applications.ecommerce.modules.order.domain.order import (
+    Order,
+    OrderItem,
+    Payment,
+    PaymentCard,
+    PaymentPaypal,
+    Shipment,
+    ShipmentFedex,
+    ShipmentLocal,
+)
 from applications.ecommerce.modules.order.persistence.models import OrderItemModel, OrderModel
 from bento.application.mapper import AutoMapper
 
@@ -110,6 +119,28 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
     # Bridge missing inferred fields (e.g., SQLAlchemy Mapped typing edge cases)
     def after_map(self, domain: Order, po: OrderModel) -> None:
         """Ensure polymorphic fields are propagated when not inferred."""
+        # If explicit payment object exists, project it to flattened fields
+        if isinstance(getattr(domain, "payment", None), Payment):
+            p = domain.payment  # type: ignore[assignment]
+            if isinstance(p, PaymentCard):
+                po.payment_method = "card"
+                po.payment_card_last4 = p.last4
+                po.payment_card_brand = p.brand
+            elif isinstance(p, PaymentPaypal):
+                po.payment_method = "paypal"
+                po.payment_paypal_payer_id = p.payer_id
+        # If explicit shipment object exists, project it
+        if isinstance(getattr(domain, "shipment", None), Shipment):
+            s = domain.shipment  # type: ignore[assignment]
+            if isinstance(s, ShipmentFedex):
+                po.shipment_carrier = "fedex"
+                po.shipment_tracking_no = s.tracking_no
+                po.shipment_service = s.service
+            elif isinstance(s, ShipmentLocal):
+                po.shipment_carrier = "local"
+                po.shipment_tracking_no = s.tracking_no
+                po.shipment_service = s.service
+
         for name in (
             "payment_method",
             "payment_card_last4",
@@ -142,6 +173,29 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
         # Clear captured reference
         if hasattr(self, "_po_for_factory"):
             delattr(self, "_po_for_factory")
+        # Rebuild explicit payment/shipment objects if possible
+        if po.payment_method == "card" and (po.payment_card_last4 or po.payment_card_brand):
+            domain.payment = PaymentCard(
+                last4=po.payment_card_last4 or "",
+                brand=po.payment_card_brand or "",
+            )
+        elif po.payment_method == "paypal" and po.payment_paypal_payer_id:
+            domain.payment = PaymentPaypal(payer_id=po.payment_paypal_payer_id)
+        else:
+            domain.payment = None
+
+        if po.shipment_carrier == "fedex":
+            domain.shipment = ShipmentFedex(
+                tracking_no=po.shipment_tracking_no or "",
+                service=po.shipment_service,
+            )
+        elif po.shipment_carrier == "local":
+            domain.shipment = ShipmentLocal(
+                tracking_no=po.shipment_tracking_no,
+                service=po.shipment_service,
+            )
+        else:
+            domain.shipment = None
         for name in (
             "payment_method",
             "payment_card_last4",

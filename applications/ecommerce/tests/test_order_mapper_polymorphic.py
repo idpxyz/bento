@@ -1,6 +1,11 @@
 from datetime import datetime
 
-from applications.ecommerce.modules.order.domain.order import Order, OrderItem
+from applications.ecommerce.modules.order.domain.order import (
+    Order,
+    OrderItem,
+    PaymentCard,
+    ShipmentFedex,
+)
 from applications.ecommerce.modules.order.domain.order_status import OrderStatus
 from applications.ecommerce.modules.order.persistence.mappers.order_mapper import (
     OrderItemMapper,
@@ -61,3 +66,25 @@ def test_order_mapper_infers_discriminators_when_missing():
     po = mapper.map(order)
     assert po.payment_method == "card"
     assert po.shipment_carrier == "fedex"  # naive default by heuristic
+
+
+def test_order_mapper_explicit_objects_roundtrip():
+    mapper = OrderMapper()
+    order = Order(order_id=ID("o-3003"), customer_id=ID("c-2"))
+    order.payment = PaymentCard(last4="9999", brand="MASTER")
+    order.shipment = ShipmentFedex(tracking_no="FX-999", service="PRIORITY")
+
+    po = mapper.map(order)
+    assert po.payment_method == "card"
+    assert po.payment_card_last4 == "9999"
+    assert po.payment_card_brand == "MASTER"
+    assert po.shipment_carrier == "fedex"
+    assert po.shipment_tracking_no == "FX-999"
+    assert po.shipment_service == "PRIORITY"
+
+    domain = mapper.map_reverse(po)
+    assert isinstance(domain.payment, PaymentCard)
+    assert domain.payment.last4 == "9999"
+    assert domain.payment.brand == "MASTER"
+    assert isinstance(domain.shipment, ShipmentFedex)
+    assert domain.shipment.tracking_no == "FX-999"

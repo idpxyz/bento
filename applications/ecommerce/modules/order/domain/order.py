@@ -15,6 +15,45 @@ from bento.domain.aggregate import AggregateRoot
 from bento.domain.entity import Entity
 
 
+class Payment:
+    """Abstract payment value object."""
+
+    method: str
+
+
+class PaymentCard(Payment):
+    def __init__(self, last4: str, brand: str) -> None:
+        self.method = "card"
+        self.last4 = last4
+        self.brand = brand
+
+
+class PaymentPaypal(Payment):
+    def __init__(self, payer_id: str) -> None:
+        self.method = "paypal"
+        self.payer_id = payer_id
+
+
+class Shipment:
+    """Abstract shipment value object."""
+
+    carrier: str
+
+
+class ShipmentFedex(Shipment):
+    def __init__(self, tracking_no: str, service: str | None = None) -> None:
+        self.carrier = "fedex"
+        self.tracking_no = tracking_no
+        self.service = service
+
+
+class ShipmentLocal(Shipment):
+    def __init__(self, tracking_no: str | None = None, service: str | None = None) -> None:
+        self.carrier = "local"
+        self.tracking_no = tracking_no
+        self.service = service
+
+
 class OrderItem(Entity):
     """Order item entity.
 
@@ -109,6 +148,9 @@ class Order(AggregateRoot):
     shipment_carrier: str | None
     shipment_tracking_no: str | None
     shipment_service: str | None
+    # Explicit polymorphic objects (optional, for richer domain usage)
+    payment: Payment | None
+    shipment: Shipment | None
 
     def __init__(
         self,
@@ -136,6 +178,9 @@ class Order(AggregateRoot):
         self.shipment_carrier = None  # e.g., "local", "fedex", "dhl"
         self.shipment_tracking_no = None
         self.shipment_service = None
+        # Polymorphic objects default
+        self.payment = None
+        self.shipment = None
 
         # Note: OrderCreated event will be published after items are added
         # to ensure total_amount is accurate
