@@ -77,6 +77,7 @@
 | guides/SPECIFICATION.md | Specification 使用指南 | ⏳ 待创建 |
 | guides/INTERCEPTOR.md | Interceptor 使用指南 | ⏳ 待创建 |
 | guides/MAPPER.md | Mapper 使用指南 | ⏳ 待创建 |
+| [application/MAPPER_USAGE.md](./application/MAPPER_USAGE.md) | AutoMapper 使用指南 | ✅ 已完成 |
 
 ### 🎨 Mermaid 图表
 
