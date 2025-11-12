@@ -161,13 +161,6 @@ async def init_db() -> None:
     if _db_initialized:
         return
 
-    # Import all models to register them with Base
-    # This is required for SQLAlchemy to create tables
-    from applications.ecommerce.modules.order.persistence.models import (  # noqa: F401
-        OrderItemModel,
-        OrderModel,
-    )
-
     # Import framework models (Outbox) - must import models to register them
     from bento.persistence.sqlalchemy.base import Base as FrameworkBase
 

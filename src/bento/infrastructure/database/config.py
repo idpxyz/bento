@@ -28,7 +28,7 @@ class DatabaseConfig(BaseSettings):
         ```python
         # Direct instantiation
         config = DatabaseConfig(
-            url="sqlite+aiosqlite:///./app.db",
+            url="sqlite+aiosqlite:///./bento.db",
             pool_size=10,
         )
         ```
@@ -55,7 +55,7 @@ class DatabaseConfig(BaseSettings):
 
     # Basic connection settings
     url: str = Field(
-        default="sqlite+aiosqlite:///./app.db",
+        default="sqlite+aiosqlite:///./bento.db",
         description="Database connection URL (e.g., postgresql+asyncpg://user:pass@host/db)",
     )
     echo: bool = Field(

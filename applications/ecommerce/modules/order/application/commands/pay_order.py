@@ -1,7 +1,6 @@
 """Pay order command and use case."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.errors import OrderErrors
@@ -23,7 +22,7 @@ class PayOrderCommand:
     order_id: str
 
 
-class PayOrderUseCase(BaseUseCase[PayOrderCommand, dict[str, Any]]):
+class PayOrderUseCase(BaseUseCase[PayOrderCommand, Order]):
     """Pay order use case.
 
     Handles order payment processing.
@@ -47,7 +46,7 @@ class PayOrderUseCase(BaseUseCase[PayOrderCommand, dict[str, Any]]):
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
 
-    async def handle(self, command: PayOrderCommand) -> dict[str, Any]:
+    async def handle(self, command: PayOrderCommand) -> Order:
         order_id = ID(command.order_id)
         order_repo = self.uow.repository(Order)
 
@@ -59,4 +58,4 @@ class PayOrderUseCase(BaseUseCase[PayOrderCommand, dict[str, Any]]):
 
         order.pay()
         await order_repo.save(order)
-        return order.to_dict()
+        return order

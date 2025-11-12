@@ -1,7 +1,6 @@
 """Cancel order command and use case."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.errors import OrderErrors
@@ -25,7 +24,7 @@ class CancelOrderCommand:
     reason: str | None = None
 
 
-class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, dict[str, Any]]):
+class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, Order]):
     """Cancel order use case.
 
     Handles order cancellation.
@@ -52,7 +51,7 @@ class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, dict[str, Any]]):
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
 
-    async def handle(self, command: CancelOrderCommand) -> dict[str, Any]:
+    async def handle(self, command: CancelOrderCommand) -> Order:
         order_id = ID(command.order_id)
         order_repo = self.uow.repository(Order)
 
@@ -64,4 +63,4 @@ class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, dict[str, Any]]):
 
         order.cancel(reason=command.reason)
         await order_repo.save(order)
-        return order.to_dict()
+        return order

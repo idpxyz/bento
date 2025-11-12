@@ -6,7 +6,6 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from applications.ecommerce.modules.order.persistence.models import order_model  # noqa: F401
 from bento.persistence import Base  # metadata with mapped tables
 
 config = context.config

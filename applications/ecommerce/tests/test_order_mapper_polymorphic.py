@@ -4,10 +4,9 @@ from decimal import Decimal
 from applications.ecommerce.modules.order.domain.order import (
     Order,
     OrderItem,
-    PaymentCard,
-    ShipmentFedex,
 )
 from applications.ecommerce.modules.order.domain.order_status import OrderStatus
+from applications.ecommerce.modules.order.domain.vo import PaymentCard, ShipmentFedex
 from applications.ecommerce.modules.order.persistence.mappers.order_mapper import (
     OrderItemMapper,
     OrderMapper,

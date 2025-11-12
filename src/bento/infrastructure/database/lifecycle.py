@@ -4,6 +4,7 @@ This module provides functions for database initialization, cleanup, and health 
 """
 
 import logging
+from typing import Any
 
 from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -163,7 +164,7 @@ async def drop_all_tables(engine: AsyncEngine, base: type[DeclarativeBase]) -> N
         raise
 
 
-async def get_database_info(engine: AsyncEngine) -> dict[str, any]:
+async def get_database_info(engine: AsyncEngine) -> dict[str, Any]:
     """Get database information and statistics.
 
     Args:

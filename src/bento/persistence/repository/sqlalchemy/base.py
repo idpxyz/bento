@@ -115,7 +115,9 @@ class BaseRepository[PO, ID]:
         Returns:
             Persistence object if found, None otherwise
         """
-        return await self._session.get(self._po_type, id)
+        # Accept both raw PK (str/UUID/int) and ID-like wrappers that expose .value
+        pk = getattr(id, "value", id)
+        return await self._session.get(self._po_type, pk)
 
     async def query_po_by_spec(self, spec: CompositeSpecification[PO]) -> list[PO]:
         """Query persistence objects using specification.

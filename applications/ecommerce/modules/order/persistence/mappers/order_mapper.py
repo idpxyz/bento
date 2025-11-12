@@ -26,12 +26,14 @@ from applications.ecommerce.modules.order.domain.order import (
     Order,
     OrderItem,
     Payment,
+    Shipment,
+    TaxLine,
+)
+from applications.ecommerce.modules.order.domain.vo import (
     PaymentCard,
     PaymentPaypal,
-    Shipment,
     ShipmentFedex,
     ShipmentLocal,
-    TaxLine,
 )
 from applications.ecommerce.modules.order.persistence.models import (
     OrderDiscountModel,
@@ -56,11 +58,17 @@ class OrderItemMapper(AutoMapper[OrderItem, OrderItemModel]):
         """Initialize with automatic type analysis."""
         super().__init__(OrderItem, OrderItemModel, domain_factory=self._build_domain)
         # Explicitly restrict fields to ensure reverse construction calls __init__ with all args
-        self.only_fields("product_id", "product_name", "quantity", "unit_price")
+        self.only_fields("id", "product_id", "product_name", "quantity", "unit_price")
         # order_id will be set by parent mapper
         self.ignore_fields("order_id")
         # ensure discriminator is handled by hooks/factory
         self.ignore_fields("kind")
+        # ensure primary key is mapped as raw value
+        self.override_field(
+            "id",
+            to_po=lambda v: (None if v is None else (v.value if hasattr(v, "value") else str(v))),
+            from_po=lambda v: (None if v is None else ID(str(v))),
+        )
         # explicit converters to bypass SQLAlchemy Mapped[...] typing wrappers
         self.override_field(
             "product_id",
@@ -124,7 +132,7 @@ class OrderItemMapper(AutoMapper[OrderItem, OrderItemModel]):
             return super().map(domain)
         except AssertionError:
             po = OrderItemModel(
-                id=None,
+                id=str(domain.id.value) if hasattr(domain, "id") else None,
                 order_id=None,
                 product_id=domain.product_id.value
                 if hasattr(domain.product_id, "value")
@@ -195,6 +203,17 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             domain_factory=self._build_domain,
             po_factory=self._build_po,
         )
+        # Ensure ID wrappers are persisted as raw strings for SQLAlchemy
+        self.override_field(
+            "id",
+            to_po=lambda v: (None if v is None else (v.value if hasattr(v, "value") else str(v))),
+            from_po=lambda v: (None if v is None else ID(str(v))),
+        )
+        self.override_field(
+            "customer_id",
+            to_po=lambda v: (None if v is None else (v.value if hasattr(v, "value") else str(v))),
+            from_po=lambda v: (None if v is None else ID(str(v))),
+        )
         # Register child entity mapper - items are automatically mapped
         self.register_child("items", OrderItemMapper(), parent_keys="order_id")
         self.register_child("discounts", OrderDiscountMapper(), parent_keys="order_id")
@@ -221,6 +240,9 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
         """PO factory: place to construct ORM/Pydantic models or handle polymorphism."""
         # Infer discriminators if missing (simple heuristics)
         d2 = dict(d)
+        # Ensure status default
+        if not d2.get("status"):
+            d2["status"] = "pending"
         if not d2.get("payment_method"):
             if d2.get("payment_card_last4") or d2.get("payment_card_brand"):
                 d2["payment_method"] = "card"
@@ -235,35 +257,81 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
     # Bridge missing inferred fields (e.g., SQLAlchemy Mapped typing edge cases)
     def after_map(self, domain: Order, po: OrderModel) -> None:
         """Ensure polymorphic fields are propagated when not inferred."""
-        # If explicit payment object exists, project it to flattened fields
-        if isinstance(getattr(domain, "payment", None), Payment):
-            p = domain.payment  # type: ignore[assignment]
-            if isinstance(p, PaymentCard):
-                po.payment_method = "card"
-                po.payment_card_last4 = p.last4
-                po.payment_card_brand = p.brand
-            elif isinstance(p, PaymentPaypal):
-                po.payment_method = "paypal"
-                po.payment_paypal_payer_id = p.payer_id
-        # If explicit shipment object exists, project it
-        if isinstance(getattr(domain, "shipment", None), Shipment):
-            s = domain.shipment  # type: ignore[assignment]
-            if isinstance(s, ShipmentFedex):
-                po.shipment_carrier = "fedex"
-                po.shipment_tracking_no = s.tracking_no
-                po.shipment_service = s.service
-            elif isinstance(s, ShipmentLocal):
-                po.shipment_carrier = "local"
-                po.shipment_tracking_no = s.tracking_no
-                po.shipment_service = s.service
-        # Project shipping_address if present
-        if isinstance(getattr(domain, "shipping_address", None), Address):
-            a = domain.shipping_address
-            if a:
-                po.shipping_address_line1 = a.line1
-                po.shipping_city = a.city
-                po.shipping_country = a.country
+        self._project_root_ids(domain, po)
+        self._project_payment(domain, po)
+        self._project_shipment(domain, po)
+        self._project_shipping_address(domain, po)
+        self._project_scalar_fields(domain, po)
+        self._infer_missing_discriminators(po)
+        self._sync_items(domain, po)
 
+    def before_map_reverse(self, po: OrderModel) -> None:
+        """Capture PO for factory use (to hydrate required ctor args)."""
+        self._po_for_factory = po
+
+    def after_map_reverse(self, po: OrderModel, domain: Order) -> None:
+        """Ensure polymorphic fields are propagated back to domain."""
+        self._clear_po_factory_cache()
+        domain.payment = self._rebuild_payment(po)
+        domain.shipment = self._rebuild_shipment(po)
+        self._rebuild_shipping_address(po, domain)
+        self._propagate_scalar_fields(po, domain)
+        self._apply_currency_and_money(po, domain)
+        self._rebuild_items_if_missing(po, domain)
+
+    @staticmethod
+    def _project_root_ids(domain: Order, po: OrderModel) -> None:
+        for attr in ("id", "customer_id"):
+            try:
+                value = getattr(domain, attr)
+            except Exception:
+                continue
+            if value is None:
+                continue
+            try:
+                coerced = value.value if hasattr(value, "value") else value
+                setattr(po, attr, str(coerced))
+            except Exception:
+                continue
+
+    @staticmethod
+    def _project_payment(domain: Order, po: OrderModel) -> None:
+        payment = getattr(domain, "payment", None)
+        if not isinstance(payment, Payment):
+            return
+        if isinstance(payment, PaymentCard):
+            po.payment_method = "card"
+            po.payment_card_last4 = payment.last4
+            po.payment_card_brand = payment.brand
+        elif isinstance(payment, PaymentPaypal):
+            po.payment_method = "paypal"
+            po.payment_paypal_payer_id = payment.payer_id
+
+    @staticmethod
+    def _project_shipment(domain: Order, po: OrderModel) -> None:
+        shipment = getattr(domain, "shipment", None)
+        if not isinstance(shipment, Shipment):
+            return
+        if isinstance(shipment, ShipmentFedex):
+            po.shipment_carrier = "fedex"
+            po.shipment_tracking_no = shipment.tracking_no
+            po.shipment_service = shipment.service
+        elif isinstance(shipment, ShipmentLocal):
+            po.shipment_carrier = "local"
+            po.shipment_tracking_no = shipment.tracking_no
+            po.shipment_service = shipment.service
+
+    @staticmethod
+    def _project_shipping_address(domain: Order, po: OrderModel) -> None:
+        address = getattr(domain, "shipping_address", None)
+        if not isinstance(address, Address):
+            return
+        po.shipping_address_line1 = address.line1
+        po.shipping_city = address.city
+        po.shipping_country = address.country
+
+    @staticmethod
+    def _project_scalar_fields(domain: Order, po: OrderModel) -> None:
         for name in (
             "payment_method",
             "payment_card_last4",
@@ -272,19 +340,24 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             "shipment_carrier",
             "shipment_tracking_no",
             "shipment_service",
-            # order-level money fields
             "discount_amount",
             "tax_amount",
-            # currency
             "currency",
         ):
-            dv = getattr(domain, name, None)
-            if dv is not None and getattr(po, name, None) is None:
-                if name in ("discount_amount", "tax_amount") and isinstance(dv, Decimal):
-                    setattr(po, name, str(dv))
+            domain_value = getattr(domain, name, None)
+            if domain_value is None or getattr(po, name, None) is not None:
+                continue
+            if name in {"discount_amount", "tax_amount"}:
+                if isinstance(domain_value, Money):
+                    po_value = str(domain_value.amount)
                 else:
-                    setattr(po, name, dv)
-        # Heuristic inference when still missing
+                    po_value = str(Decimal(str(domain_value)))
+                setattr(po, name, po_value)
+            else:
+                setattr(po, name, domain_value)
+
+    @staticmethod
+    def _infer_missing_discriminators(po: OrderModel) -> None:
         if getattr(po, "payment_method", None) is None:
             if getattr(po, "payment_card_last4", None) or getattr(po, "payment_card_brand", None):
                 po.payment_method = "card"
@@ -294,7 +367,9 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             po, "shipment_tracking_no", None
         ):
             po.shipment_carrier = "fedex"
-        # Fallback: rebuild items if child mapping failed silently
+
+    @staticmethod
+    def _sync_items(domain: Order, po: OrderModel) -> None:
         if (not getattr(po, "items", None)) and getattr(domain, "items", None):
             rebuilt = []
             for item in domain.items:
@@ -318,9 +393,42 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
                 except Exception:
                     continue
             po.items = rebuilt
-        # Ensure item kinds are set based on domain subclasses
         if getattr(domain, "items", None) and getattr(po, "items", None):
             for d_item, p_item in zip(domain.items, po.items, strict=False):
+                try:
+                    if getattr(d_item, "id", None) is not None:
+                        p_item.id = (
+                            str(d_item.id.value) if hasattr(d_item.id, "value") else str(d_item.id)
+                        )
+                except Exception:
+                    pass
+                try:
+                    if getattr(d_item, "product_id", None) is not None:
+                        pid = d_item.product_id
+                        p_item.product_id = pid.value if hasattr(pid, "value") else str(pid)
+                except Exception:
+                    pass
+                try:
+                    if getattr(d_item, "product_name", None) is not None:
+                        p_item.product_name = d_item.product_name
+                except Exception:
+                    pass
+                try:
+                    if getattr(d_item, "quantity", None) is not None:
+                        p_item.quantity = int(d_item.quantity)
+                except Exception:
+                    pass
+                try:
+                    if getattr(d_item, "unit_price", None) is not None:
+                        unit_price = d_item.unit_price
+                        amount = (
+                            unit_price.amount
+                            if hasattr(unit_price, "amount")
+                            else Decimal(str(unit_price))
+                        )
+                        p_item.unit_price = amount
+                except Exception:
+                    pass
                 if getattr(p_item, "kind", None) in (None, ""):
                     if isinstance(d_item, LineBundle):
                         p_item.kind = "bundle"
@@ -329,45 +437,46 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
                     else:
                         p_item.kind = "simple"
 
-    def before_map_reverse(self, po: OrderModel) -> None:
-        """Capture PO for factory use (to hydrate required ctor args)."""
-        self._po_for_factory = po
-
-    def after_map_reverse(self, po: OrderModel, domain: Order) -> None:
-        """Ensure polymorphic fields are propagated back to domain."""
-        # Clear captured reference
+    def _clear_po_factory_cache(self) -> None:
         if hasattr(self, "_po_for_factory"):
             delattr(self, "_po_for_factory")
-        # Rebuild explicit payment/shipment objects if possible
+
+    @staticmethod
+    def _rebuild_payment(po: OrderModel) -> Payment | None:
         if po.payment_method == "card" and (po.payment_card_last4 or po.payment_card_brand):
-            domain.payment = PaymentCard(
+            return PaymentCard(
                 last4=po.payment_card_last4 or "",
                 brand=po.payment_card_brand or "",
             )
-        elif po.payment_method == "paypal" and po.payment_paypal_payer_id:
-            domain.payment = PaymentPaypal(payer_id=po.payment_paypal_payer_id)
-        else:
-            domain.payment = None
+        if po.payment_method == "paypal" and po.payment_paypal_payer_id:
+            return PaymentPaypal(payer_id=po.payment_paypal_payer_id)
+        return None
 
+    @staticmethod
+    def _rebuild_shipment(po: OrderModel) -> Shipment | None:
         if po.shipment_carrier == "fedex":
-            domain.shipment = ShipmentFedex(
+            return ShipmentFedex(
                 tracking_no=po.shipment_tracking_no or "",
                 service=po.shipment_service,
             )
-        elif po.shipment_carrier == "local":
-            domain.shipment = ShipmentLocal(
+        if po.shipment_carrier == "local":
+            return ShipmentLocal(
                 tracking_no=po.shipment_tracking_no,
                 service=po.shipment_service,
             )
-        else:
-            domain.shipment = None
-        # Rebuild shipping_address if fields present
+        return None
+
+    @staticmethod
+    def _rebuild_shipping_address(po: OrderModel, domain: Order) -> None:
         if po.shipping_address_line1 and po.shipping_city and po.shipping_country:
             domain.shipping_address = Address(
                 line1=po.shipping_address_line1,
                 city=po.shipping_city,
                 country=po.shipping_country,
             )
+
+    @staticmethod
+    def _propagate_scalar_fields(po: OrderModel, domain: Order) -> None:
         for name in (
             "payment_method",
             "payment_card_last4",
@@ -377,38 +486,41 @@ class OrderMapper(AutoMapper[Order, OrderModel]):
             "shipment_tracking_no",
             "shipment_service",
         ):
-            pv = getattr(po, name, None)
-            if pv is not None and getattr(domain, name, None) is None:
-                setattr(domain, name, pv)
-        # Money fields: always refresh from PO if present (convert to Decimal)
+            po_value = getattr(po, name, None)
+            if po_value is not None and getattr(domain, name, None) is None:
+                setattr(domain, name, po_value)
+
+    @staticmethod
+    def _apply_currency_and_money(po: OrderModel, domain: Order) -> None:
+        currency = getattr(po, "currency", None)
+        if currency is not None:
+            domain.currency = currency
         if getattr(po, "discount_amount", None) is not None:
             domain.discount_amount = Money(Decimal(str(po.discount_amount)), domain.currency)
         if getattr(po, "tax_amount", None) is not None:
             domain.tax_amount = Money(Decimal(str(po.tax_amount)), domain.currency)
-        # Currency (narrow Optional[str] before assignment to str)
-        c = getattr(po, "currency", None)
-        if c is not None:
-            domain.currency = c
-        # Fallback: rebuild items if child reverse mapping was skipped
-        if (not getattr(domain, "items", None)) and getattr(po, "items", None):
-            rebuilt: list[OrderItem] = []
-            for item_po in po.items:
-                try:
-                    ctor = {  # ctor 是子类构造函数
-                        "bundle": LineBundle,
-                        "custom": LineCustom,
-                        "simple": LineSimple,
-                        None: LineSimple,
-                    }.get(getattr(item_po, "kind", None), LineSimple)
-                    rebuilt.append(
-                        ctor(
-                            product_id=ID(str(item_po.product_id)),
-                            product_name=item_po.product_name,
-                            quantity=int(item_po.quantity),
-                            unit_price=Money(Decimal(str(item_po.unit_price)), domain.currency),
-                        )
+
+    @staticmethod
+    def _rebuild_items_if_missing(po: OrderModel, domain: Order) -> None:
+        if getattr(domain, "items", None) or not getattr(po, "items", None):
+            return
+        rebuilt: list[OrderItem] = []
+        for item_po in po.items:
+            try:
+                ctor = {
+                    "bundle": LineBundle,
+                    "custom": LineCustom,
+                    "simple": LineSimple,
+                    None: LineSimple,
+                }.get(getattr(item_po, "kind", None), LineSimple)
+                rebuilt.append(
+                    ctor(
+                        product_id=ID(str(item_po.product_id)),
+                        product_name=item_po.product_name,
+                        quantity=int(item_po.quantity),
+                        unit_price=Money(Decimal(str(item_po.unit_price)), domain.currency),
                     )
-                except Exception:
-                    # skip invalid rows
-                    continue
-            domain.items = rebuilt
+                )
+            except Exception:
+                continue
+        domain.items = rebuilt
