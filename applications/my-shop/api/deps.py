@@ -86,6 +86,38 @@ async def get_uow(
         pass
 
 
+async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
+    """
+    Get Unit of Work with all repositories registered.
+
+    This is the recommended way to get UoW for use cases.
+    All domain repositories are pre-registered.
+
+    Usage in Use Cases:
+        uow = await get_unit_of_work()
+        user_repo = uow.repository(User)
+        ...
+    """
+    async with session_factory() as session:
+        outbox = SqlAlchemyOutbox(session)
+        uow = SQLAlchemyUnitOfWork(session, outbox)
+
+        # Register all repositories
+        from contexts.identity.domain.models.user import User
+        from contexts.identity.infrastructure.repositories.user_repository_impl import (
+            UserRepository,
+        )
+
+        uow.register_repository(User, lambda s: UserRepository(s))
+
+        # Register other repositories as needed
+        # from contexts.catalog.domain.product import Product
+        # from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
+        # uow.register_repository(Product, lambda s: ProductRepository(s))
+
+        return uow
+
+
 # Convenience function to get specific repositories
 # You can add more as needed
 
