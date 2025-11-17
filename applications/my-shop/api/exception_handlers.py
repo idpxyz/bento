@@ -2,6 +2,7 @@
 
 import logging
 
+from bento.core.errors import ApplicationException
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -46,8 +47,57 @@ async def response_validation_exception_handler(request: Request, exc: Exception
     )
 
 
+async def application_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """处理应用层异常 (ApplicationException)"""
+    app_exc = exc if isinstance(exc, ApplicationException) else None
+
+    if not app_exc:
+        # 不是 ApplicationException，交给通用处理器
+        return await generic_exception_handler(request, exc)
+
+    logger.warning(
+        f"Application exception for {request.url.path}: {app_exc.error_code} - {app_exc.details}",
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "error": "Application Error",
+            "message": str(app_exc),
+            "error_code": str(app_exc.error_code),
+            "details": app_exc.details,
+            "path": str(request.url.path),
+        },
+    )
+
+
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """处理未捕获的异常 - 500 Internal Server Error"""
+    """处理未捕获的异常
+
+    - ApplicationException: 应用层异常 → 400 Bad Request
+    - ValueError: 业务验证错误 → 400 Bad Request
+    - 其他异常: 500 Internal Server Error
+    """
+    # 应用层异常（Use Case 抛出的业务错误）
+    if isinstance(exc, ApplicationException):
+        return await application_exception_handler(request, exc)
+
+    # 业务验证错误（领域模型抛出的 ValueError）
+    if isinstance(exc, ValueError):
+        logger.warning(
+            f"Business validation error for {request.url.path}: {exc}",
+        )
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": "Business Validation Error",
+                "message": "业务规则验证失败",
+                "details": str(exc),
+                "path": str(request.url.path),
+            },
+        )
+
+    # 其他未预期的异常
     logger.error(
         f"Unhandled exception for {request.url.path}: {exc}",
         exc_info=True,
