@@ -67,7 +67,9 @@ jobs:
 
         echo "" >> RELEASE_NOTES.md
         echo "---" >> RELEASE_NOTES.md
-        echo "📦 **Installation**: \`pip install bento-framework\`" >> RELEASE_NOTES.md
+        echo "📦 **Note**: This version is under Proprietary License." >> RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "For licensing inquiries, please contact: licensing@idp.xyz" >> RELEASE_NOTES.md
 
         cat RELEASE_NOTES.md
 
@@ -83,18 +85,21 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish to PyPI
-      if: ${{ !contains(steps.get_version.outputs.version, 'a') }}  # 只发布正式版本到 PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        twine upload dist/*
+    # PyPI 发布已禁用 - 使用 Proprietary License，不公开发布
+    # 如需发布，请手动执行或使用私有 PyPI
 
-    - name: Publish to Test PyPI
-      if: contains(steps.get_version.outputs.version, 'a')  # alpha 版本发布到 Test PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      run: |
-        twine upload --repository testpypi dist/*
+    # - name: Publish to PyPI
+    #   if: ${{ !contains(steps.get_version.outputs.version, 'a') }}
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+    #   run: |
+    #     twine upload dist/*
+
+    # - name: Publish to Test PyPI
+    #   if: contains(steps.get_version.outputs.version, 'a')
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    #   run: |
+    #     twine upload --repository testpypi dist/*
