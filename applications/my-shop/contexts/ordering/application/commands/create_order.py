@@ -74,12 +74,10 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
 
     async def handle(self, command: CreateOrderCommand) -> Order:
         """Handle command execution."""
-        # P2: 验证产品是否存在
-        from contexts.catalog.infrastructure.repositories.product_repository_impl import (
-            ProductRepository,
-        )
+        # Validate products exist using UoW's repository
+        from contexts.catalog.domain.product import Product
 
-        product_repo = ProductRepository(self.uow._session)  # type: ignore
+        product_repo = self.uow.repository(Product)
 
         for item in command.items:
             product = await product_repo.get(item.product_id)  # type: ignore
@@ -123,12 +121,9 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
             )
         )
 
-        # 持久化（使用完整的聚合Repository）
-        from contexts.ordering.infrastructure.repositories.order_repository_impl import (
-            OrderRepository,
-        )
-
-        order_repo = OrderRepository(self.uow._session)  # type: ignore
+        # 持久化订单（Repository 会自动 track）
+        order_repo = self.uow.repository(Order)
         await order_repo.save(order)
+        # ✅ No need to manually track - repository handles it automatically
 
         return order

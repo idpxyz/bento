@@ -107,6 +107,10 @@ class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
             item_po = self.item_mapper.map(item)
             await item_base_repo.create_po(item_po)
 
+        # ✅ Automatically track aggregate for event collection
+        if self._uow:
+            self._uow.track(order)
+
         await self.session.flush()
 
     async def delete(self, order: Order) -> None:

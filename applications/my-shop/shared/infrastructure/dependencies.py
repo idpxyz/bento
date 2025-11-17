@@ -49,12 +49,13 @@ async def get_uow(
     session: AsyncSession = Depends(get_db_session),
 ) -> AsyncGenerator[SQLAlchemyUnitOfWork, None]:
     """
-    Get Unit of Work with Outbox pattern support.
+    Get Unit of Work with Outbox pattern support and all repositories registered.
 
     The UnitOfWork manages:
     - Transaction boundaries
     - Repository lifecycle
     - Event collection and publishing
+    - All domain repositories are pre-registered
 
     Usage:
         @router.post("/products")
@@ -63,21 +64,40 @@ async def get_uow(
             uow: SQLAlchemyUnitOfWork = Depends(get_uow)
         ):
             async with uow:
-                # Register repositories
-                from contexts.catalog.infrastructure.repositories.product_repository import ProductRepository
-                uow.register_repository(Product, lambda s: ProductRepository(s))
-
-                # Use repository
+                # Use repository (already registered)
                 repo = uow.repository(Product)
                 product = Product.create(...)
                 await repo.save(product)
-                uow.track(product)
+                # No need to manually track - repository handles it
 
                 # Commit (saves changes + publishes events)
                 await uow.commit()
     """
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
+
+    # Register all domain repositories upfront
+    from contexts.catalog.domain.category import Category
+    from contexts.catalog.domain.product import Product
+    from contexts.catalog.infrastructure.repositories.category_repository_impl import (
+        CategoryRepository,
+    )
+    from contexts.catalog.infrastructure.repositories.product_repository_impl import (
+        ProductRepository,
+    )
+    from contexts.identity.domain.models.user import User
+    from contexts.identity.infrastructure.repositories.user_repository_impl import (
+        UserRepository,
+    )
+    from contexts.ordering.domain.order import Order
+    from contexts.ordering.infrastructure.repositories.order_repository_impl import (
+        OrderRepository,
+    )
+
+    uow.register_repository(User, lambda s: UserRepository(s))
+    uow.register_repository(Product, lambda s: ProductRepository(s))
+    uow.register_repository(Category, lambda s: CategoryRepository(s))
+    uow.register_repository(Order, lambda s: OrderRepository(s))
 
     try:
         yield uow
@@ -86,57 +106,18 @@ async def get_uow(
         pass
 
 
-async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
-    """
-    Get Unit of Work with all repositories registered.
-
-    This is the recommended way to get UoW for use cases.
-    All domain repositories are pre-registered.
-
-    Usage in Use Cases:
-        uow = await get_unit_of_work()
-        user_repo = uow.repository(User)
-        ...
-    """
-    async with session_factory() as session:
-        outbox = SqlAlchemyOutbox(session)
-        uow = SQLAlchemyUnitOfWork(session, outbox)
-
-        # Register all repositories
-        from contexts.catalog.domain.category import Category
-        from contexts.catalog.domain.product import Product
-        from contexts.catalog.infrastructure.repositories.category_repository_impl import (
-            CategoryRepository,
-        )
-        from contexts.catalog.infrastructure.repositories.product_repository_impl import (
-            ProductRepository,
-        )
-        from contexts.identity.domain.models.user import User
-        from contexts.identity.infrastructure.repositories.user_repository_impl import (
-            UserRepository,
-        )
-
-        uow.register_repository(User, lambda s: UserRepository(s))
-        uow.register_repository(Product, lambda s: ProductRepository(s))
-        uow.register_repository(Category, lambda s: CategoryRepository(s))
-
-        return uow
-
-
-# Convenience function to get specific repositories
-# You can add more as needed
-
-# def get_product_repository(
-#     session: AsyncSession = Depends(get_db_session)
-# ) -> ProductRepository:
-#     """Get Product repository."""
-#     from contexts.catalog.infrastructure.repositories.product_repository import ProductRepository
-#     return ProductRepository(session)
-
-
-# def get_order_repository(
-#     session: AsyncSession = Depends(get_db_session)
-# ) -> OrderRepository:
-#     """Get Order repository."""
-#     from contexts.ordering.infrastructure.repositories.order_repository import OrderRepository
-#     return OrderRepository(session)
+# ==================== DEPRECATED ====================
+# The following function has been removed due to Session lifecycle issues.
+# Use get_uow() with Depends() instead.
+#
+# Old pattern (INCORRECT - Session closes before use):
+#     async def get_create_order_use_case() -> CreateOrderUseCase:
+#         uow = await get_unit_of_work()  # ❌ Session already closed
+#         return CreateOrderUseCase(uow)
+#
+# New pattern (CORRECT):
+#     async def get_create_order_use_case(
+#         uow: SQLAlchemyUnitOfWork = Depends(get_uow)
+#     ) -> CreateOrderUseCase:
+#         return CreateOrderUseCase(uow)  # ✅ Session managed by FastAPI
+# ===================================================
