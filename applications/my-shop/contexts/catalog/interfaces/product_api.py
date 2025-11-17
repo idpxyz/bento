@@ -29,7 +29,7 @@ router = APIRouter()
 
 class CreateProductRequest(BaseModel):
     """Create product request model."""
-    
+
     name: str
     description: str
     price: float

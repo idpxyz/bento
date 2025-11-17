@@ -2,12 +2,12 @@
 
 from fastapi import APIRouter
 
-# from api.orders import router as orders_router  # TODO: Fix ordering module
+from contexts.catalog.interfaces.category_api import router as categories_router
+from contexts.catalog.interfaces.product_api import router as products_router
 
+# from api.orders import router as orders_router  # TODO: Fix ordering module
 # Use new interfaces layer (following Bento Framework standards)
 from contexts.identity.interfaces import router as users_router
-from contexts.catalog.interfaces.product_api import router as products_router
-from contexts.catalog.interfaces.category_api import router as categories_router
 
 # Create main API router
 api_router = APIRouter()
@@ -47,10 +47,4 @@ api_router.include_router(
     categories_router,
     prefix="/categories",
     tags=["categories"],
-)
-
-api_router.include_router(
-    orders_router,
-    prefix="/orders",
-    tags=["orders"],
 )
