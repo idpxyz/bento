@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.deps import get_db_session
 from api.schemas.product import ProductCreate, ProductList, ProductResponse, ProductUpdate
 from contexts.catalog.domain.product import Product
-from contexts.catalog.infrastructure.repositories.product_repository import ProductRepository
+from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
 
 router = APIRouter()
 
@@ -15,28 +15,27 @@ router = APIRouter()
 async def list_products(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
+    category_id: str | None = Query(None, description="Filter by category ID"),
     session: AsyncSession = Depends(get_db_session),
 ):
     """
-    List all products with pagination.
+    List all products with pagination and optional category filter.
 
-    Returns a paginated list of products.
+    Returns a paginated list of products with proper database-level pagination.
     """
     repo = ProductRepository(session)
 
     # Calculate offset
     offset = (page - 1) * page_size
 
-    # Get products (you'll need to add pagination support to repository)
-    # For now, simple implementation
-    products = await repo.list()  # Assuming list() method exists
+    # Get products with database-level pagination
+    products = await repo.list(limit=page_size, offset=offset, category_id=category_id)
 
-    # Apply pagination in memory (should be done in repository/database)
-    total = len(products)
-    paginated_products = products[offset : offset + page_size]
+    # Get total count
+    total = await repo.count(category_id=category_id)
 
     return ProductList(
-        items=[ProductResponse.model_validate(p) for p in paginated_products],
+        items=[ProductResponse.model_validate(p) for p in products],
         total=total,
         page=page,
         page_size=page_size,

@@ -1,6 +1,11 @@
-# my-shop
+# 🛍️ my-shop
 
-完整测试项目
+**完整 DDD 电商示例项目** - Bento Framework 参考实现
+
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
+[![Framework](https://img.shields.io/badge/Framework-Bento-green.svg)](https://github.com/idpxyz/bento)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-teal.svg)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > 由 [Bento Framework](https://github.com/bentoml/bento) 生成 - Domain-Driven Design + Modular Monolith 架构
 

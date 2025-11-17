@@ -1,5 +1,7 @@
 """Category 仓储接口"""
+
 from typing import Protocol
+
 from contexts.catalog.domain.category import Category
 
 
