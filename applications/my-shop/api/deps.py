@@ -103,6 +103,11 @@ async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
         uow = SQLAlchemyUnitOfWork(session, outbox)
 
         # Register all repositories
+        from contexts.catalog.infrastructure.repositories.category_repository_impl import (
+            CategoryRepository,
+        )
+
+        from contexts.catalog.domain.category import Category
         from contexts.catalog.domain.product import Product
         from contexts.catalog.infrastructure.repositories.product_repository_impl import (
             ProductRepository,
@@ -114,6 +119,7 @@ async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
 
         uow.register_repository(User, lambda s: UserRepository(s))
         uow.register_repository(Product, lambda s: ProductRepository(s))
+        uow.register_repository(Category, lambda s: CategoryRepository(s))
 
         return uow
 
