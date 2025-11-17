@@ -10,10 +10,8 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from bento.core.ids import ID
+from contexts.identity.domain.user import User
 from sqlalchemy import select
 
 from api.deps import engine, session_factory
@@ -23,9 +21,11 @@ from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapp
 from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 from contexts.catalog.infrastructure.models.product_po import ProductPO
-from contexts.identity.domain.user import User
 from contexts.identity.infrastructure.mappers.user_mapper import UserMapper
 from contexts.identity.infrastructure.models.user_po import UserPO
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 async def clear_data():

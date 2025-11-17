@@ -6,7 +6,7 @@ from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from contexts.identity.domain.user import User
+from contexts.identity.domain.models.user import User
 from contexts.identity.infrastructure.mappers.user_mapper import UserMapper
 from contexts.identity.infrastructure.models.user_po import UserPO
 
@@ -86,9 +86,9 @@ class UserRepository(RepositoryAdapter[User, UserPO, str]):
 
         return self.mapper.map_reverse(po)  # PO -> AR
 
-    async def count(self) -> int:
+    async def total_count(self) -> int:
         """
-        Count total users.
+        Count total users (custom method).
 
         Returns:
             Total count of users

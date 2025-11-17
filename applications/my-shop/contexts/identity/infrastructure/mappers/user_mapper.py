@@ -9,7 +9,7 @@ AutoMapper 提供零配置的自动映射：
 
 from bento.application.mapper import AutoMapper
 
-from contexts.identity.domain.user import User
+from contexts.identity.domain.models.user import User
 from contexts.identity.infrastructure.models.user_po import UserPO
 
 

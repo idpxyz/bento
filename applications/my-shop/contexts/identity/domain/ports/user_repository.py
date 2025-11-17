@@ -11,7 +11,7 @@ Following Hexagonal Architecture:
 
 from typing import Protocol
 
-from contexts.identity.domain.user import User
+from contexts.identity.domain.models.user import User
 
 
 class IUserRepository(Protocol):

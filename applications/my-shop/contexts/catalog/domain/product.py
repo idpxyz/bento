@@ -21,6 +21,7 @@ class Product(AggregateRoot):
 
     id: str
     name: str
+    description: str
     price: float
 
     def __post_init__(self):
