@@ -1,5 +1,7 @@
 """Product 映射器接口"""
+
 from typing import Protocol
+
 from domain.product import Product
 from infrastructure.models.product_po import ProductPO
 
