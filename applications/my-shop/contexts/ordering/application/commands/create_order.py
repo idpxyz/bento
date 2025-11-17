@@ -109,7 +109,6 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
             )
 
         # 发布领域事件
-        from contexts.ordering.domain.events.ordercreated_event import OrderCreated
 
         order.add_event(
             OrderCreated(

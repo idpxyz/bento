@@ -4,10 +4,11 @@ import logging
 
 from bento.domain.domain_event import DomainEvent
 
-from contexts.ordering.domain.events.ordercancelled_event import OrderCancelled
-from contexts.ordering.domain.events.ordercreated_event import OrderCreated
-from contexts.ordering.domain.events.orderdelivered_event import OrderDelivered
-from contexts.ordering.domain.events.ordershipped_event import OrderShipped
+from contexts.ordering.domain.events.ordercancelled_event import OrderCancelledEvent
+from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
+from contexts.ordering.domain.events.orderdelivered_event import OrderDeliveredEvent
+from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
+from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class OrderEventHandler:
         else:
             logger.debug(f"No handler found for event: {event_name}")
 
-    async def _handle_order_created(self, event: OrderCreated) -> None:
+    async def _handle_order_created(self, event: OrderCreatedEvent) -> None:
         """处理订单创建事件
 
         触发多个副作用：
@@ -147,7 +148,7 @@ class OrderEventHandler:
 
         logger.info(f"✅ Finished processing OrderShipped for order {event.order_id}")
 
-    async def _handle_order_delivered(self, event: OrderDelivered) -> None:
+    async def _handle_order_delivered(self, event: OrderDeliveredEvent) -> None:
         """处理订单送达事件
 
         Args:
@@ -166,7 +167,7 @@ class OrderEventHandler:
 
         logger.info(f"✅ Finished processing OrderDelivered for order {event.order_id}")
 
-    async def _handle_order_cancelled(self, event: OrderCancelled) -> None:
+    async def _handle_order_cancelled(self, event: OrderCancelledEvent) -> None:
         """处理订单取消事件
 
         取消触发清理工作流：
@@ -200,17 +201,17 @@ class OrderEventHandler:
     # ==================== 模拟集成方法 ====================
     # 在生产环境中，这些方法会调用真实的服务
 
-    async def _send_order_confirmation_email(self, event: OrderCreated) -> None:
+    async def _send_order_confirmation_email(self, event: OrderCreatedEvent) -> None:
         """发送订单确认邮件（模拟）"""
         logger.info(f"📧 Sending order confirmation email to customer {event.customer_id}")
         # TODO: 集成邮件服务 (SendGrid, AWS SES, etc.)
 
-    async def _reserve_inventory(self, event: OrderCreated) -> None:
+    async def _reserve_inventory(self, event: OrderCreatedEvent) -> None:
         """预留库存（模拟）"""
         logger.info(f"📦 Reserving inventory for order {event.order_id} ({event.item_count} items)")
         # TODO: 集成库存服务
 
-    async def _notify_warehouse(self, event: OrderCreated) -> None:
+    async def _notify_warehouse(self, event: OrderCreatedEvent) -> None:
         """通知仓库（模拟）"""
         logger.info(f"🏭 Notifying warehouse of order {event.order_id}")
         # TODO: 集成仓库管理系统
@@ -230,7 +231,7 @@ class OrderEventHandler:
         logger.info(f"📊 Updating analytics for payment: {event.order_id} (${event.total})")
         # TODO: 集成分析平台
 
-    async def _send_shipping_notification(self, event: OrderShipped) -> None:
+    async def _send_shipping_notification(self, event: OrderShippedEvent) -> None:
         """发送发货通知（模拟）"""
         logger.info(f"📧 Sending shipping notification for order {event.order_id}")
         # TODO: 集成邮件服务
@@ -240,14 +241,14 @@ class OrderEventHandler:
         logger.info(f"📧 Sending delivery confirmation for order {event.order_id}")
         # TODO: 集成邮件服务
 
-    async def _send_cancellation_email(self, event: OrderCancelled) -> None:
+    async def _send_cancellation_email(self, event: OrderCancelledEvent) -> None:
         """发送取消邮件（模拟）"""
         logger.info(
             f"📧 Sending cancellation email for order {event.order_id}. Reason: {event.reason}"
         )
         # TODO: 集成邮件服务
 
-    async def _release_inventory(self, event: OrderCancelled) -> None:
+    async def _release_inventory(self, event: OrderCancelledEvent) -> None:
         """释放预留库存（模拟）"""
         logger.info(f"📦 Releasing inventory for order {event.order_id}")
         # TODO: 集成库存服务

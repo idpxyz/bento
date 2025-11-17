@@ -6,7 +6,7 @@ from bento.domain.domain_event import DomainEvent
 
 
 @dataclass(frozen=True, kw_only=True)
-class OrderCreated(DomainEvent):
+class OrderCreatedEvent(DomainEvent):
     """OrderCreated 事件
 
     开发人员只需要：
