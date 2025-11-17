@@ -59,14 +59,29 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         f"Application exception for {request.url.path}: {app_exc.error_code} - {app_exc.details}",
     )
 
+    # 提取错误码（只返回 code 字符串，不是整个对象）
+    error_code = (
+        app_exc.error_code.code if hasattr(app_exc.error_code, "code") else str(app_exc.error_code)
+    )
+
+    # 用户友好的中文消息映射
+    user_messages = {
+        "COMMON_001": "请求参数不正确",
+        "COMMON_010": "资源未找到",
+        "COMMON_011": "资源已存在",
+        "COMMON_020": "权限不足",
+    }
+
+    # 获取用户友好消息
+    user_message = user_messages.get(error_code, "操作失败，请检查输入")
+
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
-            "error": "Application Error",
-            "message": str(app_exc),
-            "error_code": str(app_exc.error_code),
-            "details": app_exc.details,
-            "path": str(request.url.path),
+            "success": False,
+            "message": user_message,  # 用户友好的中文消息
+            "error_code": error_code,  # 简洁的错误码
+            "details": app_exc.details,  # 具体错误详情
         },
     )
 
