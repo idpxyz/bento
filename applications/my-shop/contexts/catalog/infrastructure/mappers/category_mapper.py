@@ -1,5 +1,9 @@
 """Category 映射器接口"""
+
 from typing import Protocol
+
+from bento.application.mapper import AutoMapper
+
 from contexts.catalog.domain.category import Category
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 
@@ -18,6 +22,33 @@ class ICategoryMapper(Protocol):
     def to_domain(self, po: CategoryPO) -> Category:
         """持久化对象 -> 领域对象"""
         ...
+
+
+# ============================================================================
+# 实现
+# ============================================================================
+
+
+class CategoryMapper(AutoMapper[Category, CategoryPO]):
+    """Category 映射器实现 - 使用 Bento 框架 AutoMapper"""
+
+    def __init__(self):
+        """初始化 AutoMapper"""
+        super().__init__(
+            domain_type=Category,
+            po_type=CategoryPO,
+        )
+
+        # 忽略审计和元数据字段（由 Interceptor 处理）
+        self.ignore_fields(
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+            "deleted_at",
+            "deleted_by",
+            "version",
+        )
 
 
 # ============================================================================

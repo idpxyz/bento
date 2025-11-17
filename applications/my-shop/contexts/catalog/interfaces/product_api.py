@@ -123,7 +123,6 @@ async def create_product(
         name=request.name,
         description=request.description,
         price=request.price,
-        stock=request.stock,
         category_id=request.category_id,
     )
 
