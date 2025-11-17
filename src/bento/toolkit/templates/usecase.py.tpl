@@ -65,7 +65,7 @@ class {{Action}}{{Name}}UseCase:
         async with self._uow:
             # TODO: 实现业务逻辑
             # 示例（Create 操作）:
-            # from domain.{{name_lower}} import {{Name}}
+            # from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
             # {{name_lower}} = {{Name}}(
             #     id=generate_id(),
             #     name=command.name,

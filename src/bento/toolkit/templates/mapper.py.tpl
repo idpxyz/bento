@@ -1,7 +1,7 @@
 """{{Name}} 映射器接口"""
 from typing import Protocol
-from domain.{{name_lower}} import {{Name}}
-from infrastructure.models.{{name_lower}}_po import {{Name}}PO
+from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
+from contexts.{{context}}.infrastructure.models.{{name_lower}}_po import {{Name}}PO
 
 
 class I{{Name}}Mapper(Protocol):
@@ -25,8 +25,8 @@ class I{{Name}}Mapper(Protocol):
 # ============================================================================
 #
 # from bento.application.mapper import AutoMapper
-# from domain.{{name_lower}} import {{Name}}
-# from infrastructure.models.{{name_lower}}_po import {{Name}}PO
+# from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
+# from contexts.{{context}}.infrastructure.models.{{name_lower}}_po import {{Name}}PO
 #
 # class {{Name}}Mapper(AutoMapper[{{Name}}, {{Name}}PO]):
 #     """{{Name}} 映射器实现 - 使用框架 AutoMapper

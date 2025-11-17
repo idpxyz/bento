@@ -1,6 +1,6 @@
 """{{Name}} 仓储接口"""
 from typing import Protocol
-from domain.{{name_lower}} import {{Name}}
+from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
 
 
 class I{{Name}}Repository(Protocol):
@@ -45,9 +45,9 @@ class I{{Name}}Repository(Protocol):
 # from bento.infrastructure.repository import RepositoryAdapter
 # from bento.persistence.repository import BaseRepository
 # from bento.persistence.interceptor import create_default_chain
-# from domain.{{name_lower}} import {{Name}}
-# from infrastructure.models.{{name_lower}}_po import {{Name}}PO
-# from infrastructure.mappers.{{name_lower}}_mapper import {{Name}}Mapper
+# from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
+# from contexts.{{context}}.infrastructure.models.{{name_lower}}_po import {{Name}}PO
+# from contexts.{{context}}.infrastructure.mappers.{{name_lower}}_mapper import {{Name}}Mapper
 #
 # class {{Name}}Repository(RepositoryAdapter[{{Name}}, {{Name}}PO, str]):
 #     """{{Name}} 仓储实现

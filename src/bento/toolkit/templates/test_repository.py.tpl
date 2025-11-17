@@ -15,7 +15,7 @@ class Test{{Name}}Repository:
     async def repository(self, db_session):
         """仓储实例（需要实现数据库 fixture）"""
         # TODO: 创建实际的仓储实例
-        # from infrastructure.repositories.{{name_lower}}_repository_impl import {{Name}}Repository
+        # from contexts.{{context}}.infrastructure.repositories.{{name_lower}}_repository_impl import {{Name}}Repository
         # return {{Name}}Repository(session=db_session, actor="test-user")
         pytest.skip("需要实现数据库 fixture")
 
