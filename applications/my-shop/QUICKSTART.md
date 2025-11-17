@@ -23,6 +23,9 @@ pip install -e ../../
 ```bash
 # 创建数据库表
 python scripts/init_db.py
+
+# 填充示例数据（可选）
+python scripts/seed_data.py
 ```
 
 ## 🏃 启动服务
@@ -80,6 +83,29 @@ curl -X PUT http://localhost:8000/api/v1/products/{product_id} \
 
 # 删除产品
 curl -X DELETE http://localhost:8000/api/v1/products/{product_id}
+
+# 创建订单
+curl -X POST http://localhost:8000/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "user-123",
+    "items": [
+      {"product_id": "prod-1", "quantity": 2, "unit_price": 5999.00},
+      {"product_id": "prod-2", "quantity": 1, "unit_price": 1899.00}
+    ]
+  }'
+
+# 获取订单列表
+curl http://localhost:8000/api/v1/orders
+
+# 支付订单
+curl -X POST http://localhost:8000/api/v1/orders/{order_id}/pay
+
+# 发货订单
+curl -X POST http://localhost:8000/api/v1/orders/{order_id}/ship
+
+# 取消订单
+curl -X POST http://localhost:8000/api/v1/orders/{order_id}/cancel
 ```
 
 ### 使用 Python requests

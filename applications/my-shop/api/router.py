@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from api.orders import router as orders_router
 from api.products import router as products_router
 
 # Create main API router
@@ -26,11 +27,13 @@ api_router.include_router(
     prefix="/products",
     tags=["products"],
 )
+api_router.include_router(
+    orders_router,
+    prefix="/orders",
+    tags=["orders"],
+)
 
 
 # TODO: Add more routers as needed
-# from api.orders import router as orders_router
-# api_router.include_router(orders_router, prefix="/orders", tags=["orders"])
-#
 # from api.users import router as users_router
 # api_router.include_router(users_router, prefix="/users", tags=["users"])
