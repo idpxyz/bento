@@ -18,6 +18,7 @@ class UpdateProductCommand:
     name: str | None = None
     description: str | None = None
     price: float | None = None
+    category_id: str | None = None  # 可选：更新分类
 
 
 class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
@@ -35,7 +36,12 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
             )
 
         # At least one field must be provided
-        if not command.name and not command.description and not command.price:
+        if (
+            not command.name
+            and not command.description
+            and not command.price
+            and command.category_id is None
+        ):
             raise ApplicationException(
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"reason": "at least one field must be provided"},
@@ -68,7 +74,13 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
             product.description = command.description.strip()
 
         if command.price is not None:
-            product.price = command.price
+            product.change_price(command.price)  # 使用业务方法
+
+        if command.category_id is not None:
+            if command.category_id:
+                product.assign_to_category(command.category_id)
+            else:
+                product.remove_from_category()
 
         # Save changes
         await product_repo.save(product)

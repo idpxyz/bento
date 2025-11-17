@@ -18,8 +18,7 @@ class CreateProductCommand:
     name: str
     description: str
     price: float
-    stock: int = 0
-    category_id: str | None = None
+    category_id: str | None = None  # 可选的分类ID
 
 
 class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
@@ -50,6 +49,7 @@ class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",
             price=command.price,
+            category_id=command.category_id,  # 关联分类
         )
 
         # Persist via repository

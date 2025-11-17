@@ -10,4 +10,6 @@ def product_to_dict(product: Product) -> dict:
         "name": product.name,
         "description": product.description,
         "price": product.price,
+        "category_id": product.category_id,
+        "is_categorized": product.is_categorized(),
     }

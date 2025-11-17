@@ -29,12 +29,11 @@ router = APIRouter()
 
 class CreateProductRequest(BaseModel):
     """Create product request model."""
-
+    
     name: str
     description: str
     price: float
-    stock: int = 0
-    category_id: str | None = None
+    category_id: str | None = None  # 可选的分类ID
 
 
 class UpdateProductRequest(BaseModel):

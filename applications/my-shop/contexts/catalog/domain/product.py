@@ -23,12 +23,27 @@ class Product(AggregateRoot):
     name: str
     description: str
     price: float
+    category_id: str | None = None  # 所属分类（可选）
 
     def __post_init__(self):
         super().__init__(id=self.id)
 
-    # TODO: 在这里添加业务方法
-    # 例如:
-    # def deactivate(self):
-    #     self.is_active = False
-    #     self.add_event(ProductDeactivatedEvent(product_id=self.id))
+    def assign_to_category(self, category_id: str) -> None:
+        """将产品分配到指定分类"""
+        if not category_id:
+            raise ValueError("Category ID cannot be empty")
+        self.category_id = category_id
+
+    def remove_from_category(self) -> None:
+        """从分类中移除产品"""
+        self.category_id = None
+
+    def is_categorized(self) -> bool:
+        """检查产品是否已分类"""
+        return self.category_id is not None
+
+    def change_price(self, new_price: float) -> None:
+        """修改价格（带验证）"""
+        if new_price <= 0:
+            raise ValueError("Price must be greater than 0")
+        self.price = new_price
