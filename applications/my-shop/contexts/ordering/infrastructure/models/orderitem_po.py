@@ -1,33 +1,37 @@
-"""OrderItem 持久化对象（数据库模型）"""
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from datetime import datetime
+"""OrderItem 持久化对象 - 符合 Bento Framework 标准"""
+
+from bento.persistence import (
+    AuditFieldsMixin,
+    Base,
+    OptimisticLockFieldMixin,
+)
+from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Base(DeclarativeBase):
-    """临时 Base 类 - 实际项目应从框架统一的 Base 继承"""
-    pass
+class OrderItemPO(Base, AuditFieldsMixin, OptimisticLockFieldMixin):
+    """OrderItem 持久化对象
 
-
-class OrderItemPO(Base):
-    """OrderItem 数据库表
-
-    持久化对象（PO）仅包含数据结构，不包含业务逻辑。
-    与领域模型分离，通过 Mapper 进行转换。
+    订单项作为 Order 聚合的一部分，不需要软删除。
     """
-    __tablename__: str = "orderitems"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
-    order_id: Mapped[str]
-    product_id: Mapped[str]
-    product_name: Mapped[str]
-    quantity: Mapped[int]
-    unit_price: Mapped[float]
+    __tablename__ = "order_items"
 
-    # 审计字段（拦截器自动填充）
-    created_at: Mapped[datetime | None]
-    created_by: Mapped[str | None]
-    updated_at: Mapped[datetime | None]
-    updated_by: Mapped[str | None]
+    # 主键
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+    # 外键：关联到 Order
+    order_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("orders.id"), nullable=False, index=True
+    )
+
+    # 产品关联（通过 ID 引用，不是直接外键）
+    product_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    product_name: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    # 业务字段
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 
 
 # ============================================================================

@@ -1,31 +1,44 @@
-"""Order 持久化对象（数据库模型）"""
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+"""Order 持久化对象 - 符合 Bento Framework 标准"""
+
 from datetime import datetime
 
+from bento.persistence import (
+    AuditFieldsMixin,
+    Base,
+    OptimisticLockFieldMixin,
+    SoftDeleteFieldsMixin,
+)
+from sqlalchemy import Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column
 
-class Base(DeclarativeBase):
-    """临时 Base 类 - 实际项目应从框架统一的 Base 继承"""
-    pass
 
+class OrderPO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFieldMixin):
+    """Order 持久化对象
 
-class OrderPO(Base):
-    """Order 数据库表
-
-    持久化对象（PO）仅包含数据结构，不包含业务逻辑。
-    与领域模型分离，通过 Mapper 进行转换。
+    继承 Bento Framework 的 Mixins：
+    - AuditFieldsMixin: created_at, updated_at, created_by, updated_by
+    - SoftDeleteFieldsMixin: deleted_at, deleted_by
+    - OptimisticLockFieldMixin: version
     """
-    __tablename__: str = "orders"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
-    customer_id: Mapped[str]
-    total: Mapped[float]
-    status: Mapped[str]
+    __tablename__ = "orders"
 
-    # 审计字段（拦截器自动填充）
-    created_at: Mapped[datetime | None]
-    created_by: Mapped[str | None]
-    updated_at: Mapped[datetime | None]
-    updated_by: Mapped[str | None]
+    # 主键
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+    # 业务字段
+    customer_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    total: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0.0)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+
+    # 时间字段
+    paid_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    shipped_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # 关系：一个订单包含多个订单项
+    # items: Mapped[list["OrderItemPO"]] = relationship(
+    #     "OrderItemPO", back_populates="order", cascade="all, delete-orphan"
+    # )
 
 
 # ============================================================================
