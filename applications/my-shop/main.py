@@ -1,16 +1,13 @@
 """my-shop - Main FastAPI application entry point."""
 
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 
-# Import context routers
-from contexts.catalog.interfaces.category_api import router as categories_router
-from contexts.catalog.interfaces.product_api import router as products_router
-from contexts.identity.interfaces.user_api import router as users_router
-from contexts.ordering.interfaces.order_api import router as orders_router
+# Import router registry
+from shared.api.router_registry import create_api_router
 
 # Import exception handlers
 from shared.exceptions.handlers import (
@@ -50,27 +47,8 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, generic_exception_handler)
 
     # ==================== API 路由聚合 ====================
-    # Create API router
-    api_router = APIRouter()
-
-    # Health check endpoints
-    @api_router.get("/ping")
-    async def ping():
-        """Ping endpoint for testing"""
-        return {"message": "pong"}
-
-    @api_router.get("/health")
-    async def health():
-        """Health check endpoint"""
-        return {"status": "healthy", "service": "my-shop"}
-
-    # Include domain context routers
-    api_router.include_router(products_router, prefix="/products", tags=["products"])
-    api_router.include_router(orders_router, prefix="/orders", tags=["orders"])
-    api_router.include_router(users_router, prefix="/users", tags=["users"])
-    api_router.include_router(categories_router, prefix="/categories", tags=["categories"])
-
-    # Mount API router
+    # Auto-discover and register all context routes
+    api_router = create_api_router()
     app.include_router(api_router, prefix="/api/v1")
 
     return app
@@ -89,10 +67,17 @@ async def root():
     }
 
 
+# Health check endpoints
+@app.get("/ping")
+async def ping():
+    """Ping endpoint for testing"""
+    return {"message": "pong"}
+
+
 @app.get("/health")
-async def health_check():
+async def health():
     """Health check endpoint"""
-    return {"status": "healthy"}
+    return {"status": "healthy", "service": "my-shop"}
 
 
 if __name__ == "__main__":
