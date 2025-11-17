@@ -1,4 +1,4 @@
-"""Product API routes (FastAPI) - Thin Interface Layer"""
+"""Product API routes (FastAPI) - Thin Interface Layer - Complete Version"""
 
 from typing import Annotated, Any
 
@@ -8,8 +8,14 @@ from pydantic import BaseModel
 from contexts.catalog.application.commands import (
     CreateProductCommand,
     CreateProductUseCase,
+    DeleteProductCommand,
+    DeleteProductUseCase,
+    UpdateProductCommand,
+    UpdateProductUseCase,
 )
 from contexts.catalog.application.queries import (
+    GetProductQuery,
+    GetProductUseCase,
     ListProductsQuery,
     ListProductsUseCase,
 )
@@ -29,6 +35,14 @@ class CreateProductRequest(BaseModel):
     price: float
     stock: int = 0
     category_id: str | None = None
+
+
+class UpdateProductRequest(BaseModel):
+    """Update product request model."""
+
+    name: str | None = None
+    description: str | None = None
+    price: float | None = None
 
 
 class ProductResponse(BaseModel):
@@ -68,6 +82,30 @@ async def get_list_products_use_case() -> ListProductsUseCase:
     return ListProductsUseCase(uow)
 
 
+async def get_get_product_use_case() -> GetProductUseCase:
+    """Get get product use case (dependency)."""
+    from api.deps import get_unit_of_work
+
+    uow = await get_unit_of_work()
+    return GetProductUseCase(uow)
+
+
+async def get_update_product_use_case() -> UpdateProductUseCase:
+    """Get update product use case (dependency)."""
+    from api.deps import get_unit_of_work
+
+    uow = await get_unit_of_work()
+    return UpdateProductUseCase(uow)
+
+
+async def get_delete_product_use_case() -> DeleteProductUseCase:
+    """Get delete product use case (dependency)."""
+    from api.deps import get_unit_of_work
+
+    uow = await get_unit_of_work()
+    return DeleteProductUseCase(uow)
+
+
 # ==================== API Routes ====================
 
 
@@ -82,7 +120,6 @@ async def create_product(
     use_case: Annotated[CreateProductUseCase, Depends(get_create_product_use_case)],
 ) -> dict[str, Any]:
     """Create a new product."""
-    # 1. Request → Command
     command = CreateProductCommand(
         name=request.name,
         description=request.description,
@@ -91,10 +128,7 @@ async def create_product(
         category_id=request.category_id,
     )
 
-    # 2. Execute Use Case
     product = await use_case.execute(command)
-
-    # 3. Domain → Response
     return product_to_dict(product)
 
 
@@ -110,20 +144,68 @@ async def list_products(
     category_id: str | None = Query(None),
 ) -> dict[str, Any]:
     """List products with pagination."""
-    # 1. Request → Query
     query = ListProductsQuery(
         page=page,
         page_size=page_size,
         category_id=category_id,
     )
 
-    # 2. Execute Use Case
     result = await use_case.execute(query)
 
-    # 3. Domain → Response
     return {
         "items": [product_to_dict(p) for p in result.products],
         "total": result.total,
         "page": result.page,
         "page_size": result.page_size,
     }
+
+
+@router.get(
+    "/{product_id}",
+    response_model=ProductResponse,
+    summary="Get a product",
+)
+async def get_product(
+    product_id: str,
+    use_case: Annotated[GetProductUseCase, Depends(get_get_product_use_case)],
+) -> dict[str, Any]:
+    """Get a product by ID."""
+    query = GetProductQuery(product_id=product_id)
+    product = await use_case.execute(query)
+    return product_to_dict(product)
+
+
+@router.put(
+    "/{product_id}",
+    response_model=ProductResponse,
+    summary="Update a product",
+)
+async def update_product(
+    product_id: str,
+    request: UpdateProductRequest,
+    use_case: Annotated[UpdateProductUseCase, Depends(get_update_product_use_case)],
+) -> dict[str, Any]:
+    """Update a product."""
+    command = UpdateProductCommand(
+        product_id=product_id,
+        name=request.name,
+        description=request.description,
+        price=request.price,
+    )
+
+    product = await use_case.execute(command)
+    return product_to_dict(product)
+
+
+@router.delete(
+    "/{product_id}",
+    status_code=204,
+    summary="Delete a product",
+)
+async def delete_product(
+    product_id: str,
+    use_case: Annotated[DeleteProductUseCase, Depends(get_delete_product_use_case)],
+) -> None:
+    """Delete a product (soft delete)."""
+    command = DeleteProductCommand(product_id=product_id)
+    await use_case.execute(command)
