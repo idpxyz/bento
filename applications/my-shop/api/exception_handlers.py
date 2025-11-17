@@ -59,23 +59,14 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         f"Application exception for {request.url.path}: {app_exc.error_code} - {app_exc.details}",
     )
 
-    # 提取错误码（只返回 code 字符串，不是整个对象）
-    error_code = (
-        app_exc.error_code.code if hasattr(app_exc.error_code, "code") else str(app_exc.error_code)
-    )
-
-    # 获取错误消息（使用框架自带的消息）
-    error_message = (
-        app_exc.error_code.message if hasattr(app_exc.error_code, "message") else str(app_exc)
-    )
-
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
-            "success": False,
-            "message": error_message,
-            "error_code": error_code,
+            "error": "Application Error",
+            "message": str(app_exc),
+            "error_code": str(app_exc.error_code),
             "details": app_exc.details,
+            "path": str(request.url.path),
         },
     )
 
