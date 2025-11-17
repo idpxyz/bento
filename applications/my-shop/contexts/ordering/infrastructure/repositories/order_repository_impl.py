@@ -9,6 +9,12 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from contexts.ordering.domain.order import Order
+from contexts.ordering.infrastructure.mappers.order_mapper_impl import (
+    OrderItemMapper,
+    OrderMapper,
+)
+from contexts.ordering.infrastructure.models.order_po import OrderPO
+from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
 
 class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
@@ -47,6 +53,8 @@ class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
         self.actor = actor
 
         # Get current UoW from ContextVar for automatic tracking
+        from bento.persistence.uow import _current_uow
+
         self._uow = _current_uow.get()
 
     async def get(self, order_id: str) -> Order | None:
