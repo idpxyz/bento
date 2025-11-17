@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from bento.domain.domain_event import DomainEvent
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class OrderCreated(DomainEvent):
     """OrderCreated 事件
 
@@ -19,11 +19,10 @@ class OrderCreated(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    name: str = "ordercreated"
+    name: str = "order_created"
 
-    # TODO: 添加事件字段
-    # 例如:
-    # ordercreated_id: str
-    # user_id: str
-    # old_value: str
-    # new_value: str
+    # 事件字段
+    order_id: str
+    customer_id: str
+    total: float
+    item_count: int
