@@ -33,7 +33,7 @@ class CategoryPO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFi
     # 业务字段
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    parent_id: Mapped[str] = mapped_column(String(36), nullable=True)
+    parent_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
 
 # ============================================================================

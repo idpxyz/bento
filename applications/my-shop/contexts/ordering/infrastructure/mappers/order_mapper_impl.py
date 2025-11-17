@@ -1,65 +1,62 @@
 """Order Mapper 实现 - 处理 Order + OrderItem 聚合映射"""
 
-from datetime import datetime
+from bento.application.mapper import AutoMapper
 
-from contexts.ordering.domain.order import Order, OrderStatus
+from contexts.ordering.domain.order import Order
 from contexts.ordering.domain.orderitem import OrderItem
 from contexts.ordering.infrastructure.models.order_po import OrderPO
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
 
-class OrderMapper:
-    """Order Mapper - 手动实现聚合映射
-    
-    由于 Order 包含 OrderItem 集合，需要自定义映射逻辑。
+class OrderMapper(AutoMapper[Order, OrderPO]):
+    """Order Mapper - 使用 Bento AutoMapper
+
+    AutoMapper 自动处理：
+    - 同名字段映射
+    - OrderStatus enum 转换
+    - 审计字段由 Interceptor 处理（ignored）
+
+    注意：items 集合需要在 Repository 层单独处理
     """
-    
-    def map(self, domain: Order) -> OrderPO:
-        """领域对象 -> 持久化对象"""
-        po = OrderPO(
-            id=domain.id,
-            customer_id=domain.customer_id,
-            total=domain.total,
-            status=domain.status.value if isinstance(domain.status, OrderStatus) else domain.status,
-            paid_at=domain.paid_at,
-            shipped_at=domain.shipped_at,
+
+    def __init__(self):
+        super().__init__(
+            domain_type=Order,
+            po_type=OrderPO,
         )
-        # 注意：OrderItem 需要单独保存，通过 Repository 处理
-        return po
-    
-    def map_reverse(self, po: OrderPO) -> Order:
-        """持久化对象 -> 领域对象"""
-        # 注意：这里不包含 items，需要通过 Repository 加载
-        order = Order(
-            id=po.id,
-            customer_id=po.customer_id,
-            items=[],  # 稍后填充
-            total=po.total,
-            status=OrderStatus(po.status),
-            created_at=po.created_at,
-            paid_at=po.paid_at,
-            shipped_at=po.shipped_at,
+
+        # 忽略审计和元数据字段（由 Interceptor 自动处理）
+        self.ignore_fields(
+            "created_at",
+            "created_by",
+            "updated_at",
+            "updated_by",
+            "version",
+            "deleted_at",
+            "deleted_by",
         )
-        return order
-    
-    def map_item(self, item: OrderItem) -> OrderItemPO:
-        """OrderItem -> OrderItemPO"""
-        return OrderItemPO(
-            id=item.id,
-            order_id=item.order_id,
-            product_id=item.product_id,
-            product_name=item.product_name,
-            quantity=item.quantity,
-            unit_price=item.unit_price,
+
+        # items 集合在 Repository 层处理
+        self.ignore_fields("items")
+
+
+# OrderItem Mapper（简单映射，审计字段由 Interceptor 处理）
+class OrderItemMapper(AutoMapper[OrderItem, OrderItemPO]):
+    """OrderItem Mapper - 使用 AutoMapper"""
+
+    def __init__(self):
+        super().__init__(
+            domain_type=OrderItem,
+            po_type=OrderItemPO,
         )
-    
-    def map_item_reverse(self, po: OrderItemPO) -> OrderItem:
-        """OrderItemPO -> OrderItem"""
-        return OrderItem(
-            id=po.id,
-            order_id=po.order_id,
-            product_id=po.product_id,
-            product_name=po.product_name,
-            quantity=po.quantity,
-            unit_price=po.unit_price,
+
+        # 忽略审计字段
+        self.ignore_fields(
+            "created_at",
+            "created_by",
+            "updated_at",
+            "updated_by",
+            "version",
+            "deleted_at",
+            "deleted_by",
         )
