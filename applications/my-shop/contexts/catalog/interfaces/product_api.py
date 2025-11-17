@@ -2,6 +2,7 @@
 
 from typing import Annotated, Any
 
+from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
@@ -20,7 +21,7 @@ from contexts.catalog.application.queries import (
     ListProductsUseCase,
 )
 from contexts.catalog.interfaces.presenters import product_to_dict
-from bento.persistence.uow import SQLAlchemyUnitOfWork
+from shared.infrastructure.dependencies import get_uow
 
 router = APIRouter()
 
@@ -68,7 +69,7 @@ class ListProductsResponse(BaseModel):
 
 async def get_create_product_use_case() -> CreateProductUseCase:
     """Get create product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work, get_uow
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateProductUseCase(uow)

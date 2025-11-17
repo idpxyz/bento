@@ -11,6 +11,7 @@ All business logic is in the Application layer (Use Cases).
 
 from typing import Annotated, Any
 
+from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, EmailStr
 
@@ -29,7 +30,7 @@ from contexts.identity.application.queries import (
     ListUsersUseCase,
 )
 from contexts.identity.interfaces.presenters import user_to_dict
-from bento.persistence.uow import SQLAlchemyUnitOfWork
+from shared.infrastructure.dependencies import get_uow
 
 # Create router
 router = APIRouter()
@@ -74,7 +75,7 @@ class ListUsersResponse(BaseModel):
 
 async def get_create_user_use_case() -> CreateUserUseCase:
     """Get create user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work, get_uow
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateUserUseCase(uow)
