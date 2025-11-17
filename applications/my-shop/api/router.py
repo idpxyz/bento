@@ -48,3 +48,9 @@ api_router.include_router(
     prefix="/categories",
     tags=["categories"],
 )
+
+api_router.include_router(
+    orders_router,
+    prefix="/orders",
+    tags=["orders"],
+)

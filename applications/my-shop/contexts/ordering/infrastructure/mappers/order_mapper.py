@@ -1,5 +1,7 @@
 """Order 映射器接口"""
+
 from typing import Protocol
+
 from contexts.ordering.domain.order import Order
 from contexts.ordering.infrastructure.models.order_po import OrderPO
 

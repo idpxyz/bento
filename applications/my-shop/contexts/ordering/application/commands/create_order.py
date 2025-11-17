@@ -73,13 +73,23 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
 
     async def handle(self, command: CreateOrderCommand) -> Order:
         """Handle command execution."""
-        # TODO: 验证产品是否存在
-        # from contexts.catalog.domain.product import Product
-        # product_repo = self.uow.repository(Product)
-        # for item in command.items:
-        #     product = await product_repo.get(item.product_id)
-        #     if not product:
-        #         raise ApplicationException(...)
+        # P2: 验证产品是否存在
+        from contexts.catalog.infrastructure.repositories.product_repository_impl import (
+            ProductRepository,
+        )
+
+        product_repo = ProductRepository(self.uow._session)  # type: ignore
+
+        for item in command.items:
+            product = await product_repo.get(item.product_id)  # type: ignore
+            if not product:
+                raise ApplicationException(
+                    error_code=CommonErrors.NOT_FOUND,
+                    details={"resource": "product", "id": item.product_id},
+                )
+            # TODO P2: 检查库存充足
+            # if product.stock < item.quantity:
+            #     raise ApplicationException(...)
 
         # 创建订单聚合根
         order_id = str(ID.generate())
@@ -110,8 +120,12 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
             )
         )
 
-        # 持久化（简化版：暂不处理OrderItem的持久化，待完整实现）
-        # order_repo = self.uow.repository(Order)
-        # await order_repo.save(order)
+        # 持久化（使用完整的聚合Repository）
+        from contexts.ordering.infrastructure.repositories.order_repository_impl import (
+            OrderRepository,
+        )
+
+        order_repo = OrderRepository(self.uow._session)  # type: ignore
+        await order_repo.save(order)
 
         return order
