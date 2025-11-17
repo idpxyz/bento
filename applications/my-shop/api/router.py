@@ -1,5 +1,8 @@
 """API Router - Aggregate all routes here"""
+
 from fastapi import APIRouter
+
+from api.products import router as products_router
 
 # Create main API router
 api_router = APIRouter()
@@ -11,10 +14,23 @@ async def ping():
     return {"message": "pong"}
 
 
-# TODO: Include module-specific routers
-# Example:
+@api_router.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "my-shop"}
+
+
+# Include domain-specific routers
+api_router.include_router(
+    products_router,
+    prefix="/products",
+    tags=["products"],
+)
+
+
+# TODO: Add more routers as needed
+# from api.orders import router as orders_router
+# api_router.include_router(orders_router, prefix="/orders", tags=["orders"])
+#
 # from api.users import router as users_router
 # api_router.include_router(users_router, prefix="/users", tags=["users"])
-#
-# from api.products import router as products_router
-# api_router.include_router(products_router, prefix="/products", tags=["products"])

@@ -1,42 +1,105 @@
-"""API Dependencies - Dependency Injection"""
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+"""API Dependencies - Uses Bento Framework
+
+This module provides FastAPI dependencies using Bento's infrastructure:
+- Database session management
+- Unit of Work pattern
+- Repository access
+"""
+
+from collections.abc import AsyncGenerator
+
+from bento.infrastructure.database import create_async_engine_from_config
+from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+from bento.persistence.uow import SQLAlchemyUnitOfWork
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from config import settings
 
-# Database engine
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-)
+# Create database engine using Bento's configuration
+db_config = settings.get_database_config()
+engine = create_async_engine_from_config(db_config)
 
-# Session factory
-AsyncSessionLocal = async_sessionmaker(
+# Create session factory
+session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
+    autoflush=False,
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Database session dependency.
+    Get database session.
 
-    Usage in FastAPI:
-        @router.get("/users")
-        async def get_users(db: AsyncSession = Depends(get_db)):
+    Usage:
+        @router.get("/items")
+        async def get_items(session: AsyncSession = Depends(get_db_session)):
             ...
     """
-    async with AsyncSessionLocal() as session:
+    async with session_factory() as session:
         try:
             yield session
         finally:
             await session.close()
 
 
-# TODO: Add more dependencies as needed
-# Example:
-# def get_current_user(token: str = Depends(oauth2_scheme)):
-#     ...
-#
-# def get_repository(db: AsyncSession = Depends(get_db)):
-#     return UserRepository(session=db, actor="system")
+async def get_uow(
+    session: AsyncSession = Depends(get_db_session),
+) -> AsyncGenerator[SQLAlchemyUnitOfWork, None]:
+    """
+    Get Unit of Work with Outbox pattern support.
+
+    The UnitOfWork manages:
+    - Transaction boundaries
+    - Repository lifecycle
+    - Event collection and publishing
+
+    Usage:
+        @router.post("/products")
+        async def create_product(
+            data: ProductCreate,
+            uow: SQLAlchemyUnitOfWork = Depends(get_uow)
+        ):
+            async with uow:
+                # Register repositories
+                from contexts.catalog.infrastructure.repositories.product_repository import ProductRepository
+                uow.register_repository(Product, lambda s: ProductRepository(s))
+
+                # Use repository
+                repo = uow.repository(Product)
+                product = Product.create(...)
+                await repo.save(product)
+                uow.track(product)
+
+                # Commit (saves changes + publishes events)
+                await uow.commit()
+    """
+    outbox = SqlAlchemyOutbox(session)
+    uow = SQLAlchemyUnitOfWork(session, outbox)
+
+    try:
+        yield uow
+    finally:
+        # Cleanup is handled by UnitOfWork's __aexit__
+        pass
+
+
+# Convenience function to get specific repositories
+# You can add more as needed
+
+# def get_product_repository(
+#     session: AsyncSession = Depends(get_db_session)
+# ) -> ProductRepository:
+#     """Get Product repository."""
+#     from contexts.catalog.infrastructure.repositories.product_repository import ProductRepository
+#     return ProductRepository(session)
+
+
+# def get_order_repository(
+#     session: AsyncSession = Depends(get_db_session)
+# ) -> OrderRepository:
+#     """Get Order repository."""
+#     from contexts.ordering.infrastructure.repositories.order_repository import OrderRepository
+#     return OrderRepository(session)

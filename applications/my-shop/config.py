@@ -1,4 +1,9 @@
-"""Configuration Management"""
+"""Configuration Management
+
+Uses Bento Framework's DatabaseConfig for database settings.
+"""
+
+from bento.infrastructure.database import DatabaseConfig
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,8 +15,11 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = True
 
-    # Database
+    # Database - delegated to Bento's DatabaseConfig
     database_url: str = "sqlite+aiosqlite:///./my_shop.db"
+    database_echo: bool = True
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
 
     # API
     api_host: str = "0.0.0.0"
@@ -37,6 +45,15 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    def get_database_config(self) -> DatabaseConfig:
+        """Get Bento DatabaseConfig instance from settings."""
+        return DatabaseConfig(
+            url=self.database_url,
+            echo=self.database_echo,
+            pool_size=self.database_pool_size,
+            max_overflow=self.database_max_overflow,
+        )
 
 
 # Global settings instance
