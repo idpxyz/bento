@@ -28,16 +28,16 @@ class Repository[T](Protocol):
         """
         ...
 
-    async def find_by_id(self, id: EntityId) -> T | None:
-        """Alias for get() with more explicit naming.
+    # async def find_by_id(self, id: EntityId) -> T | None:
+    #     """Alias for get() with more explicit naming.
 
-        Args:
-            id: Entity identifier
+    #     Args:
+    #         id: Entity identifier
 
-        Returns:
-            Entity if found, None otherwise
-        """
-        ...
+    #     Returns:
+    #         Entity if found, None otherwise
+    #     """
+    #     ...
 
     async def save(self, entity: T) -> None:
         """Persist entity (create or update).

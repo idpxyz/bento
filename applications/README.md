@@ -76,15 +76,15 @@ uvicorn applications.ecommerce.main:app --reload
 ```python
 class Order(AggregateRoot):
     """订单聚合根"""
-    
+
     def pay(self):
         # 业务规则
         if not self.items:
             raise DomainException(...)
-        
+
         # 状态变更
         self.status = OrderStatus.PAID
-        
+
         # 发布事件
         self.add_event(OrderPaid(...))
 ```

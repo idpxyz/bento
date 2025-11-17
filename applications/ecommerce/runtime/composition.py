@@ -4,6 +4,7 @@ This module wires up all dependencies for the e-commerce application.
 Uses Bento's database infrastructure for configuration and lifecycle management.
 """
 
+import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -16,6 +17,7 @@ from bento.infrastructure.database import (
     cleanup_database,
     create_async_engine_from_config,
     create_async_session_factory,
+    drop_all_tables,
     init_database,
 )
 from bento.persistence import Base
@@ -164,8 +166,15 @@ async def init_db() -> None:
     # Import framework models (Outbox) - must import models to register them
     from bento.persistence.sqlalchemy.base import Base as FrameworkBase
 
-    # Initialize application tables
-    await init_database(engine, Base, check_tables=True)
+    # In test mode, reset the application schema to avoid stale columns
+    reset_flag = os.getenv("BENTO_TEST_RESET_DB")
+    is_pytest = "PYTEST_CURRENT_TEST" in os.environ
+    if (reset_flag and reset_flag.lower() in {"1", "true", "yes"}) or is_pytest:
+        await drop_all_tables(engine, Base)
+        await init_database(engine, Base, check_tables=False)
+    else:
+        # Initialize application tables (idempotent create if empty)
+        await init_database(engine, Base, check_tables=True)
 
     # Initialize framework tables (Outbox) - use check_tables=False to force creation
     await init_database(engine, FrameworkBase, check_tables=False)

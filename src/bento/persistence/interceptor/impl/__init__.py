@@ -7,6 +7,7 @@ This module provides ready-to-use interceptors for common cross-cutting concerns
 """
 
 from .audit import AuditInterceptor
+from .cache import CacheInterceptor
 from .optimistic_lock import OptimisticLockException, OptimisticLockInterceptor
 from .soft_delete import SoftDeleteInterceptor
 
@@ -18,4 +19,6 @@ __all__ = [
     # Optimistic Lock
     "OptimisticLockInterceptor",
     "OptimisticLockException",
+    # Cache
+    "CacheInterceptor",
 ]

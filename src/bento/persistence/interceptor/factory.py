@@ -6,8 +6,15 @@ interceptor chains based on configuration.
 
 from typing import Any, TypeVar
 
+from bento.application.ports.cache import Cache
+
 from .core import Interceptor, InterceptorChain
-from .impl import AuditInterceptor, OptimisticLockInterceptor, SoftDeleteInterceptor
+from .impl import (
+    AuditInterceptor,
+    CacheInterceptor,
+    OptimisticLockInterceptor,
+    SoftDeleteInterceptor,
+)
 
 T = TypeVar("T")
 
@@ -28,6 +35,10 @@ class InterceptorConfig:
         enable_audit: bool = True,
         enable_soft_delete: bool = True,
         enable_optimistic_lock: bool = True,
+        enable_cache: bool = False,
+        cache: Cache | None = None,
+        cache_ttl_seconds: int = 300,
+        cache_prefix: str | None = None,
         actor: str | None = None,
     ) -> None:
         """Initialize interceptor configuration.
@@ -41,6 +52,10 @@ class InterceptorConfig:
         self.enable_audit = enable_audit
         self.enable_soft_delete = enable_soft_delete
         self.enable_optimistic_lock = enable_optimistic_lock
+        self.enable_cache = enable_cache
+        self.cache = cache
+        self.cache_ttl_seconds = cache_ttl_seconds
+        self.cache_prefix = cache_prefix or ""
         self.actor = actor or "system"
 
 
@@ -88,6 +103,16 @@ class InterceptorFactory:
         interceptors: list[Interceptor[Any]] = []
 
         # Add standard interceptors based on configuration
+        if self._config.enable_cache and self._config.cache:
+            interceptors.append(
+                CacheInterceptor(
+                    self._config.cache,
+                    ttl=self._config.cache_ttl_seconds,
+                    enabled=True,
+                    prefix=self._config.cache_prefix,
+                )
+            )
+
         if self._config.enable_audit:
             interceptors.append(AuditInterceptor(actor=self._config.actor))
 

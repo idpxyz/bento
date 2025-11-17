@@ -127,6 +127,7 @@ from .factory import (
 # Standard implementations
 from .impl import (
     AuditInterceptor,
+    CacheInterceptor,
     OptimisticLockException,
     OptimisticLockInterceptor,
     SoftDeleteInterceptor,
@@ -145,6 +146,7 @@ __all__ = [
     "SoftDeleteInterceptor",
     "OptimisticLockInterceptor",
     "OptimisticLockException",
+    "CacheInterceptor",
     # Factory
     "InterceptorFactory",
     "InterceptorConfig",

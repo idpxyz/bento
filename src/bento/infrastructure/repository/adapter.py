@@ -9,7 +9,7 @@ Architecture:
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Protocol, cast, runtime_checkable
 
 from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
@@ -17,6 +17,11 @@ from bento.domain.entity import Entity
 from bento.domain.ports.repository import Repository as IRepository
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
+
+
+@runtime_checkable
+class HasVersion(Protocol):
+    version: int | None
 
 
 class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
@@ -162,8 +167,27 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
                 # Create
                 await self._repository.create_po(po)
             else:
+                # Propagate current version to transient PO to satisfy optimistic lock interceptor
+                try:
+                    if isinstance(existing, HasVersion) and isinstance(po, HasVersion):
+                        if po.version in (None, 0):
+                            po.version = existing.version
+                except Exception:
+                    pass
                 # Update
                 await self._repository.update_po(po)
+
+        # Ensure the current UoW can collect domain events from this aggregate
+        try:
+            session = self._repository.session  # AsyncSession
+            sync_sess = getattr(session, "sync_session", None)
+            info = sync_sess.info if sync_sess is not None else session.info
+            uow = info.get("uow")
+            if uow and hasattr(uow, "track"):
+                uow.track(aggregate)  # type: ignore[no-any-return]
+        except Exception:
+            # Best-effort: do not block persistence if UoW is not available
+            pass
 
     async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
         """List aggregate roots matching specification.

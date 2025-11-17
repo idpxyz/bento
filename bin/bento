@@ -1,0 +1,10 @@
+#!/bin/bash
+# Bento CLI 快捷脚本
+# 用法: bento gen module Product --fields "name:str,price:float"
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BENTO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+export PYTHONPATH="${BENTO_ROOT}/src"
+
+python3 -m bento.toolkit.cli "$@"

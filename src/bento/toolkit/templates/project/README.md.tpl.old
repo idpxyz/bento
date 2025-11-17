@@ -1,0 +1,159 @@
+# {{project_name}}
+
+{{description}}
+
+Generated with [Bento Framework](https://github.com/bentoml/bento) - A Domain-Driven Design framework for Python.
+
+## 🚀 Quick Start
+
+### 1. Setup Environment
+
+```bash
+# Create and activate virtual environment (recommended: use uv)
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Or use uv (faster)
+uv venv
+source .venv/bin/activate
+
+# Install dependencies
+uv pip install -e ".[dev]"
+# Or: pip install -e ".[dev]"
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+### 2. Database Setup
+
+```bash
+# Initialize Alembic migrations
+alembic revision --autogenerate -m "Initial migration"
+
+# Apply migrations
+alembic upgrade head
+```
+
+### 3. Run Application
+
+```bash
+# Development mode (with auto-reload)
+uvicorn main:app --reload
+
+# Production mode
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Visit: http://localhost:8000/docs for API documentation
+
+## 📁 Project Structure
+
+```
+{{project_slug}}/
+├── domain/                    # Domain Layer (Business Logic)
+│   ├── events/               # Domain Events
+│   └── __init__.py
+├── application/               # Application Layer (Use Cases)
+│   ├── usecases/
+│   └── __init__.py
+├── infrastructure/            # Infrastructure Layer (Technical Details)
+│   ├── models/               # Database Models (PO)
+│   ├── mappers/              # Domain ↔ DB Mappers
+│   ├── repositories/         # Repository Implementations
+│   └── __init__.py
+├── api/                       # Interface Layer (HTTP/REST)
+│   ├── deps.py               # Dependency Injection
+│   ├── router.py             # API Routes
+│   └── __init__.py
+├── tests/                     # Tests
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+├── main.py                    # Application Entry Point
+├── config.py                  # Configuration
+└── pyproject.toml            # Project Configuration
+```
+
+## 🛠️ Development
+
+### Generate New Module
+
+```bash
+# Generate a complete DDD module (aggregate + events + repository + use case + tests)
+/path/to/bento/bin/bento-gen gen module Product \
+  --fields "name:str,price:float,stock:int" \
+  --output .
+
+# Generate individual components
+/path/to/bento/bin/bento-gen gen usecase UpdateProduct --output .
+/path/to/bento/bin/bento-gen gen event ProductDeactivated --output .
+```
+
+### Run Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run unit tests only
+pytest -m unit
+
+# Run with coverage
+pytest --cov --cov-report=html
+
+# Run specific test file
+pytest tests/unit/domain/test_product.py
+```
+
+### Code Quality
+
+```bash
+# Format code
+ruff format .
+
+# Lint code
+ruff check .
+
+# Type check
+mypy .
+```
+
+## 🎯 Next Steps
+
+1. **Define Your Domain**
+   - Create aggregates in `domain/`
+   - Define business rules and invariants
+   - Emit domain events for important state changes
+
+2. **Implement Use Cases**
+   - Create command handlers in `application/usecases/`
+   - Orchestrate domain objects
+   - Handle transactions with UnitOfWork
+
+3. **Setup Infrastructure**
+   - Implement repositories in `infrastructure/repositories/`
+   - Create mappers for domain ↔ persistence conversion
+   - Configure database connections
+
+4. **Build API**
+   - Define routes in `api/router.py`
+   - Setup dependency injection in `api/deps.py`
+   - Add request/response DTOs
+
+5. **Write Tests**
+   - Unit tests for domain logic
+   - Integration tests for repositories
+   - E2E tests for complete workflows
+
+## 📚 Resources
+
+- [Bento Framework Documentation](https://github.com/bentoml/bento)
+- [Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+
+## 📝 License
+
+MIT

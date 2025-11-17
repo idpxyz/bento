@@ -55,7 +55,7 @@ class DatabaseConfig(BaseSettings):
 
     # Basic connection settings
     url: str = Field(
-        default="sqlite+aiosqlite:///./bento.db",
+        default="sqlite+aiosqlite:///./app.db",
         description="Database connection URL (e.g., postgresql+asyncpg://user:pass@host/db)",
     )
     echo: bool = Field(

@@ -13,9 +13,9 @@ Based on Legend system's projector architecture with:
 
 Architecture:
     Database (Outbox Table)
-        �?(poll)
+        ↓ (poll)
     OutboxProjector
-        �?(publish)
+        ↓ (publish)
     MessageBus (Pulsar/Kafka/Redis)
 
 Design highlights:
@@ -56,7 +56,7 @@ class OutboxProjector:
     This projector implements the Transactional Outbox Pattern with multi-tenant support:
     1. Polls Outbox table for pending events (filtered by tenant_id)
     2. Publishes events to MessageBus in batches
-    3. Updates event status (NEW �?SENT/ERR)
+    3. Updates event status (NEW → SENT/ERR)
 
     Features:
     - Multi-tenant shard support (one projector instance per tenant)

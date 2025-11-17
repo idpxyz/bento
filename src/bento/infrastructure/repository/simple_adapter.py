@@ -164,8 +164,8 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         Returns:
             First matching aggregate root or None
         """
-        page = Page.create(items=[], total=0, page=1, size=1)
-        limited_spec = specification.with_page(page)
+        page_params = PageParams(page=1, size=1)
+        limited_spec = specification.with_page(page_params)
         results = await self._repository.query_po_by_spec(limited_spec)
         return results[0] if results else None
 
@@ -201,8 +201,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
             return Page.create(items=[], total=0, page=1, size=page_params.size)
 
         # Get page of results
-        page = Page.create(items=[], total=0, page=page_params.page, size=page_params.size)
-        paged_spec = specification.with_page(page)
+        paged_spec = specification.with_page(page_params)
         items = await self._repository.query_po_by_spec(paged_spec)
 
         return Page.create(

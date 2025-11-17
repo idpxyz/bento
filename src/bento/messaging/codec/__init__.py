@@ -9,11 +9,13 @@ Available Codecs:
 - ProtobufCodec: Protobuf serialization (efficient) - TODO
 """
 
-from bento.messaging.codec.base import MessageCodec
-from bento.messaging.codec.json import JsonCodec
+import json
 
-__all__ = [
-    "MessageCodec",
-    "JsonCodec",
-]
+# Simple wrappers for quick JSON encode/decode usage
+encode = json.dumps
+decode = json.loads
 
+# Re-export JsonCodec from submodule
+from .json import JsonCodec  # noqa: E402,F401
+
+__all__ = ["encode", "decode", "JsonCodec"]

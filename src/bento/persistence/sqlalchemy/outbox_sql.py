@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy import JSON, TIMESTAMP, Index, Integer, String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -188,14 +188,14 @@ class SqlAlchemyOutbox(Outbox):
 
     async def mark_published(self, id: str) -> None:
         """Mark event as successfully published."""
-        q = select(OutboxRecord).where(OutboxRecord.id == UUID(id))
+        q = select(OutboxRecord).where(OutboxRecord.id == id)
         r = (await self.session.execute(q)).scalar_one_or_none()
         if r:
             r.status = "SENT"
 
     async def mark_failed(self, id: str) -> None:
         """Mark event as failed after max retries."""
-        q = select(OutboxRecord).where(OutboxRecord.id == UUID(id))
+        q = select(OutboxRecord).where(OutboxRecord.id == id)
         r = (await self.session.execute(q)).scalar_one_or_none()
         if r:
             r.retry_cnt += 1
