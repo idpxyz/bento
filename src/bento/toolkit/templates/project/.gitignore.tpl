@@ -27,7 +27,13 @@ ENV/
 env/
 
 # IDEs
-.vscode/
+# VS Code - 排除个人配置，保留项目配置
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
 .idea/
 *.swp
 *.swo

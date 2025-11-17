@@ -117,25 +117,27 @@ def generate_po(name: str, fields, output_dir: pathlib.Path):
     )
 
 
-def generate_mapper(name: str, output_dir: pathlib.Path):
+def generate_mapper(name: str, output_dir: pathlib.Path, context: str = "shared"):
     return generate_file(
         "mapper.py.tpl",
         output_dir / "infrastructure" / "mappers" / f"{name.lower()}_mapper.py",
         Name=name,
         name_lower=name.lower(),
+        context=context.lower(),
     )
 
 
-def generate_repository(name: str, output_dir: pathlib.Path):
+def generate_repository(name: str, output_dir: pathlib.Path, context: str = "shared"):
     return generate_file(
         "repository.py.tpl",
         output_dir / "infrastructure" / "repositories" / f"{name.lower()}_repository.py",
         Name=name,
         name_lower=name.lower(),
+        context=context.lower(),
     )
 
 
-def generate_usecase(name: str, action: str, output_dir: pathlib.Path):
+def generate_usecase(name: str, action: str, output_dir: pathlib.Path, context: str = "shared"):
     return generate_file(
         "usecase.py.tpl",
         output_dir / "application" / "usecases" / f"{action.lower()}_{name.lower()}.py",
@@ -143,6 +145,7 @@ def generate_usecase(name: str, action: str, output_dir: pathlib.Path):
         Action=action,
         name_lower=name.lower(),
         action_lower=action.lower(),
+        context=context.lower(),
     )
 
 
@@ -216,6 +219,18 @@ def generate_project_scaffold(project_name: str, output_dir: pathlib.Path, descr
     generate_file("project/pytest.ini.tpl", project_dir / "pytest.ini", **ctx)
     generate_file("project/README.md.tpl", project_dir / "README.md", **ctx)
     generate_file("project/alembic.ini.tpl", project_dir / "alembic.ini", **ctx)
+    generate_file("project/Makefile.tpl", project_dir / "Makefile", **ctx)
+
+    # 生成 VS Code 配置
+    print("\n🔧 Generating VS Code configuration...\n")
+    generate_file(
+        "project/vscode/extensions.json.tpl", project_dir / ".vscode" / "extensions.json", **ctx
+    )
+    generate_file(
+        "project/vscode/settings.json.tpl", project_dir / ".vscode" / "settings.json", **ctx
+    )
+    generate_file("project/vscode/launch.json.tpl", project_dir / ".vscode" / "launch.json", **ctx)
+    generate_file("project/vscode/tasks.json.tpl", project_dir / ".vscode" / "tasks.json", **ctx)
 
     # 生成应用代码
     print("\n🏗️  Generating application structure...\n")
@@ -285,21 +300,48 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
     # Modular Monolith: contexts/<context-name>/
     base_dir = output_dir / "contexts" / context.lower()
 
+    # 创建上下文目录结构及 __init__.py 文件
+    print("📁 Creating context directory structure...\n")
+    context_dirs = [
+        base_dir,
+        base_dir / "domain",
+        base_dir / "domain" / "events",
+        base_dir / "application",
+        base_dir / "application" / "usecases",
+        base_dir / "infrastructure",
+        base_dir / "infrastructure" / "models",
+        base_dir / "infrastructure" / "mappers",
+        base_dir / "infrastructure" / "repositories",
+    ]
+    for d in context_dirs:
+        d.mkdir(parents=True, exist_ok=True)
+        init_file = d / "__init__.py"
+        if not init_file.exists():
+            # 为每个目录创建带有文档字符串的 __init__.py
+            layer_name = (
+                d.name.capitalize() if d != base_dir else f"{context.capitalize()} 限界上下文"
+            )
+            init_file.write_text(f'"""{layer_name}"""\n', encoding="utf-8")
+            print(f"✓ Created: {init_file}")
+
     field_names = [f[0] for f in fields]
     if "id" not in field_names:
         fields.insert(0, ("id", "str"))
 
     # 生成领域层代码
+    print("\n📦 Generating domain layer...\n")
     generate_aggregate(name, fields, base_dir)
     generate_event(name + "Created", base_dir)
 
     # 生成基础设施层代码
+    print("\n🏗️  Generating infrastructure layer...\n")
     generate_po(name, fields, base_dir)
-    generate_mapper(name, base_dir)
-    generate_repository(name, base_dir)
+    generate_mapper(name, base_dir, context)
+    generate_repository(name, base_dir, context)
 
     # 生成应用层代码
-    generate_usecase(name, "Create", base_dir)
+    print("\n⚙️  Generating application layer...\n")
+    generate_usecase(name, "Create", base_dir, context)
 
     # 生成测试代码（TDD）- 按上下文组织
     print("\n📝 Generating tests...\n")
@@ -348,30 +390,130 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
 
 def main():
     """CLI 入口点函数"""
+
+    # 主帮助文本
+    epilog = """
+Examples:
+  # Initialize a new project
+  bento init my-shop --description "E-commerce application"
+
+  # Generate a complete module (aggregate + repository + use cases + tests)
+  bento gen module Product --context catalog --fields "name:str,price:float,stock:int"
+
+  # Generate individual components
+  bento gen event OrderCreated --output ./my-project
+  bento gen aggregate Order --fields "id:str,status:str" --output ./my-project
+
+  # Generate in specific context
+  bento gen module User --context identity --fields "email:str,name:str"
+
+Architecture:
+  Bento follows Domain-Driven Design (DDD) and Modular Monolith architecture.
+  Projects are organized by bounded contexts, each containing:
+    - domain/      Domain layer (aggregates, entities, events)
+    - application/ Application layer (use cases, DTOs)
+    - infrastructure/ Infrastructure layer (repositories, mappers)
+
+Documentation:
+  https://github.com/idpxyz/bento
+
+Version: 0.1.0
+"""
+
     parser = argparse.ArgumentParser(
         prog="bento",
-        description="Bento Framework - Code Generator",
+        description="🍱 Bento Framework - Domain-Driven Design Code Generator\n\n"
+        "Generate production-ready DDD projects with Modular Monolith architecture.",
+        epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    parser.add_argument("--version", action="version", version="%(prog)s 0.1.0")
+
+    sub = parser.add_subparsers(
+        dest="cmd", required=True, title="commands", description="Available commands"
+    )
 
     # init 命令 - 初始化新项目（Modular Monolith 架构）
+    init_help = """
+Initialize a new Bento project with complete project structure.
+
+This creates:
+  - Modular Monolith architecture with bounded contexts
+  - VS Code configuration (extensions, settings, tasks, debug)
+  - Makefile with common tasks (test, fmt, lint, dev)
+  - Database migrations (Alembic)
+  - FastAPI application setup
+  - Testing configuration (Pytest)
+
+Example:
+  bento init my-shop --description "E-commerce platform"
+  cd my-shop
+  make dev
+"""
+
     init = sub.add_parser(
-        "init", help="Initialize a new Bento project with Modular Monolith architecture"
+        "init",
+        help="Initialize a new Bento project",
+        description=init_help,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    init.add_argument("project_name", help="Project name")
-    init.add_argument("--description", default="", help="Project description")
-    init.add_argument("--output", default=".", type=pathlib.Path, help="Output directory")
+    init.add_argument("project_name", help="Name of the project (e.g., my-shop, order-service)")
+    init.add_argument("--description", default="", help="Project description (optional)")
+    init.add_argument(
+        "--output",
+        default=".",
+        type=pathlib.Path,
+        help="Output directory (default: current directory)",
+    )
 
     # gen 命令 - 生成代码骨架
-    g = sub.add_parser("gen", help="Generate code skeletons")
-    g.add_argument(
-        "what", choices=["module", "aggregate", "usecase", "event", "repository", "mapper", "po"]
+    gen_help = """
+Generate DDD code components.
+
+Component types:
+  module      - Complete DDD module (aggregate + repository + use cases + tests)
+  aggregate   - Domain aggregate root with events
+  event       - Domain event
+  repository  - Repository interface and implementation
+  mapper      - Data mapper (domain <-> persistence)
+  usecase     - Application use case
+  po          - Persistence object (SQLAlchemy model)
+
+Examples:
+  # Generate complete module
+  bento gen module Product --context catalog --fields "name:str,price:float"
+
+  # Generate standalone components
+  bento gen event OrderCreated --output ./my-project
+  bento gen aggregate Order --fields "customer_id:str,total:float"
+"""
+
+    g = sub.add_parser(
+        "gen",
+        help="Generate code components",
+        description=gen_help,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    g.add_argument("name")
+    g.add_argument(
+        "what",
+        choices=["module", "aggregate", "usecase", "event", "repository", "mapper", "po"],
+        help="Type of component to generate",
+        metavar="COMPONENT",
+    )
+    g.add_argument("name", help="Name of the component (e.g., Product, Order, User)")
     g.add_argument("--context", default="shared", help="Bounded context name (default: shared)")
-    g.add_argument("--fields", default="")
-    g.add_argument("--output", default=".", type=pathlib.Path)
+    g.add_argument(
+        "--fields",
+        default="",
+        help='Comma-separated fields with types (e.g., "name:str,price:float,stock:int")',
+    )
+    g.add_argument(
+        "--output",
+        default=".",
+        type=pathlib.Path,
+        help="Output directory (default: current directory)",
+    )
 
     args = parser.parse_args()
 
@@ -395,15 +537,15 @@ def main():
         elif args.what == "po":
             generate_po(name, fields, output_dir)
         elif args.what == "mapper":
-            generate_mapper(name, output_dir)
+            generate_mapper(name, output_dir, context)
         elif args.what == "repository":
-            generate_repository(name, output_dir)
+            generate_repository(name, output_dir, context)
         elif args.what == "usecase":
             if name.startswith(("Create", "Update", "Delete", "Get", "List")):
                 for action in ["Create", "Update", "Delete", "Get", "List"]:
                     if name.startswith(action):
                         entity_name = name[len(action) :]
-                        generate_usecase(entity_name, action, output_dir)
+                        generate_usecase(entity_name, action, output_dir, context)
                         break
         elif args.what == "event":
             generate_event(name, output_dir)
