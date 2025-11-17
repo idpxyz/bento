@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db_session
 from api.schemas.user import UserCreate, UserList, UserResponse, UserUpdate
-from contexts.identity.domain.user import User
+from contexts.identity.domain.models.user import User
 from contexts.identity.infrastructure.repositories.user_repository_impl import UserRepository
 
 router = APIRouter()

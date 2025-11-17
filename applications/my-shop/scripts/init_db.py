@@ -10,13 +10,14 @@ import asyncio
 import sys
 from pathlib import Path
 
+# Import all models to register them with SQLAlchemy
+from bento.persistence import Base
+
 from config import settings
 
-# Import all models to register them with SQLAlchemy
-from contexts.catalog.infrastructure.models.product_po import ProductPO
-
-# Add project root to path
+# Add project root and bento src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 
 async def main():
@@ -27,17 +28,15 @@ async def main():
     # Get database config
     from api.deps import engine
 
-    # Get Base from any model (they all share the same)
-    Base = ProductPO.metadata
-
+    # Use Bento's Base metadata (all models inherit from it)
     try:
         # Create all tables
         async with engine.begin() as conn:
-            await conn.run_sync(Base.create_all)
+            await conn.run_sync(Base.metadata.create_all)
 
         print("✅ Database tables created successfully!")
         print("\n📋 Created tables:")
-        for table in Base.sorted_tables:
+        for table in Base.metadata.sorted_tables:
             print(f"  - {table.name}")
 
     except Exception as e:

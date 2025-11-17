@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from api.orders import router as orders_router
+# from api.orders import router as orders_router  # TODO: Fix ordering module
 from api.products import router as products_router
 from api.users import router as users_router
 
@@ -28,11 +28,11 @@ api_router.include_router(
     prefix="/products",
     tags=["products"],
 )
-api_router.include_router(
-    orders_router,
-    prefix="/orders",
-    tags=["orders"],
-)
+# api_router.include_router(  # TODO: Fix ordering module
+#     orders_router,
+#     prefix="/orders",
+#     tags=["orders"],
+# )
 
 api_router.include_router(
     users_router,

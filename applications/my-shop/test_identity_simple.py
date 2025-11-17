@@ -10,14 +10,10 @@ import asyncio
 import sys
 from pathlib import Path
 
-# 添加项目路径
-sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
 from bento.core.ids import ID
+from bento.persistence.specification import EntitySpecificationBuilder
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from contexts.identity.domain.models.user import User
 from contexts.identity.infrastructure.mappers.user_mapper import UserMapper
@@ -25,6 +21,10 @@ from contexts.identity.infrastructure.models.user_po import Base, UserPO
 from contexts.identity.infrastructure.repositories.user_repository_impl import (
     UserRepository,
 )
+
+# 添加项目路径
+sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 
 async def main():
@@ -45,7 +45,7 @@ async def main():
         await conn.run_sync(Base.metadata.create_all)
 
     # 创建 session factory
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     print("✅ 数据库初始化完成\n")
 
@@ -141,12 +141,13 @@ async def main():
 
         # 使用框架的 get() 方法
         print("\n2️⃣  读取用户...")
-        retrieved = await repo.get(user4.id)
+        retrieved = await repo.get(user4.id)  # type: ignore[arg-type]
 
         if retrieved:
             print(f"   ✅ 找到用户: {retrieved.name} ({retrieved.email})")
         else:
             print("   ❌ 未找到用户")
+            raise AssertionError("User should exist after being saved")
 
         # 验证审计字段
         print("\n3️⃣  检查审计字段 (由 AuditInterceptor 自动填充)...")
@@ -177,7 +178,8 @@ async def main():
 
         # 测试 exists
         print("\n6️⃣  检查用户是否存在...")
-        exists = await repo.exists(user4.id)
+        exists_spec = EntitySpecificationBuilder().by_id(user4.id).include_deleted().build()
+        exists = await repo.exists(exists_spec)
         print(f"   exists: {exists}")
 
         # 测试 total_count

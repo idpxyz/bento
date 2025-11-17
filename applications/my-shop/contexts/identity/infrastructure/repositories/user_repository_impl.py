@@ -1,5 +1,6 @@
 """User Repository Implementation using Bento's RepositoryAdapter"""
 
+from bento.core.ids import ID
 from bento.infrastructure.repository import RepositoryAdapter
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
@@ -11,7 +12,7 @@ from contexts.identity.infrastructure.mappers.user_mapper import UserMapper
 from contexts.identity.infrastructure.models.user_po import UserPO
 
 
-class UserRepository(RepositoryAdapter[User, UserPO, str]):
+class UserRepository(RepositoryAdapter[User, UserPO, ID]):
     """
     User Repository using Bento's RepositoryAdapter.
 
@@ -26,6 +27,12 @@ class UserRepository(RepositoryAdapter[User, UserPO, str]):
     - Optimistic locking with version field
     - Soft deletion support
     - UnitOfWork integration for event collection
+
+    Note on ID Type:
+    - The type parameter uses `ID` (from bento.core.ids) to satisfy the EntityId bound
+    - At runtime, the framework accepts both `ID` objects and raw strings/UUIDs
+    - The BaseRepository extracts `.value` from ID objects or uses raw values directly
+    - Use `# type: ignore[arg-type]` when passing strings to framework methods
     """
 
     def __init__(self, session: AsyncSession, actor: str = "system"):
@@ -55,18 +62,24 @@ class UserRepository(RepositoryAdapter[User, UserPO, str]):
     # - async def get(self, id: str) -> User | None
     # - async def save(self, user: User) -> None
     # - async def list(self, specification=None) -> list[User]
-    # - async def exists(self, id: str) -> bool
-    # - async def delete(self, id: str) -> None
-    # - async def paginate(...) -> Page[User]
+    # - async def exists(self, specification: CompositeSpecification[User]) -> bool
+    # - async def delete(self, aggregate: User) -> None
+    # - async def find_page(...) -> Page[User]
 
     # ==================== Custom Query Methods ====================
 
-    async def find_by_id(self, user_id: str) -> User | None:
+    async def find_by_id(self, user_id: str | ID) -> User | None:
         """
         Find user by ID (convenience method).
         Delegates to framework's get() method.
+
+        Args:
+            user_id: User ID as string or ID object
+
+        Returns:
+            User if found, None otherwise
         """
-        return await self.get(user_id)
+        return await self.get(user_id)  # type: ignore[arg-type]
 
     async def find_by_email(self, email: str) -> User | None:
         """
