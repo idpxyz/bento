@@ -100,6 +100,8 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderPaidEvent(
+                aggregate_id=self.id,
+                tenant_id="default",
                 order_id=self.id,
                 customer_id=self.customer_id,
                 total=self.total,
@@ -119,7 +121,11 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderShippedEvent(
-                order_id=self.id, tracking_number=tracking_number, shipped_at=self.shipped_at
+                aggregate_id=self.id,
+                tenant_id="default",
+                order_id=self.id,
+                tracking_number=tracking_number,
+                shipped_at=self.shipped_at,
             )
         )
 
@@ -132,7 +138,14 @@ class Order(AggregateRoot):
 
         from contexts.ordering.domain.events.orderdelivered_event import OrderDeliveredEvent
 
-        self.add_event(OrderDeliveredEvent(order_id=self.id, delivered_at=datetime.utcnow()))
+        self.add_event(
+            OrderDeliveredEvent(
+                aggregate_id=self.id,
+                tenant_id="default",
+                order_id=self.id,
+                delivered_at=datetime.utcnow(),
+            )
+        )
 
     def cancel(self, reason: str):
         """取消订单"""
@@ -148,5 +161,11 @@ class Order(AggregateRoot):
         from contexts.ordering.domain.events.ordercancelled_event import OrderCancelledEvent
 
         self.add_event(
-            OrderCancelledEvent(order_id=self.id, reason=reason, previous_status=old_status.value)
+            OrderCancelledEvent(
+                aggregate_id=self.id,
+                tenant_id="default",
+                order_id=self.id,
+                reason=reason,
+                previous_status=old_status.value,
+            )
         )

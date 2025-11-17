@@ -13,21 +13,21 @@ from contexts.ordering.domain.order import Order
 @dataclass
 class CancelOrderCommand:
     """Cancel order command."""
-    
+
     order_id: str
     reason: str
 
 
 class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, Order]):
     """Cancel order use case.
-    
+
     取消订单。
     发布 OrderCancelled 事件。
     """
-    
+
     def __init__(self, uow: IUnitOfWork) -> None:
         super().__init__(uow)
-    
+
     async def validate(self, command: CancelOrderCommand) -> None:
         """Validate command."""
         if not command.order_id:
@@ -40,13 +40,15 @@ class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, Order]):
                 error_code=CommonErrors.INVALID_PARAMS,
                 details={"field": "reason", "reason": "cannot be empty"},
             )
-    
+
     async def handle(self, command: CancelOrderCommand) -> Order:
         """Handle command execution."""
-        from contexts.ordering.infrastructure.repositories.order_repository_impl import OrderRepository
-        
+        from contexts.ordering.infrastructure.repositories.order_repository_impl import (
+            OrderRepository,
+        )
+
         order_repo = OrderRepository(self.uow._session)  # type: ignore
-        
+
         # 获取订单
         order = await order_repo.get(command.order_id)
         if not order:
@@ -54,17 +56,16 @@ class CancelOrderUseCase(BaseUseCase[CancelOrderCommand, Order]):
                 error_code=CommonErrors.NOT_FOUND,
                 details={"resource": "order", "id": command.order_id},
             )
-        
-        # 取消（领域方法）
+
+        # 取消订单（领域方法会自动发布 OrderCancelledEvent）
         try:
             order.cancel(reason=command.reason)
         except ValueError as e:
             raise ApplicationException(
-                error_code=CommonErrors.BUSINESS_ERROR,
+                error_code=CommonErrors.INVALID_PARAMS,
                 details={"reason": str(e)},
-            )
-        
+            ) from e
         # 保存
         await order_repo.save(order)
-        
+
         return order

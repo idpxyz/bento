@@ -110,9 +110,12 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
             )
 
         # 发布领域事件
-
         order.add_event(
             OrderCreated(
+                # 事件元数据
+                aggregate_id=order.id,  # ✅ 设置聚合根ID
+                tenant_id="default",  # ✅ 设置租户ID（多租户支持）
+                # 业务数据
                 order_id=order.id,
                 customer_id=order.customer_id,
                 total=order.total,

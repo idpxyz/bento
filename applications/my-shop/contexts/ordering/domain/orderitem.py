@@ -31,14 +31,22 @@ class OrderItem(AggregateRoot):
 
     def _validate(self):
         """验证订单项数据"""
-        if self.quantity <= 0:
-            raise ValueError("数量必须大于0")
-        if self.unit_price < 0:
-            raise ValueError("单价不能为负数")
-        if not self.product_id or not self.product_id.strip():
+        # Product ID 验证（兼容字符串和ID对象）
+        product_id_str = str(self.product_id) if self.product_id else ""
+        if not product_id_str or not product_id_str.strip():
             raise ValueError("产品ID不能为空")
+
+        # Product Name 验证
         if not self.product_name or not self.product_name.strip():
             raise ValueError("产品名称不能为空")
+
+        # Quantity 验证
+        if self.quantity <= 0:
+            raise ValueError("数量必须大于0")
+
+        # Unit Price 验证
+        if self.unit_price < 0:
+            raise ValueError("单价不能为负数")
 
     @property
     def subtotal(self) -> float:
