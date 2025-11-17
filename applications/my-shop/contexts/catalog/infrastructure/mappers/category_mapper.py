@@ -1,23 +1,21 @@
-"""Product 映射器接口"""
-
+"""Category 映射器接口"""
 from typing import Protocol
+from contexts.catalog.domain.category import Category
+from contexts.catalog.infrastructure.models.category_po import CategoryPO
 
-from contexts.catalog.domain.product import Product
-from contexts.catalog.infrastructure.models.product_po import ProductPO
 
-
-class IProductMapper(Protocol):
-    """Product 映射器协议
+class ICategoryMapper(Protocol):
+    """Category 映射器协议
 
     负责领域对象与持久化对象之间的双向映射。
     Infrastructure 层提供具体实现。
     """
 
-    def to_po(self, domain_obj: Product) -> ProductPO:
+    def to_po(self, domain_obj: Category) -> CategoryPO:
         """领域对象 -> 持久化对象"""
         ...
 
-    def to_domain(self, po: ProductPO) -> Product:
+    def to_domain(self, po: CategoryPO) -> Category:
         """持久化对象 -> 领域对象"""
         ...
 
@@ -27,11 +25,11 @@ class IProductMapper(Protocol):
 # ============================================================================
 #
 # from bento.application.mapper import AutoMapper
-# from contexts.catalog.domain.product import Product
-# from contexts.catalog.infrastructure.models.product_po import ProductPO
+# from contexts.catalog.domain.category import Category
+# from contexts.catalog.infrastructure.models.category_po import CategoryPO
 #
-# class ProductMapper(AutoMapper[Product, ProductPO]):
-#     """Product 映射器实现 - 使用框架 AutoMapper
+# class CategoryMapper(AutoMapper[Category, CategoryPO]):
+#     """Category 映射器实现 - 使用框架 AutoMapper
 #
 #     框架自动推断字段映射：
 #     - 同名字段自动映射

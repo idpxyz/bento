@@ -1,14 +1,16 @@
-"""CreateProduct 用例"""
+"""CreateUser 用例"""
+
 from dataclasses import dataclass
 
 
 @dataclass
-class CreateProductCommand:
-    """CreateProduct 命令
+class CreateUserCommand:
+    """CreateUser 命令
 
     命令对象封装用户意图，包含执行操作所需的所有数据。
     遵循 CQRS 模式，命令不返回业务数据。
     """
+
     # TODO: 添加命令字段
     # 例如:
     # name: str
@@ -17,8 +19,8 @@ class CreateProductCommand:
     pass
 
 
-class CreateProductUseCase:
-    """CreateProduct 用例
+class CreateUserUseCase:
+    """CreateUser 用例
 
     应用层用例编排业务流程，协调领域对象完成业务逻辑。
 
@@ -37,13 +39,13 @@ class CreateProductUseCase:
     def __init__(self, repository, unit_of_work):
         """
         参数：
-            repository: IProductRepository - 仓储协议实例
+            repository: IUserRepository - 仓储协议实例
             unit_of_work: IUnitOfWork - 工作单元协议实例
         """
         self._repository = repository
         self._uow = unit_of_work
 
-    async def validate(self, command: CreateProductCommand) -> None:
+    async def validate(self, command: CreateUserCommand) -> None:
         """验证命令（可选）
 
         在执行前验证业务规则，例如：
@@ -54,7 +56,7 @@ class CreateProductUseCase:
         # TODO: 添加验证逻辑
         pass
 
-    async def execute(self, command: CreateProductCommand) -> str:
+    async def execute(self, command: CreateUserCommand) -> str:
         """执行用例
 
         返回：
@@ -65,15 +67,15 @@ class CreateProductUseCase:
         async with self._uow:
             # TODO: 实现业务逻辑
             # 示例（Create 操作）:
-            # from contexts.catalog.domain.product import Product
-            # product = Product(
+            # from contexts.identity.domain.user import User
+            # user = User(
             #     id=generate_id(),
             #     name=command.name,
             #     email=command.email
             # )
-            # await self._repository.save(product)
+            # await self._repository.save(user)
             # await self._uow.commit()
-            # return product.id
+            # return user.id
 
             raise NotImplementedError("Please implement business logic")
 
@@ -85,7 +87,7 @@ class CreateProductUseCase:
 # from bento.application.usecase import BaseUseCase
 # from bento.core.ids import ID
 #
-# class CreateProductUseCase(BaseUseCase[CreateProductCommand, ID]):
+# class CreateUserUseCase(BaseUseCase[CreateUserCommand, ID]):
 #     """使用 Bento 框架 BaseUseCase
 #
 #     框架自动提供：
@@ -95,9 +97,9 @@ class CreateProductUseCase:
 #     - 幂等性支持（可选）
 #     """
 #
-#     async def handle(self, command: CreateProductCommand) -> ID:
-#         repo = self.uow.repository(Product)
-#         product = Product(...)
-#         await repo.save(product)
-#         return product.id
+#     async def handle(self, command: CreateUserCommand) -> ID:
+#         repo = self.uow.repository(User)
+#         user = User(...)
+#         await repo.save(user)
+#         return user.id
 #

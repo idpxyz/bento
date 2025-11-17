@@ -1,8 +1,10 @@
 """my-shop - Main Application Entry Point"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import settings
+
 from api.router import api_router
+from config import settings
 
 # Create FastAPI application
 app = FastAPI(

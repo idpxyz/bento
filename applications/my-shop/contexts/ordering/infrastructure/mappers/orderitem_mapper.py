@@ -1,23 +1,21 @@
-"""Product 映射器接口"""
-
+"""OrderItem 映射器接口"""
 from typing import Protocol
+from contexts.ordering.domain.orderitem import OrderItem
+from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
-from contexts.catalog.domain.product import Product
-from contexts.catalog.infrastructure.models.product_po import ProductPO
 
-
-class IProductMapper(Protocol):
-    """Product 映射器协议
+class IOrderItemMapper(Protocol):
+    """OrderItem 映射器协议
 
     负责领域对象与持久化对象之间的双向映射。
     Infrastructure 层提供具体实现。
     """
 
-    def to_po(self, domain_obj: Product) -> ProductPO:
+    def to_po(self, domain_obj: OrderItem) -> OrderItemPO:
         """领域对象 -> 持久化对象"""
         ...
 
-    def to_domain(self, po: ProductPO) -> Product:
+    def to_domain(self, po: OrderItemPO) -> OrderItem:
         """持久化对象 -> 领域对象"""
         ...
 
@@ -27,11 +25,11 @@ class IProductMapper(Protocol):
 # ============================================================================
 #
 # from bento.application.mapper import AutoMapper
-# from contexts.catalog.domain.product import Product
-# from contexts.catalog.infrastructure.models.product_po import ProductPO
+# from contexts.ordering.domain.orderitem import OrderItem
+# from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 #
-# class ProductMapper(AutoMapper[Product, ProductPO]):
-#     """Product 映射器实现 - 使用框架 AutoMapper
+# class OrderItemMapper(AutoMapper[OrderItem, OrderItemPO]):
+#     """OrderItem 映射器实现 - 使用框架 AutoMapper
 #
 #     框架自动推断字段映射：
 #     - 同名字段自动映射

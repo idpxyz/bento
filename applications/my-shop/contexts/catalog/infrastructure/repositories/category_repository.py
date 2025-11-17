@@ -1,10 +1,10 @@
-"""Product 仓储接口"""
+"""Category 仓储接口"""
 from typing import Protocol
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.category import Category
 
 
-class IProductRepository(Protocol):
-    """Product 仓储协议
+class ICategoryRepository(Protocol):
+    """Category 仓储协议
 
     遵循依赖反转原则，Domain/Application 层只依赖此协议。
     Infrastructure 层提供具体实现。
@@ -17,11 +17,11 @@ class IProductRepository(Protocol):
     - exists(id) - 检查是否存在
     """
 
-    async def get(self, id: str) -> Product | None:
+    async def get(self, id: str) -> Category | None:
         """根据ID获取聚合根"""
         ...
 
-    async def save(self, entity: Product) -> None:
+    async def save(self, entity: Category) -> None:
         """保存聚合根（创建或更新）"""
         ...
 
@@ -29,7 +29,7 @@ class IProductRepository(Protocol):
         """删除聚合根"""
         ...
 
-    async def list(self, limit: int = 100, offset: int = 0) -> list[Product]:
+    async def list(self, limit: int = 100, offset: int = 0) -> list[Category]:
         """查询聚合根列表"""
         ...
 
@@ -39,18 +39,18 @@ class IProductRepository(Protocol):
 
 
 # ============================================================================
-# 实现示例（需手动创建，放在 infrastructure/repositories/product_repository_impl.py）
+# 实现示例（需手动创建，放在 infrastructure/repositories/category_repository_impl.py）
 # ============================================================================
 #
 # from bento.infrastructure.repository import RepositoryAdapter
 # from bento.persistence.repository import BaseRepository
 # from bento.persistence.interceptor import create_default_chain
-# from contexts.catalog.domain.product import Product
-# from contexts.catalog.infrastructure.models.product_po import ProductPO
-# from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
+# from contexts.catalog.domain.category import Category
+# from contexts.catalog.infrastructure.models.category_po import CategoryPO
+# from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapper
 #
-# class ProductRepository(RepositoryAdapter[Product, ProductPO, str]):
-#     """Product 仓储实现
+# class CategoryRepository(RepositoryAdapter[Category, CategoryPO, str]):
+#     """Category 仓储实现
 #
 #     框架自动提供的功能：
 #     - 领域对象 <-> 持久化对象映射
@@ -59,10 +59,10 @@ class IProductRepository(Protocol):
 #     """
 #
 #     def __init__(self, session, actor: str = "system"):
-#         mapper = ProductMapper()
+#         mapper = CategoryMapper()
 #         base_repo = BaseRepository(
 #             session=session,
-#             po_type=ProductPO,
+#             po_type=CategoryPO,
 #             actor=actor,
 #             interceptor_chain=create_default_chain(actor)
 #         )
