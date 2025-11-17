@@ -107,17 +107,28 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
                 unit_price=item_input.unit_price,
             )
 
-        # 发布领域事件
+        # 发布领域事件（包含完整订单信息）
         order.add_event(
             OrderCreated(
                 # 事件元数据
                 aggregate_id=order.id,  # ✅ 设置聚合根ID
                 tenant_id="default",  # ✅ 设置租户ID（多租户支持）
-                # 业务数据
+                # 订单基本信息
                 order_id=order.id,
                 customer_id=order.customer_id,
                 total=order.total,
                 item_count=len(order.items),
+                # ✅ 订单项详情 - 下游服务可以立即处理
+                items=[
+                    {
+                        "product_id": item.product_id,
+                        "product_name": item.product_name,
+                        "quantity": item.quantity,
+                        "unit_price": item.unit_price,
+                        "subtotal": item.subtotal,
+                    }
+                    for item in order.items
+                ],
             )
         )
 
