@@ -1,5 +1,8 @@
-"""Product Repository Implementation with Pagination Support"""
+"""Product Repository Implementation using Bento's RepositoryAdapter"""
 
+from bento.infrastructure.repository import RepositoryAdapter
+from bento.persistence.interceptor import create_default_chain
+from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,57 +11,64 @@ from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
 from contexts.catalog.infrastructure.models.product_po import ProductPO
 
 
-class ProductRepository:
+class ProductRepository(RepositoryAdapter[Product, ProductPO, str]):
     """
-    Product Repository Implementation.
+    Product Repository using Bento's RepositoryAdapter.
 
-    Provides database operations for Product aggregate with:
-    - CRUD operations
-    - Pagination support
-    - Async SQLAlchemy integration
+    Provides:
+    - Automatic CRUD operations via RepositoryAdapter
+    - AR <-> PO mapping via ProductMapper
+    - Audit, soft delete, optimistic locking via interceptor chain
+    - Additional custom queries (pagination, filtering, etc.)
+
+    Framework Features:
+    - Automatic audit fields (created_at, updated_at, created_by, updated_by)
+    - Optimistic locking with version field
+    - Soft deletion support
+    - UnitOfWork integration for event collection
     """
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.mapper = ProductMapper()
+    def __init__(self, session: AsyncSession, actor: str = "system"):
+        """
+        Initialize Product Repository.
+
+        Args:
+            session: SQLAlchemy async session
+            actor: Current user/system identifier for audit
+        """
+        # Create mapper
+        mapper = ProductMapper()
+
+        # Create base repository with interceptor chain
+        base_repo = BaseRepository(
+            session=session,
+            po_type=ProductPO,
+            actor=actor,
+            interceptor_chain=create_default_chain(actor),
+        )
+
+        # Initialize adapter
+        super().__init__(repository=base_repo, mapper=mapper)
+
+    # ==================== Bento Framework Methods ====================
+    # The following methods are inherited from RepositoryAdapter:
+    # - async def get(self, id: str) -> Product | None
+    # - async def save(self, product: Product) -> None
+    # - async def list(self, specification=None) -> list[Product]
+    # - async def exists(self, id: str) -> bool
+    # - async def delete(self, id: str) -> None
+    # - async def paginate(...) -> Page[Product]
+
+    # ==================== Custom Query Methods ====================
 
     async def find_by_id(self, product_id: str) -> Product | None:
-        """Find product by ID"""
-        result = await self.session.execute(select(ProductPO).where(ProductPO.id == product_id))
-        po = result.scalar_one_or_none()
+        """
+        Find product by ID (convenience method).
+        Delegates to framework's get() method.
+        """
+        return await self.get(product_id)
 
-        if not po:
-            return None
-
-        return self.mapper.to_domain(po)
-
-    async def save(self, product: Product) -> None:
-        """Save or update product"""
-        # Check if exists
-        existing = await self.session.execute(select(ProductPO).where(ProductPO.id == product.id))
-        existing_po = existing.scalar_one_or_none()
-
-        if existing_po:
-            # Update
-            existing_po.name = product.name
-            existing_po.price = product.price
-            existing_po.stock = product.stock
-            existing_po.description = product.description
-            existing_po.category_id = product.category_id
-        else:
-            # Insert
-            po = self.mapper.to_po(product)
-            self.session.add(po)
-
-    async def delete(self, product: Product) -> None:
-        """Delete product"""
-        po = await self.session.execute(select(ProductPO).where(ProductPO.id == product.id))
-        po_obj = po.scalar_one_or_none()
-
-        if po_obj:
-            await self.session.delete(po_obj)
-
-    async def list(
+    async def list_products(
         self, limit: int = 100, offset: int = 0, category_id: str | None = None
     ) -> list[Product]:
         """
@@ -84,10 +94,10 @@ class ProductRepository:
         # Order by name
         query = query.order_by(ProductPO.name)
 
-        result = await self.session.execute(query)
+        result = await self.repository.session.execute(query)
         pos = result.scalars().all()
 
-        return [self.mapper.to_domain(po) for po in pos]
+        return [self.mapper.map_reverse(po) for po in pos]
 
     async def count(self, category_id: str | None = None) -> int:
         """
@@ -104,13 +114,5 @@ class ProductRepository:
         if category_id:
             query = query.where(ProductPO.category_id == category_id)
 
-        result = await self.session.execute(query)
+        result = await self.repository.session.execute(query)
         return result.scalar_one()
-
-    async def exists(self, product_id: str) -> bool:
-        """Check if product exists"""
-        result = await self.session.execute(
-            select(func.count()).select_from(ProductPO).where(ProductPO.id == product_id)
-        )
-        count = result.scalar_one()
-        return count > 0

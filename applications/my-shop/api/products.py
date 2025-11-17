@@ -29,7 +29,7 @@ async def list_products(
     offset = (page - 1) * page_size
 
     # Get products with database-level pagination
-    products = await repo.list(limit=page_size, offset=offset, category_id=category_id)
+    products = await repo.list_products(limit=page_size, offset=offset, category_id=category_id)
 
     # Get total count
     total = await repo.count(category_id=category_id)
