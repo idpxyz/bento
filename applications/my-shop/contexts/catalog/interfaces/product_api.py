@@ -67,7 +67,7 @@ class ListProductsResponse(BaseModel):
 
 async def get_create_product_use_case() -> CreateProductUseCase:
     """Get create product use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateProductUseCase(uow)
@@ -75,7 +75,7 @@ async def get_create_product_use_case() -> CreateProductUseCase:
 
 async def get_list_products_use_case() -> ListProductsUseCase:
     """Get list products use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return ListProductsUseCase(uow)
@@ -83,7 +83,7 @@ async def get_list_products_use_case() -> ListProductsUseCase:
 
 async def get_get_product_use_case() -> GetProductUseCase:
     """Get get product use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return GetProductUseCase(uow)
@@ -91,7 +91,7 @@ async def get_get_product_use_case() -> GetProductUseCase:
 
 async def get_update_product_use_case() -> UpdateProductUseCase:
     """Get update product use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return UpdateProductUseCase(uow)
@@ -99,7 +99,7 @@ async def get_update_product_use_case() -> UpdateProductUseCase:
 
 async def get_delete_product_use_case() -> DeleteProductUseCase:
     """Get delete product use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return DeleteProductUseCase(uow)

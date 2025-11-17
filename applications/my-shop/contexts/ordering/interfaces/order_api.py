@@ -108,7 +108,7 @@ class ListOrdersResponse(BaseModel):
 
 async def get_create_order_use_case() -> CreateOrderUseCase:
     """Get create order use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateOrderUseCase(uow)
@@ -116,7 +116,7 @@ async def get_create_order_use_case() -> CreateOrderUseCase:
 
 async def get_list_orders_use_case() -> ListOrdersUseCase:
     """Get list orders use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return ListOrdersUseCase(uow)
@@ -124,7 +124,7 @@ async def get_list_orders_use_case() -> ListOrdersUseCase:
 
 async def get_get_order_use_case() -> GetOrderUseCase:
     """Get get order use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return GetOrderUseCase(uow)
@@ -132,7 +132,7 @@ async def get_get_order_use_case() -> GetOrderUseCase:
 
 async def get_pay_order_use_case() -> PayOrderUseCase:
     """Get pay order use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return PayOrderUseCase(uow)
@@ -140,7 +140,7 @@ async def get_pay_order_use_case() -> PayOrderUseCase:
 
 async def get_ship_order_use_case() -> ShipOrderUseCase:
     """Get ship order use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return ShipOrderUseCase(uow)
@@ -148,7 +148,7 @@ async def get_ship_order_use_case() -> ShipOrderUseCase:
 
 async def get_cancel_order_use_case() -> CancelOrderUseCase:
     """Get cancel order use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CancelOrderUseCase(uow)

@@ -1,16 +1,23 @@
 """my-shop - Main FastAPI application entry point."""
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.exception_handlers import (
+from config import settings
+
+# Import context routers
+from contexts.catalog.interfaces.category_api import router as categories_router
+from contexts.catalog.interfaces.product_api import router as products_router
+from contexts.identity.interfaces.user_api import router as users_router
+from contexts.ordering.interfaces.order_api import router as orders_router
+
+# Import exception handlers
+from shared.exceptions.handlers import (
     generic_exception_handler,
     response_validation_exception_handler,
     validation_exception_handler,
 )
-from api.router import api_router
-from config import settings
 
 
 def create_app() -> FastAPI:
@@ -42,7 +49,28 @@ def create_app() -> FastAPI:
     # 未捕获的异常（500 Internal Server Error）
     app.add_exception_handler(Exception, generic_exception_handler)
 
-    # Include API router
+    # ==================== API 路由聚合 ====================
+    # Create API router
+    api_router = APIRouter()
+
+    # Health check endpoints
+    @api_router.get("/ping")
+    async def ping():
+        """Ping endpoint for testing"""
+        return {"message": "pong"}
+
+    @api_router.get("/health")
+    async def health():
+        """Health check endpoint"""
+        return {"status": "healthy", "service": "my-shop"}
+
+    # Include domain context routers
+    api_router.include_router(products_router, prefix="/products", tags=["products"])
+    api_router.include_router(orders_router, prefix="/orders", tags=["orders"])
+    api_router.include_router(users_router, prefix="/users", tags=["users"])
+    api_router.include_router(categories_router, prefix="/categories", tags=["categories"])
+
+    # Mount API router
     app.include_router(api_router, prefix="/api/v1")
 
     return app

@@ -65,7 +65,7 @@ class ListCategoriesResponse(BaseModel):
 
 async def get_create_category_use_case() -> CreateCategoryUseCase:
     """Get create category use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateCategoryUseCase(uow)
@@ -73,7 +73,7 @@ async def get_create_category_use_case() -> CreateCategoryUseCase:
 
 async def get_list_categories_use_case() -> ListCategoriesUseCase:
     """Get list categories use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return ListCategoriesUseCase(uow)
@@ -81,7 +81,7 @@ async def get_list_categories_use_case() -> ListCategoriesUseCase:
 
 async def get_get_category_use_case() -> GetCategoryUseCase:
     """Get get category use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return GetCategoryUseCase(uow)
@@ -89,7 +89,7 @@ async def get_get_category_use_case() -> GetCategoryUseCase:
 
 async def get_update_category_use_case() -> UpdateCategoryUseCase:
     """Get update category use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return UpdateCategoryUseCase(uow)
@@ -97,7 +97,7 @@ async def get_update_category_use_case() -> UpdateCategoryUseCase:
 
 async def get_delete_category_use_case() -> DeleteCategoryUseCase:
     """Get delete category use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return DeleteCategoryUseCase(uow)

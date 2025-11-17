@@ -73,7 +73,7 @@ class ListUsersResponse(BaseModel):
 
 async def get_create_user_use_case() -> CreateUserUseCase:
     """Get create user use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return CreateUserUseCase(uow)
@@ -81,7 +81,7 @@ async def get_create_user_use_case() -> CreateUserUseCase:
 
 async def get_update_user_use_case() -> UpdateUserUseCase:
     """Get update user use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return UpdateUserUseCase(uow)
@@ -89,7 +89,7 @@ async def get_update_user_use_case() -> UpdateUserUseCase:
 
 async def get_delete_user_use_case() -> DeleteUserUseCase:
     """Get delete user use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return DeleteUserUseCase(uow)
@@ -97,7 +97,7 @@ async def get_delete_user_use_case() -> DeleteUserUseCase:
 
 async def get_get_user_use_case() -> GetUserUseCase:
     """Get get user use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return GetUserUseCase(uow)
@@ -105,7 +105,7 @@ async def get_get_user_use_case() -> GetUserUseCase:
 
 async def get_list_users_use_case() -> ListUsersUseCase:
     """Get list users use case (dependency)."""
-    from api.deps import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work
 
     uow = await get_unit_of_work()
     return ListUsersUseCase(uow)
