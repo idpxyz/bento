@@ -26,3 +26,18 @@ See `docs/` for conventions and ADRs.
 - Redis/Kafka/MinIO/OpenSearch thin adapters
 - GitHub Actions CI + stricter import-linter rules
 - `bento gen` for aggregate/usecase/event
+
+## License
+
+**Version 0.2.0 and later:**
+
+Copyright © 2025 idp.xyz. All Rights Reserved.
+
+This software is proprietary and confidential. Unauthorized copying,
+modification, distribution, or use of this software is strictly prohibited.
+
+For licensing inquiries, please contact: licensing@idp.xyz
+
+**Previous versions (v0.1.x):**
+
+Licensed under MIT License.
