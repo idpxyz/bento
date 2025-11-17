@@ -99,10 +99,10 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
             )
 
         # 发布领域事件
-        from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
+        from contexts.ordering.domain.events.ordercreated_event import OrderCreated
 
         order.add_event(
-            OrderCreatedEvent(
+            OrderCreated(
                 order_id=order.id,
                 customer_id=order.customer_id,
                 total=order.total,
