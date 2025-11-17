@@ -29,10 +29,10 @@ async def list_users(
     offset = (page - 1) * page_size
 
     # Get users with database-level pagination
-    users = await repo.list(limit=page_size, offset=offset)
+    users = await repo.list_paginated(limit=page_size, offset=offset)
 
     # Get total count
-    total = await repo.count()
+    total = await repo.total_count()
 
     return UserList(
         items=[UserResponse.model_validate(u) for u in users],

@@ -1,31 +1,39 @@
-"""Category 持久化对象（数据库模型）"""
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from datetime import datetime
+"""Category 持久化对象 - 完全符合 Bento Framework 标准"""
+
+from bento.persistence import (
+    AuditFieldsMixin,
+    Base,
+    OptimisticLockFieldMixin,
+    SoftDeleteFieldsMixin,
+)
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Base(DeclarativeBase):
-    """临时 Base 类 - 实际项目应从框架统一的 Base 继承"""
-    pass
-
-
-class CategoryPO(Base):
-    """Category 数据库表
-
-    持久化对象（PO）仅包含数据结构，不包含业务逻辑。
-    与领域模型分离，通过 Mapper 进行转换。
+class CategoryPO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFieldMixin):
     """
-    __tablename__: str = "categorys"
+    Category 持久化对象（Persistence Object）
 
-    id: Mapped[str] = mapped_column(primary_key=True)
-    name: Mapped[str]
-    description: Mapped[str]
-    parent_id: Mapped[str]
+    继承 Bento Framework 的 Mixins：
+    - AuditFieldsMixin: created_at, updated_at, created_by, updated_by
+    - SoftDeleteFieldsMixin: deleted_at, deleted_by, is_deleted property
+    - OptimisticLockFieldMixin: version
 
-    # 审计字段（拦截器自动填充）
-    created_at: Mapped[datetime | None]
-    created_by: Mapped[str | None]
-    updated_at: Mapped[datetime | None]
-    updated_by: Mapped[str | None]
+    注意：
+    - 所有 Mixin 字段由 Interceptor 在 repository 层自动填充
+    - 不需要手动定义这些字段
+    - 业务代码只需关注业务字段
+    """
+
+    __tablename__ = "categories"
+
+    # 主键
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+    # 业务字段
+    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    parent_id: Mapped[str] = mapped_column(String(36), nullable=True)
 
 
 # ============================================================================

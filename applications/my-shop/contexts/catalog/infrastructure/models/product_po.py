@@ -1,40 +1,38 @@
-"""Product 持久化对象（数据库模型）"""
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from datetime import datetime
+"""Product 持久化对象 - 完全符合 Bento Framework 标准"""
+
+from bento.persistence import (
+    AuditFieldsMixin,
+    Base,
+    OptimisticLockFieldMixin,
+    SoftDeleteFieldsMixin,
+)
+from sqlalchemy import Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Base(DeclarativeBase):
-    """临时 Base 类 - 实际项目应从框架统一的 Base 继承"""
-    pass
-
-
-class ProductPO(Base):
-    """Product 数据库表
-
-    持久化对象（PO）仅包含数据结构，不包含业务逻辑。
-    与领域模型分离，通过 Mapper 进行转换。
+class ProductPO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFieldMixin):
     """
-    __tablename__: str = "products"
+    Product 持久化对象（Persistence Object）
 
-    id: Mapped[str] = mapped_column(primary_key=True)
-    name: Mapped[str]
-    price: Mapped[float]
+    继承 Bento Framework 的 Mixins：
+    - AuditFieldsMixin: created_at, updated_at, created_by, updated_by
+    - SoftDeleteFieldsMixin: deleted_at, deleted_by, is_deleted property
+    - OptimisticLockFieldMixin: version
 
-    # 审计字段（拦截器自动填充）
-    created_at: Mapped[datetime | None]
-    created_by: Mapped[str | None]
-    updated_at: Mapped[datetime | None]
-    updated_by: Mapped[str | None]
+    注意：
+    - 所有 Mixin 字段由 Interceptor 在 repository 层自动填充
+    - 不需要手动定义这些字段
+    - 业务代码只需关注业务字段
+    """
 
+    __tablename__ = "products"
 
-# ============================================================================
-# 实际项目中的实现示例
-# ============================================================================
-#
-# 从框架统一的 Base 继承：
-# from bento.persistence.sqlalchemy.base import Base
-#
-# class ProductPO(Base):
-#     __tablename__: str = "products"
-#     # ... 字段定义
-#
+    # 主键
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+    # 业务字段
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    stock: Mapped[int | None] = mapped_column(nullable=True, default=0)
+    category_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
