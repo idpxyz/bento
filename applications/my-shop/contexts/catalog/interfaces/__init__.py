@@ -2,8 +2,6 @@
 
 from fastapi import APIRouter
 
-from contexts.catalog.interfaces.product_api import router
-
 
 def register_routes(parent_router: APIRouter) -> None:
     """Register catalog routes to parent router.
@@ -27,3 +25,6 @@ def register_routes(parent_router: APIRouter) -> None:
         prefix="/products",
         tags=["products"],
     )
+
+
+__all__ = ["register_routes"]

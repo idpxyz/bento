@@ -19,3 +19,6 @@ def register_routes(parent_router: APIRouter) -> None:
         prefix="/users",
         tags=["users"],
     )
+
+
+__all__ = ["register_routes"]
