@@ -1,5 +1,7 @@
 """Order Repository 实现 - 处理 Order + OrderItem 聚合持久化"""
 
+from __future__ import annotations
+
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

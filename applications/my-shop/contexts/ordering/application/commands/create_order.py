@@ -8,6 +8,7 @@ from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
 
+from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent as OrderCreated
 from contexts.ordering.domain.order import Order
 
 
