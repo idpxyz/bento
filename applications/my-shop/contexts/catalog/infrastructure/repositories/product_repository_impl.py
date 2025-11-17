@@ -55,22 +55,24 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, str]):
 
         self._uow = _current_uow.get()
 
-    # ==================== Bento Framework Methods ====================
-    # The following methods are inherited from RepositoryAdapter:
-    # - async def get(self, id: str) -> Product | None
+    # ==================== Override save() to add tracking ====================
+
     async def save(self, product: Product) -> None:
         """Save product to database and track for event collection.
 
         Args:
             product: Product aggregate to save
         """
-        product_po = ProductPO.from_domain(product)
-        self._session.add(product_po)
+        # Use parent's save method (RepositoryAdapter)
+        await super().save(product)
 
         # Automatically track aggregate for event collection
         if self._uow:
             self._uow.track(product)
 
+    # ==================== Other Bento Framework Methods ====================
+    # The following methods are inherited from RepositoryAdapter:
+    # - async def get(self, id: str) -> Product | None
     # - async def list(self, specification=None) -> list[Product]
     # - async def exists(self, id: str) -> bool
     # - async def delete(self, id: str) -> None

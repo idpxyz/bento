@@ -20,6 +20,7 @@ from contexts.catalog.application.queries import (
     ListCategoriesUseCase,
 )
 from contexts.catalog.interfaces.category_presenters import category_to_dict
+from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 router = APIRouter()
 
@@ -65,41 +66,37 @@ class ListCategoriesResponse(BaseModel):
 
 async def get_create_category_use_case() -> CreateCategoryUseCase:
     """Get create category use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work, get_uow
 
     uow = await get_unit_of_work()
     return CreateCategoryUseCase(uow)
 
 
-async def get_list_categories_use_case() -> ListCategoriesUseCase:
-    """Get list categories use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_list_categories_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> ListCategoriesUseCase:
+    """get_list_categories_use_case (dependency)."""
     return ListCategoriesUseCase(uow)
 
 
-async def get_get_category_use_case() -> GetCategoryUseCase:
-    """Get get category use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_get_category_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> GetCategoryUseCase:
+    """get_get_category_use_case (dependency)."""
     return GetCategoryUseCase(uow)
 
 
-async def get_update_category_use_case() -> UpdateCategoryUseCase:
-    """Get update category use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_update_category_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> UpdateCategoryUseCase:
+    """get_update_category_use_case (dependency)."""
     return UpdateCategoryUseCase(uow)
 
 
-async def get_delete_category_use_case() -> DeleteCategoryUseCase:
-    """Get delete category use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_delete_category_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> DeleteCategoryUseCase:
+    """get_delete_category_use_case (dependency)."""
     return DeleteCategoryUseCase(uow)
 
 

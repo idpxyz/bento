@@ -20,6 +20,7 @@ from contexts.catalog.application.queries import (
     ListProductsUseCase,
 )
 from contexts.catalog.interfaces.presenters import product_to_dict
+from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 router = APIRouter()
 
@@ -67,41 +68,37 @@ class ListProductsResponse(BaseModel):
 
 async def get_create_product_use_case() -> CreateProductUseCase:
     """Get create product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work, get_uow
 
     uow = await get_unit_of_work()
     return CreateProductUseCase(uow)
 
 
-async def get_list_products_use_case() -> ListProductsUseCase:
-    """Get list products use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_list_products_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> ListProductsUseCase:
+    """get_list_products_use_case (dependency)."""
     return ListProductsUseCase(uow)
 
 
-async def get_get_product_use_case() -> GetProductUseCase:
-    """Get get product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_get_product_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> GetProductUseCase:
+    """get_get_product_use_case (dependency)."""
     return GetProductUseCase(uow)
 
 
-async def get_update_product_use_case() -> UpdateProductUseCase:
-    """Get update product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_update_product_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> UpdateProductUseCase:
+    """get_update_product_use_case (dependency)."""
     return UpdateProductUseCase(uow)
 
 
-async def get_delete_product_use_case() -> DeleteProductUseCase:
-    """Get delete product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_delete_product_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> DeleteProductUseCase:
+    """get_delete_product_use_case (dependency)."""
     return DeleteProductUseCase(uow)
 
 

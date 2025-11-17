@@ -49,6 +49,11 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, str]):
         # Initialize RepositoryAdapter
         super().__init__(repository=base_repo, mapper=mapper)
 
+        # Get current UoW from ContextVar for automatic tracking
+        from bento.persistence.uow import _current_uow
+
+        self._uow = _current_uow.get()
+
     # Additional custom query methods can be added here
     # For example:
     # async def find_by_parent_id(self, parent_id: str | None) -> list[Category]:

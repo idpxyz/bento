@@ -122,11 +122,10 @@ async def get_list_orders_use_case(
     return ListOrdersUseCase(uow)
 
 
-async def get_get_order_use_case() -> GetOrderUseCase:
+async def get_get_order_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> GetOrderUseCase:
     """Get get order use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
     return GetOrderUseCase(uow)
 
 

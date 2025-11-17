@@ -29,6 +29,7 @@ from contexts.identity.application.queries import (
     ListUsersUseCase,
 )
 from contexts.identity.interfaces.presenters import user_to_dict
+from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 # Create router
 router = APIRouter()
@@ -73,41 +74,37 @@ class ListUsersResponse(BaseModel):
 
 async def get_create_user_use_case() -> CreateUserUseCase:
     """Get create user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
+    from shared.infrastructure.dependencies import get_unit_of_work, get_uow
 
     uow = await get_unit_of_work()
     return CreateUserUseCase(uow)
 
 
-async def get_update_user_use_case() -> UpdateUserUseCase:
-    """Get update user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_update_user_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> UpdateUserUseCase:
+    """get_update_user_use_case (dependency)."""
     return UpdateUserUseCase(uow)
 
 
-async def get_delete_user_use_case() -> DeleteUserUseCase:
-    """Get delete user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_delete_user_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> DeleteUserUseCase:
+    """get_delete_user_use_case (dependency)."""
     return DeleteUserUseCase(uow)
 
 
-async def get_get_user_use_case() -> GetUserUseCase:
-    """Get get user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_get_user_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> GetUserUseCase:
+    """get_get_user_use_case (dependency)."""
     return GetUserUseCase(uow)
 
 
-async def get_list_users_use_case() -> ListUsersUseCase:
-    """Get list users use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
+async def get_list_users_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> ListUsersUseCase:
+    """get_list_users_use_case (dependency)."""
     return ListUsersUseCase(uow)
 
 
