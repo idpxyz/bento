@@ -91,10 +91,22 @@ class CreateUserUseCase(BaseUseCase[CreateUserCommand, User]):
             Created user aggregate
         """
         # Create user aggregate
+        user_id = str(ID.generate())
         user = User(
-            id=str(ID.generate()),
+            id=user_id,
             name=command.name.strip(),
             email=command.email.strip().lower(),
+        )
+
+        # Publish UserCreated event
+        from contexts.identity.domain.events import UserCreated
+
+        user.add_event(
+            UserCreated(
+                user_id=user_id,
+                name=user.name,
+                email=user.email,
+            )
         )
 
         # Persist via repository inside UoW

@@ -50,5 +50,15 @@ class DeleteUserUseCase(BaseUseCase[DeleteUserCommand, None]):
                 details={"resource": "user", "id": command.user_id},
             )
 
+        # Publish UserDeleted event before deletion
+        from contexts.identity.domain.events import UserDeleted
+
+        user.add_event(
+            UserDeleted(
+                user_id=user.id,
+                email=user.email,
+            )
+        )
+
         # Delete user (soft delete via framework)
         await user_repo.delete(user)

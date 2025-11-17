@@ -32,6 +32,8 @@ class User(AggregateRoot):
         更改用户名称
 
         这是一个业务方法示例，展示如何在领域模型中实现业务逻辑。
+
+        发布 UserUpdated 事件以通知系统其他部分。
         """
         if not new_name or len(new_name.strip()) == 0:
             raise ValueError("Name cannot be empty")
@@ -39,17 +41,35 @@ class User(AggregateRoot):
         old_name = self.name
         self.name = new_name.strip()
 
-        # 可以发布领域事件
-        # from contexts.identity.domain.events import UserNameChangedEvent
-        # self.add_event(UserNameChangedEvent(
-        #     user_id=self.id,
-        #     old_name=old_name,
-        #     new_name=self.name
-        # ))
+        # 发布领域事件
+        from contexts.identity.domain.events import UserUpdated
+
+        self.add_event(
+            UserUpdated(
+                user_id=self.id,
+                updated_fields={"name": self.name},
+            )
+        )
 
     def change_email(self, new_email: str) -> None:
-        """更改邮箱地址"""
+        """
+        更改邮箱地址
+
+        发布 UserEmailChanged 事件，因为邮箱变更通常需要特殊处理。
+        """
         if not new_email or "@" not in new_email:
             raise ValueError("Invalid email address")
 
+        old_email = self.email
         self.email = new_email.lower().strip()
+
+        # 发布邮箱变更事件（独立事件）
+        from contexts.identity.domain.events import UserEmailChanged
+
+        self.add_event(
+            UserEmailChanged(
+                user_id=self.id,
+                old_email=old_email,
+                new_email=self.email,
+            )
+        )
