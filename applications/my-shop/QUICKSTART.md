@@ -106,6 +106,33 @@ curl -X POST http://localhost:8000/api/v1/orders/{order_id}/ship
 
 # 取消订单
 curl -X POST http://localhost:8000/api/v1/orders/{order_id}/cancel
+
+# 创建用户
+curl -X POST http://localhost:8000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "张三",
+    "email": "zhangsan@example.com"
+  }'
+
+# 获取用户列表
+curl http://localhost:8000/api/v1/users
+
+# 获取单个用户
+curl http://localhost:8000/api/v1/users/{user_id}
+
+# 通过邮箱查找用户
+curl http://localhost:8000/api/v1/users/by-email/zhangsan@example.com
+
+# 更新用户
+curl -X PUT http://localhost:8000/api/v1/users/{user_id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "张三丰"
+  }'
+
+# 删除用户
+curl -X DELETE http://localhost:8000/api/v1/users/{user_id}
 ```
 
 ### 使用 Python requests
