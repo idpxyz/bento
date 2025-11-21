@@ -10,6 +10,7 @@
 
 import asyncio
 
+from bento.core.ids import ID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from contexts.catalog.application.services.product_enhanced_service import ProductEnhancedService
@@ -47,7 +48,7 @@ async def demo_basic_operations(service: ProductEnhancedService):
 
     # 1. 批量获取
     print("\n1️⃣  批量获取产品:")
-    product_ids = ["demo-p1", "demo-p2", "demo-p3"]
+    product_ids = [ID("demo-p1"), ID("demo-p2"), ID("demo-p3")]
     products = await service.get_products_batch(product_ids)
     print(f"   ✅ 批量获取了 {len(products)} 个产品")
     for p in products:
@@ -55,10 +56,10 @@ async def demo_basic_operations(service: ProductEnhancedService):
 
     # 2. 存在性检查
     print("\n2️⃣  检查产品是否存在:")
-    exists = await service.check_product_exists("demo-p1")
+    exists = await service.check_product_exists(ID("demo-p1"))
     print(f"   ✅ 产品 demo-p1 存在: {exists}")
 
-    exists = await service.check_product_exists("non-existent")
+    exists = await service.check_product_exists(ID("non-existent"))
     print(f"   ✅ 产品 non-existent 存在: {exists}")
 
     # 3. 通过字段查找（使用 name 字段）
