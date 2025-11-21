@@ -3,6 +3,9 @@
 Provides group by and aggregation operations:
 - group_by_field_po: Group and count by field
 - group_by_date_po: Group and count by date
+- group_by_multiple_fields_po: Group by multiple fields
+
+With caching support via CacheInterceptor.
 """
 
 from __future__ import annotations
@@ -21,11 +24,15 @@ class GroupByQueryMixin:
     This mixin assumes the class has:
     - self._po_type: The persistence object type
     - self._session: AsyncSession instance
+    - self._interceptor_chain: Optional interceptor chain for caching
+    - self._actor: Actor performing the operation
     """
 
     # Type hints for attributes provided by BaseRepository
     _po_type: type[Any]
     _session: AsyncSession
+    _interceptor_chain: Any  # InterceptorChain[Any] | None
+    _actor: str
 
     async def group_by_field_po(self, field: str, spec: Any | None = None) -> dict[Any, int]:
         """Group entities by field and count each group.
@@ -48,8 +55,27 @@ class GroupByQueryMixin:
             # Result: {"cat-1": 50, "cat-2": 30}
             ```
         """
-        field_obj = getattr(self._po_type, field)  # type: ignore
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
 
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.GROUP_BY,
+                actor=self._actor,
+                context_data={
+                    "group_fields": [field],
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
+        field_obj = getattr(self._po_type, field)  # type: ignore
         stmt = select(field_obj, func.count().label("count")).group_by(field_obj)
 
         if spec:
@@ -57,8 +83,13 @@ class GroupByQueryMixin:
 
         result = await self._session.execute(stmt)  # type: ignore
         rows = result.all()
+        result_value = {row[0]: row[1] for row in rows}
 
-        return {row[0]: row[1] for row in rows}
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def group_by_date_po(
         self, date_field: str, granularity: str = "day", spec: Any | None = None
@@ -84,6 +115,27 @@ class GroupByQueryMixin:
             # Result: {"2025-01": 150, "2025-02": 180, ...}
             ```
         """
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.GROUP_BY,
+                actor=self._actor,
+                context_data={
+                    "group_fields": [date_field],
+                    "period": granularity,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         field_obj = getattr(self._po_type, date_field)  # type: ignore
 
         if granularity == "day":
@@ -122,15 +174,21 @@ class GroupByQueryMixin:
         # Format results based on granularity
         if granularity == "day":
             # func.date() returns string directly
-            return {str(row[0]): row[1] for row in rows}
+            result_value = {str(row[0]): row[1] for row in rows}
         elif granularity == "week":
-            return {f"{int(row[0])}-W{int(row[1]):02d}": row[2] for row in rows}
+            result_value = {f"{int(row[0])}-W{int(row[1]):02d}": row[2] for row in rows}
         elif granularity == "month":
-            return {f"{int(row[0])}-{int(row[1]):02d}": row[2] for row in rows}
+            result_value = {f"{int(row[0])}-{int(row[1]):02d}": row[2] for row in rows}
         elif granularity == "year":
-            return {str(int(row[0])): row[1] for row in rows}
+            result_value = {str(int(row[0])): row[1] for row in rows}
+        else:
+            result_value = {}
 
-        return {}
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def group_by_multiple_fields_po(
         self, fields: list[str], spec: Any | None = None
@@ -156,6 +214,26 @@ class GroupByQueryMixin:
         if not fields:
             raise ValueError("At least one field is required for grouping")
 
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.GROUP_BY,
+                actor=self._actor,
+                context_data={
+                    "group_fields": fields,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         field_objs = [
             getattr(self._po_type, f)
             for f in fields  # type: ignore
@@ -168,5 +246,10 @@ class GroupByQueryMixin:
 
         result = await self._session.execute(stmt)  # type: ignore
         rows = result.all()
+        result_value = {tuple(row[:-1]): row[-1] for row in rows}
 
-        return {tuple(row[:-1]): row[-1] for row in rows}
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
