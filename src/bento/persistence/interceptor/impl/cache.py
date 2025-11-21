@@ -220,14 +220,20 @@ class CacheInterceptor(Interceptor[T]):
             OperationType.BATCH_UPDATE,
             OperationType.BATCH_DELETE,
         ):
-            # Invalidate per-entity id cache and list query cache
+            # Invalidate per-entity id cache and all related caches
             et = self._get_entity_type(context)
             if context.entities:
                 for ent in context.entities:
                     eid = getattr(ent, "id", None)
                     if eid is not None:
                         await self._cache.delete(self._full_key(f"{et}:id:{eid}"))
+
+            # Invalidate all query-related caches for this entity type
             await self._cache.delete_pattern(self._full_key(f"{et}:query*"))
+            await self._cache.delete_pattern(self._full_key(f"{et}:agg:*"))
+            await self._cache.delete_pattern(self._full_key(f"{et}:group:*"))
+            await self._cache.delete_pattern(self._full_key(f"{et}:sort:*"))
+            await self._cache.delete_pattern(self._full_key(f"{et}:page:*"))
 
         return await next_interceptor(context, results)
 
