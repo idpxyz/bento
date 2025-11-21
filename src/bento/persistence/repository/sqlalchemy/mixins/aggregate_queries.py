@@ -5,6 +5,8 @@ Provides aggregate query operations:
 - avg_field_po: Average field values
 - min_field_po: Minimum field value
 - max_field_po: Maximum field value
+
+With caching support via CacheInterceptor.
 """
 
 from __future__ import annotations
@@ -23,11 +25,15 @@ class AggregateQueryMixin:
     This mixin assumes the class has:
     - self._po_type: The persistence object type
     - self._session: AsyncSession instance
+    - self._interceptor_chain: Optional interceptor chain for caching
+    - self._actor: Actor performing the operation
     """
 
     # Type hints for attributes provided by BaseRepository
     _po_type: type[Any]
     _session: AsyncSession
+    _interceptor_chain: Any  # InterceptorChain[Any] | None
+    _actor: str
 
     async def sum_field_po(self, field: str, spec: Any | None = None) -> float:
         """Sum values of a field across all matching entities.
@@ -48,14 +54,40 @@ class AggregateQueryMixin:
             paid_total = await repo.sum_field_po("total", OrderSpec().status("PAID"))
             ```
         """
-        stmt = select(func.sum(getattr(self._po_type, field)))  # type: ignore
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
 
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.AGGREGATE,
+                actor=self._actor,
+                context_data={
+                    "aggregate_method": "sum",
+                    "field": field,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
+        stmt = select(func.sum(getattr(self._po_type, field)))  # type: ignore
         if spec:
             stmt = spec.apply(stmt, self._po_type)  # type: ignore
 
         result = await self._session.execute(stmt)  # type: ignore
         value = result.scalar()
-        return float(value) if value is not None else 0.0
+        result_value = float(value) if value is not None else 0.0
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def avg_field_po(self, field: str, spec: Any | None = None) -> float:
         """Calculate average value of a field across all matching entities.
@@ -76,14 +108,40 @@ class AggregateQueryMixin:
             avg_price = await repo.avg_field_po("price", ProductSpec().is_active())
             ```
         """
-        stmt = select(func.avg(getattr(self._po_type, field)))  # type: ignore
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
 
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.AGGREGATE,
+                actor=self._actor,
+                context_data={
+                    "aggregate_method": "avg",
+                    "field": field,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
+        stmt = select(func.avg(getattr(self._po_type, field)))  # type: ignore
         if spec:
             stmt = spec.apply(stmt, self._po_type)  # type: ignore
 
         result = await self._session.execute(stmt)  # type: ignore
         value = result.scalar()
-        return float(value) if value is not None else 0.0
+        result_value = float(value) if value is not None else 0.0
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def min_field_po(self, field: str, spec: Any | None = None) -> Any | None:
         """Find minimum value of a field across all matching entities.
@@ -104,13 +162,39 @@ class AggregateQueryMixin:
             earliest = await repo.min_field_po("created_at")
             ```
         """
-        stmt = select(func.min(getattr(self._po_type, field)))  # type: ignore
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
 
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.AGGREGATE,
+                actor=self._actor,
+                context_data={
+                    "aggregate_method": "min",
+                    "field": field,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
+        stmt = select(func.min(getattr(self._po_type, field)))  # type: ignore
         if spec:
             stmt = spec.apply(stmt, self._po_type)  # type: ignore
 
         result = await self._session.execute(stmt)  # type: ignore
-        return result.scalar()
+        result_value = result.scalar()
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def max_field_po(self, field: str, spec: Any | None = None) -> Any | None:
         """Find maximum value of a field across all matching entities.
@@ -131,13 +215,39 @@ class AggregateQueryMixin:
             latest = await repo.max_field_po("created_at")
             ```
         """
-        stmt = select(func.max(getattr(self._po_type, field)))  # type: ignore
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
 
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.AGGREGATE,
+                actor=self._actor,
+                context_data={
+                    "aggregate_method": "max",
+                    "field": field,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
+        stmt = select(func.max(getattr(self._po_type, field)))  # type: ignore
         if spec:
             stmt = spec.apply(stmt, self._po_type)  # type: ignore
 
         result = await self._session.execute(stmt)  # type: ignore
-        return result.scalar()
+        result_value = result.scalar()
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def count_field_po(
         self, field: str, spec: Any | None = None, distinct: bool = False
@@ -161,6 +271,27 @@ class AggregateQueryMixin:
             customers = await repo.count_field_po("customer_id", distinct=True)
             ```
         """
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.AGGREGATE,
+                actor=self._actor,
+                context_data={
+                    "aggregate_method": f"count{'_distinct' if distinct else ''}",
+                    "field": field,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         field_obj = getattr(self._po_type, field)  # type: ignore
         if distinct:
             stmt = select(func.count(func.distinct(field_obj)))
@@ -171,4 +302,10 @@ class AggregateQueryMixin:
             stmt = spec.apply(stmt, self._po_type)  # type: ignore
 
         result = await self._session.execute(stmt)  # type: ignore
-        return result.scalar() or 0
+        result_value = result.scalar() or 0
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
