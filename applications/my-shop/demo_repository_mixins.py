@@ -9,6 +9,7 @@
 """
 
 import asyncio
+from datetime import UTC, datetime
 
 from bento.core.ids import ID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -18,11 +19,17 @@ from contexts.catalog.infrastructure.models.product_po import ProductPO
 from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
 
 
-async def setup_demo_data(session: AsyncSession):
-    """创建演示数据"""
-    print("📦 正在创建演示数据...")
+async def setup_demo_data_direct(session: AsyncSession):
+    """直接创建演示数据（绕过 Repository）
 
-    # 创建一些测试产品（只使用 ProductPO 实际存在的字段）
+    注意：这种方式需要手动设置审计字段，因为绕过了 AuditInterceptor
+    仅用于演示目的，实际应用中应该使用 Repository
+    """
+    print("📦 正在创建演示数据...")
+    print("⚠️  注意：直接使用 Session 绕过了 Repository 层")
+
+    # 由于绕过了 Repository，需要手动设置审计字段
+    now = datetime.now(UTC)
     products = [
         ProductPO(
             id=f"demo-p{i}",
@@ -31,6 +38,11 @@ async def setup_demo_data(session: AsyncSession):
             category_id=f"cat-{i % 3 + 1}",  # 3个类别
             description=f"这是产品 {i} 的描述",
             stock=100 + i * 10,
+            # ⚠️ 手动设置审计字段（因为没有使用 Repository）
+            created_at=now,
+            updated_at=now,
+            created_by="demo",
+            updated_by="demo",
         )
         for i in range(1, 21)  # 创建 20 个产品
     ]
@@ -224,7 +236,7 @@ async def main():
         # 创建 session
         async with async_session_maker() as session:
             # 设置演示数据
-            await setup_demo_data(session)
+            await setup_demo_data_direct(session)
 
             # 创建 repository 和 service
             product_repo = ProductRepository(session, actor="demo-user")
