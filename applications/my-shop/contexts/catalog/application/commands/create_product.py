@@ -43,13 +43,13 @@ class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
 
     async def handle(self, command: CreateProductCommand) -> Product:
         """Handle command execution."""
-        product_id = str(ID.generate())
+        product_id = ID.generate()
         product = Product(
             id=product_id,
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",
             price=command.price,
-            category_id=command.category_id,  # 关联分类
+            category_id=ID(command.category_id) if command.category_id else None,  # 关联分类
         )
 
         # Persist via repository

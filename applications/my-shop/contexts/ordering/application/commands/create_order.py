@@ -10,6 +10,9 @@ from bento.core.ids import ID
 
 from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent as OrderCreated
 from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.ports.services.i_product_catalog_service import (
+    IProductCatalogService,
+)
 
 
 @dataclass
@@ -34,11 +37,12 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
     """Create order use case.
 
     创建订单并包含订单项。
-    验证产品存在性（与 Product 聚合交互）。
+    验证产品存在性（通过反腐败层与 Catalog BC 交互）。
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: IUnitOfWork, product_catalog: IProductCatalogService) -> None:
         super().__init__(uow)
+        self._product_catalog = product_catalog
 
     async def validate(self, command: CreateOrderCommand) -> None:
         """Validate command."""
@@ -74,26 +78,31 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
 
     async def handle(self, command: CreateOrderCommand) -> Order:
         """Handle command execution."""
-        # Validate products exist using UoW's repository
-        from contexts.catalog.domain.product import Product
+        # ✅ 通过反腐败层验证产品存在性（不直接依赖 Catalog BC）
+        product_ids = [item.product_id for item in command.items]
+        _, unavailable_ids = await self._product_catalog.check_products_available(product_ids)
 
-        product_repo = self.uow.repository(Product)
+        if unavailable_ids:
+            raise ApplicationException(
+                error_code=CommonErrors.NOT_FOUND,
+                details={
+                    "resource": "product",
+                    "unavailable_products": unavailable_ids,
+                    "message": f"Products not found or unavailable: {', '.join(unavailable_ids)}",
+                },
+            )
 
-        for item in command.items:
-            product = await product_repo.get(item.product_id)  # type: ignore
-            if not product:
-                raise ApplicationException(
-                    error_code=CommonErrors.NOT_FOUND,
-                    details={"resource": "product", "id": item.product_id},
-                )
-            # TODO P2: 检查库存充足
-            # if product.stock < item.quantity:
-            #     raise ApplicationException(...)
+        # TODO P2: 检查库存充足（需要在 IProductCatalogService 中添加方法）
+        # products_info = await self._product_catalog.get_products_info(product_ids)
+        # for item in command.items:
+        #     product_info = products_info[item.product_id]
+        #     if product_info.stock < item.quantity:
+        #         raise ApplicationException(...)
 
         # 创建订单聚合根
-        order_id = str(ID.generate())
+        order_id = ID.generate()  # 生成 ID 对象（不转字符串）
         order = Order(
-            id=order_id,
+            id=order_id,  # 传递 ID 对象
             customer_id=command.customer_id,
             items=[],  # 先创建空订单
         )
@@ -111,10 +120,10 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
         order.add_event(
             OrderCreated(
                 # 事件元数据
-                aggregate_id=order.id,  # ✅ 设置聚合根ID
+                aggregate_id=order.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",  # ✅ 设置租户ID（多租户支持）
                 # 订单基本信息
-                order_id=order.id,
+                order_id=order.id,  # ✅ 直接传递 ID 对象
                 customer_id=order.customer_id,
                 total=order.total,
                 item_count=len(order.items),

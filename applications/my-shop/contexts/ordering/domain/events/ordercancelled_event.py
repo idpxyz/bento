@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from bento.core.ids import ID
 from bento.domain.domain_event import DomainEvent
 
 
@@ -16,6 +17,6 @@ class OrderCancelledEvent(DomainEvent):
     - 分析取消原因
     """
 
-    order_id: str
+    order_id: ID  # ✅ 支持 ID 类型
     reason: str
     previous_status: str  # 取消前的状态

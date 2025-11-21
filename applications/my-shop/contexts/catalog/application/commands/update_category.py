@@ -6,6 +6,7 @@ from bento.application.ports import IUnitOfWork
 from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
+from bento.core.ids import ID
 
 from contexts.catalog.domain.category import Category
 
@@ -61,7 +62,7 @@ class UpdateCategoryUseCase(BaseUseCase[UpdateCategoryCommand, Category]):
             category.description = command.description.strip()
 
         if command.parent_id is not None:
-            category.move_to(command.parent_id)
+            category.move_to(ID(command.parent_id))
 
         # Save changes
         await category_repo.save(category)

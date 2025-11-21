@@ -2,9 +2,13 @@
 
 from dataclasses import dataclass
 
+from bento.core.ids import ID
 from bento.domain.domain_event import DomainEvent
+from bento.domain.event_registry import register_event
 
 
+# 事件注册，框架会自动处理事件持久化、发布、追踪， 反序列化
+@register_event
 @dataclass(frozen=True, kw_only=True)
 class OrderCreatedEvent(DomainEvent):
     """OrderCreated 事件 - 包含完整订单信息
@@ -24,7 +28,7 @@ class OrderCreatedEvent(DomainEvent):
     name: str = "order_created"
 
     # 订单基本信息
-    order_id: str
+    order_id: ID  # ✅ 支持 ID 类型
     customer_id: str
     total: float
     item_count: int

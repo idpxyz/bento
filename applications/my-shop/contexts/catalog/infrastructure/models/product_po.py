@@ -30,9 +30,17 @@ class ProductPO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFie
     # 主键
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
 
-    # 业务字段
+    # 基础字段
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    stock: Mapped[int | None] = mapped_column(nullable=True, default=0)
+
+    # 扩展字段（增强版）
+    sku: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    brand: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    stock: Mapped[int] = mapped_column(nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
+    sales_count: Mapped[int] = mapped_column(nullable=False, default=0)
+
+    # 关联字段
     category_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)

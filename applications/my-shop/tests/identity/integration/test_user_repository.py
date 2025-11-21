@@ -1,6 +1,8 @@
 """User 仓储集成测试"""
+
 import pytest
-from contexts.identity.domain.user import User
+
+from contexts.identity.domain.models.user import User
 
 
 @pytest.mark.integration

@@ -451,8 +451,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
 
         if kind == "id":
             return (
-                lambda v: self.convert_id_to_str(v),
-                lambda v: self.convert_str_to_id(v, d_unwrapped),
+                lambda v: str(v) if v is not None else None,  # ✅ 智能转换：ID → str
+                lambda v: d_unwrapped(v) if v is not None else None,  # ✅ 智能转换：str → ID
             )
         if kind == "enum":
             return (

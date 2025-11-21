@@ -65,11 +65,10 @@ class ListCategoriesResponse(BaseModel):
 # ==================== Dependency Injection ====================
 
 
-async def get_create_category_use_case() -> CreateCategoryUseCase:
+async def get_create_category_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> CreateCategoryUseCase:
     """Get create category use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
     return CreateCategoryUseCase(uow)
 
 

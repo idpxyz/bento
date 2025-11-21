@@ -11,7 +11,7 @@ from bento.domain.event_registry import (
     get_event_class,
     register_event,
 )
-from bento.domain.repository import Repository
+from bento.domain.ports.repository import Repository
 from bento.domain.service import DomainService
 from bento.domain.specification import Specification
 from bento.domain.value_object import ValueObject

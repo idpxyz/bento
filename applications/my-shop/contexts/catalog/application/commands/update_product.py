@@ -6,6 +6,7 @@ from bento.application.ports import IUnitOfWork
 from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
+from bento.core.ids import ID
 
 from contexts.catalog.domain.product import Product
 
@@ -78,7 +79,8 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
 
         if command.category_id is not None:
             if command.category_id:
-                product.assign_to_category(command.category_id)
+                # ✅ 转换 str 为 ID 类型
+                product.assign_to_category(ID(command.category_id))
             else:
                 product.remove_from_category()
 

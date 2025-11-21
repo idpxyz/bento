@@ -18,7 +18,35 @@ uv run examples/minimal_app/main.py
 - `examples/minimal_app` runnable FastAPI demo
 - `deploy/docker/compose.dev.yaml` one-command infra (Postgres, Redis, Redpanda/Kafka, MinIO)
 
-See `docs/` for conventions and ADRs.
+## ✨ Key Features
+
+### 🚀 Repository Enhancement (NEW!)
+**29 built-in repository methods** to supercharge your data access layer:
+- ✅ **Batch operations** - `get_by_ids()`, `delete_by_ids()`
+- ✅ **Uniqueness checks** - `is_unique()`, `find_by_field()`
+- ✅ **Aggregations** - `sum_field()`, `avg_field()`, `min/max_field()`
+- ✅ **Sorting & pagination** - `find_top_n()`, `find_paginated()`
+- ✅ **Conditional updates** - `update_by_spec()`, `delete_by_spec()`
+- ✅ **Group by queries** - `group_by_field()`, `group_by_date()`
+- ✅ **Soft delete management** - `find_trashed()`, `restore_by_spec()`
+- ✅ **Random sampling** - `find_random_n()`, `sample_percentage()`
+
+All repositories automatically inherit these methods - **zero configuration required**!
+
+📖 **Docs**: [Repository Mixins Guide](./docs/infrastructure/REPOSITORY_MIXINS_GUIDE.md) | [Quick Reference](./docs/infrastructure/REPOSITORY_MIXINS_QUICK_REF.md)
+
+### 🔄 Cascade Operations
+Automatic cascade save/delete for aggregate relationships with declarative configuration.
+
+📖 **Docs**: [Cascade Usage Guide](./docs/infrastructure/CASCADE_USAGE.md)
+
+### 🎯 Rich Infrastructure
+- **Interceptor Chain** - Audit, cache, soft delete, optimistic locking
+- **Specification Pattern** - Fluent query builders with type safety
+- **Event-Driven Architecture** - Domain events + outbox pattern
+- **Auto Mapping** - DTO ↔ Domain ↔ PO transformation
+
+See `docs/` for detailed conventions and guides.
 
 
 ## Added in this pack

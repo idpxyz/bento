@@ -1,5 +1,7 @@
 """Product 聚合根单元测试"""
-import pytest
+
+from bento.core.ids import ID
+
 from contexts.catalog.domain.product import Product
 
 
@@ -13,14 +15,24 @@ class TestProduct:
     def test_create_valid_product(self):
         """测试创建有效的聚合根"""
         # Arrange & Act
+        product_id = ID.generate()
+        category_id = ID.generate()
+
         product = Product(
-            id="test-id-123",
-            # TODO: 添加其他字段
+            id=product_id,
+            name="iPhone 15 Pro",
+            description="Latest flagship smartphone",
+            price=999.99,
+            category_id=category_id,
         )
 
         # Assert
-        assert product.id == "test-id-123"
-        # TODO: 验证其他字段
+        assert product.id == product_id
+        assert product.name == "iPhone 15 Pro"
+        assert product.description == "Latest flagship smartphone"
+        assert product.price == 999.99
+        assert product.category_id == category_id
+        assert product.is_categorized() is True
 
     def test_product_invariants(self):
         """测试聚合根不变量"""

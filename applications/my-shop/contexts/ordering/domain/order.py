@@ -1,9 +1,12 @@
 """Order 聚合根"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
+from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
 
 from contexts.ordering.domain.orderitem import OrderItem
@@ -35,7 +38,7 @@ class Order(AggregateRoot):
     - 只有已支付订单可以发货
     """
 
-    id: str
+    id: ID  # 使用 Bento 标准 ID 类型
     customer_id: str
     items: list[OrderItem] = field(default_factory=list)
     total: float = 0.0
@@ -45,7 +48,7 @@ class Order(AggregateRoot):
     shipped_at: datetime | None = None
 
     def __post_init__(self):
-        super().__init__(id=self.id)
+        super().__init__(id=str(self.id))  # ✅ ID 自动转字符串
         if self.created_at is None:
             self.created_at = datetime.utcnow()
         # 自动计算总额
@@ -63,9 +66,12 @@ class Order(AggregateRoot):
         if unit_price < 0:
             raise ValueError("单价不能为负数")
 
+        # 生成 OrderItem 的 ID
+        item_id = ID.generate()
+
         item = OrderItem(
-            id=f"{self.id}-{len(self.items) + 1}",
-            order_id=self.id,
+            id=item_id,
+            order_id=str(self.id),  # ID 自动转字符串
             product_id=product_id,
             product_name=product_name,
             quantity=quantity,
@@ -100,9 +106,9 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderPaidEvent(
-                aggregate_id=self.id,
+                aggregate_id=self.id,  # ✅ 直接传递 ID 对象，框架自动处理
                 tenant_id="default",
-                order_id=self.id,
+                order_id=self.id,  # ✅ 直接传递 ID 对象
                 customer_id=self.customer_id,
                 total=self.total,
                 paid_at=self.paid_at,
@@ -121,9 +127,9 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderShippedEvent(
-                aggregate_id=self.id,
+                aggregate_id=self.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",
-                order_id=self.id,
+                order_id=self.id,  # ✅ 直接传递 ID 对象
                 tracking_number=tracking_number,
                 shipped_at=self.shipped_at,
             )
@@ -140,9 +146,9 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderDeliveredEvent(
-                aggregate_id=self.id,
+                aggregate_id=self.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",
-                order_id=self.id,
+                order_id=self.id,  # ✅ 直接传递 ID 对象
                 delivered_at=datetime.utcnow(),
             )
         )
@@ -162,9 +168,9 @@ class Order(AggregateRoot):
 
         self.add_event(
             OrderCancelledEvent(
-                aggregate_id=self.id,
+                aggregate_id=self.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",
-                order_id=self.id,
+                order_id=self.id,  # ✅ 直接传递 ID 对象
                 reason=reason,
                 previous_status=old_status.value,
             )

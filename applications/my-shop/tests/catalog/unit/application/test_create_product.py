@@ -1,9 +1,12 @@
 """CreateProduct 用例单元测试"""
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock
-from contexts.catalog.application.usecases.create_product import (
-    CreateProductUseCase,
+
+import pytest
+
+from contexts.catalog.application.commands.create_product import (
     CreateProductCommand,
+    CreateProductUseCase,
 )
 
 
@@ -28,19 +31,16 @@ class TestCreateProductUseCase:
         return uow
 
     @pytest.fixture
-    def usecase(self, mock_repository, mock_uow):
+    def usecase(self, mock_uow):
         """用例实例"""
-        return CreateProductUseCase(
-            repository=mock_repository,
-            unit_of_work=mock_uow,
-        )
+        return CreateProductUseCase(uow=mock_uow)
 
     @pytest.mark.asyncio
     async def test_create_product_success(self, usecase, mock_repository):
         """测试成功场景"""
         # Arrange
         command = CreateProductCommand(
-            # TODO: 添加命令字段
+            name="iPhone 15 Pro", description="Latest flagship smartphone", price=999.99
         )
 
         # Act
@@ -57,7 +57,9 @@ class TestCreateProductUseCase:
         """测试验证失败场景"""
         # Arrange
         invalid_command = CreateProductCommand(
-            # TODO: 添加无效的命令数据
+            name="",  # 无效：空名称
+            description="Some description",
+            price=-100.0,  # 无效：负价格
         )
 
         # Act & Assert
@@ -66,9 +68,7 @@ class TestCreateProductUseCase:
         pass
 
     @pytest.mark.asyncio
-    async def test_create_product_transaction_rollback(
-        self, usecase, mock_uow
-    ):
+    async def test_create_product_transaction_rollback(self, usecase, mock_uow):
         """测试事务回滚"""
         # TODO: 测试异常时事务回滚
         # 模拟仓储抛出异常，验证工作单元回滚

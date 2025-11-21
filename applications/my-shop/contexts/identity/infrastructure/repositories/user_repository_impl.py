@@ -57,25 +57,14 @@ class UserRepository(RepositoryAdapter[User, UserPO, ID]):
         # Initialize adapter
         super().__init__(repository=base_repo, mapper=mapper)
 
-        # Get current UoW from ContextVar for automatic tracking
-        from bento.persistence.uow import _current_uow
+        # ✅ 框架自动处理：
+        # - UoW 追踪：RepositoryAdapter.save() 自动调用 uow.track()
+        # - 事件收集：框架自动从聚合根收集领域事件
+        # - 审计字段：拦截器链自动填充 created_at, updated_at 等
 
-        self._uow = _current_uow.get()
-
-    # ==================== Override save() to add tracking ====================
-
-    async def save(self, user: User) -> None:
-        """Save user to database and track for event collection.
-
-        Args:
-            user: User aggregate to save
-        """
-        # Use parent's save method (RepositoryAdapter)
-        await super().save(user)
-
-        # Automatically track aggregate for event collection
-        if self._uow:
-            self._uow.track(user)
+        # ❌ 不需要手动获取 UoW
+        # ❌ 不需要重写 save() 方法
+        # ❌ 不需要手动追踪实体
 
     # ==================== Bento Framework Methods ====================
     # The following methods are inherited from RepositoryAdapter:

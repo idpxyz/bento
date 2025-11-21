@@ -36,12 +36,12 @@ class CreateCategoryUseCase(BaseUseCase[CreateCategoryCommand, Category]):
 
     async def handle(self, command: CreateCategoryCommand) -> Category:
         """Handle command execution."""
-        category_id = str(ID.generate())
+        category_id = ID.generate()
         category = Category(
             id=category_id,
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",
-            parent_id=command.parent_id,
+            parent_id=ID(command.parent_id) if command.parent_id else None,
         )
 
         # Persist via repository

@@ -67,11 +67,10 @@ class ListProductsResponse(BaseModel):
 # ==================== Dependency Injection ====================
 
 
-async def get_create_product_use_case() -> CreateProductUseCase:
+async def get_create_product_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> CreateProductUseCase:
     """Get create product use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
     return CreateProductUseCase(uow)
 
 

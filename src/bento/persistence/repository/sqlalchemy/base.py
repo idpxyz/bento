@@ -18,6 +18,16 @@ from bento.persistence.interceptor import (
     InterceptorContext,
     OperationType,
 )
+from bento.persistence.repository.sqlalchemy.mixins import (
+    AggregateQueryMixin,
+    BatchOperationsMixin,
+    ConditionalUpdateMixin,
+    GroupByQueryMixin,
+    RandomSamplingMixin,
+    SoftDeleteEnhancedMixin,
+    SortingLimitingMixin,
+    UniquenessChecksMixin,
+)
 from bento.persistence.specification import CompositeSpecification
 
 # Type variables for Persistence Objects
@@ -25,7 +35,20 @@ PO = TypeVar("PO")  # Persistence Object
 ID = TypeVar("ID")  # ID type
 
 
-class BaseRepository[PO, ID]:
+class BaseRepository[PO, ID](
+    # P0 Mixins
+    BatchOperationsMixin,
+    UniquenessChecksMixin,
+    # P1 Mixins
+    AggregateQueryMixin,
+    SortingLimitingMixin,
+    ConditionalUpdateMixin,
+    # P2 Mixins
+    GroupByQueryMixin,
+    SoftDeleteEnhancedMixin,
+    # P3 Mixins
+    RandomSamplingMixin,
+):
     """Base repository for Persistence Object (PO) operations.
 
     This repository provides database operations for POs (SQLAlchemy models)

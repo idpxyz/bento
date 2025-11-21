@@ -1,12 +1,15 @@
 """OrderItem 实体"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
-from bento.domain.aggregate import AggregateRoot
+from bento.core.ids import ID
+from bento.domain.entity import Entity
 
 
 @dataclass
-class OrderItem(AggregateRoot):
+class OrderItem(Entity):
     """OrderItem 实体
 
     订单项是 Order 聚合的一部分，代表订单中的一个商品。
@@ -18,15 +21,14 @@ class OrderItem(AggregateRoot):
     - 小计 = 数量 × 单价
     """
 
-    id: str
-    order_id: str
+    id: ID
+    order_id: str  # 仍然是 str，因为这是外键引用
     product_id: str
     product_name: str
     quantity: int
     unit_price: float
 
     def __post_init__(self):
-        super().__init__(id=self.id)
         self._validate()
 
     def _validate(self):

@@ -1,5 +1,7 @@
 """Category 聚合根单元测试"""
-import pytest
+
+from bento.core.ids import ID
+
 from contexts.catalog.domain.category import Category
 
 
@@ -13,14 +15,17 @@ class TestCategory:
     def test_create_valid_category(self):
         """测试创建有效的聚合根"""
         # Arrange & Act
+        category_id = ID.generate()
         category = Category(
-            id="test-id-123",
-            # TODO: 添加其他字段
+            id=category_id, name="Electronics", description="Electronic products category"
         )
 
         # Assert
-        assert category.id == "test-id-123"
-        # TODO: 验证其他字段
+        assert category.id == category_id
+        assert category.name == "Electronics"
+        assert category.description == "Electronic products category"
+        assert category.parent_id is None
+        assert category.is_root() is True
 
     def test_category_invariants(self):
         """测试聚合根不变量"""

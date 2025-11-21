@@ -79,6 +79,20 @@
 | guides/MAPPER.md | Mapper 使用指南 | ⏳ 待创建 |
 | [application/MAPPER_USAGE.md](./application/MAPPER_USAGE.md) | AutoMapper 使用指南 | ✅ 已完成 |
 
+### 🔧 基础设施使用指南
+
+| 文档 | 说明 | 状态 |
+|------|------|------|
+| [infrastructure/REPOSITORY_MIXINS_GUIDE.md](./infrastructure/REPOSITORY_MIXINS_GUIDE.md) | **Repository 增强功能指南** 🆕🔥 | ✅ 已完成 |
+| [infrastructure/CASCADE_USAGE.md](./infrastructure/CASCADE_USAGE.md) | **级联操作使用指南** 🆕 | ✅ 已完成 |
+| [infrastructure/INTERCEPTOR_USAGE.md](./infrastructure/INTERCEPTOR_USAGE.md) | 拦截器系统使用指南 | ✅ 已完成 |
+| [infrastructure/SPECIFICATION_USAGE.md](./infrastructure/SPECIFICATION_USAGE.md) | 规范模式使用指南 | ✅ 已完成 |
+| [infrastructure/DATABASE_USAGE.md](./infrastructure/DATABASE_USAGE.md) | 数据库使用指南 | ✅ 已完成 |
+| [infrastructure/CACHE_ENHANCED_USAGE.md](./infrastructure/CACHE_ENHANCED_USAGE.md) | 缓存系统使用指南 | ✅ 已完成 |
+| [infrastructure/MESSAGING_USAGE.md](./infrastructure/MESSAGING_USAGE.md) | 消息系统使用指南 | ✅ 已完成 |
+| [infrastructure/PROJECTION_USAGE.md](./infrastructure/PROJECTION_USAGE.md) | 投影系统使用指南 | ✅ 已完成 |
+| [infrastructure/EXCEPTION_USAGE.md](./infrastructure/EXCEPTION_USAGE.md) | 异常处理使用指南 | ✅ 已完成 |
+
 ### 🎨 Mermaid 图表
 
 | 图表 | 说明 | 状态 |

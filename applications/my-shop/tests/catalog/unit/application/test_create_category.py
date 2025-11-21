@@ -1,9 +1,12 @@
 """CreateCategory 用例单元测试"""
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock
-from contexts.catalog.application.usecases.create_category import (
-    CreateCategoryUseCase,
+
+import pytest
+
+from contexts.catalog.application.commands.create_category import (
     CreateCategoryCommand,
+    CreateCategoryUseCase,
 )
 
 
@@ -28,19 +31,16 @@ class TestCreateCategoryUseCase:
         return uow
 
     @pytest.fixture
-    def usecase(self, mock_repository, mock_uow):
+    def usecase(self, mock_uow):
         """用例实例"""
-        return CreateCategoryUseCase(
-            repository=mock_repository,
-            unit_of_work=mock_uow,
-        )
+        return CreateCategoryUseCase(uow=mock_uow)
 
     @pytest.mark.asyncio
     async def test_create_category_success(self, usecase, mock_repository):
         """测试成功场景"""
         # Arrange
         command = CreateCategoryCommand(
-            # TODO: 添加命令字段
+            name="Electronics", description="Electronic products category"
         )
 
         # Act
@@ -57,7 +57,8 @@ class TestCreateCategoryUseCase:
         """测试验证失败场景"""
         # Arrange
         invalid_command = CreateCategoryCommand(
-            # TODO: 添加无效的命令数据
+            name="",  # 无效：空名称
+            description="Some description",
         )
 
         # Act & Assert
@@ -66,9 +67,7 @@ class TestCreateCategoryUseCase:
         pass
 
     @pytest.mark.asyncio
-    async def test_create_category_transaction_rollback(
-        self, usecase, mock_uow
-    ):
+    async def test_create_category_transaction_rollback(self, usecase, mock_uow):
         """测试事务回滚"""
         # TODO: 测试异常时事务回滚
         # 模拟仓储抛出异常，验证工作单元回滚

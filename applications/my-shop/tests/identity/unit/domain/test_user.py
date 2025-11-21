@@ -1,6 +1,6 @@
 """User 聚合根单元测试"""
-import pytest
-from contexts.identity.domain.user import User
+
+from contexts.identity.domain.models.user import User
 
 
 class TestUser:
@@ -13,14 +13,12 @@ class TestUser:
     def test_create_valid_user(self):
         """测试创建有效的聚合根"""
         # Arrange & Act
-        user = User(
-            id="test-id-123",
-            # TODO: 添加其他字段
-        )
+        user = User(id="test-id-123", name="John Doe", email="john@example.com")
 
         # Assert
         assert user.id == "test-id-123"
-        # TODO: 验证其他字段
+        assert user.name == "John Doe"
+        assert user.email == "john@example.com"
 
     def test_user_invariants(self):
         """测试聚合根不变量"""

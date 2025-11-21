@@ -15,6 +15,16 @@ from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
 from bento.domain.entity import Entity
 from bento.domain.ports.repository import Repository as IRepository
+from bento.infrastructure.repository.mixins import (
+    AggregateQueryMixin,
+    BatchOperationsMixin,
+    ConditionalUpdateMixin,
+    GroupByQueryMixin,
+    RandomSamplingMixin,
+    SoftDeleteEnhancedMixin,
+    SortingLimitingMixin,
+    UniquenessChecksMixin,
+)
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
 
@@ -24,7 +34,22 @@ class HasVersion(Protocol):
     version: int | None
 
 
-class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
+class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
+    # P0 Mixins
+    BatchOperationsMixin,
+    UniquenessChecksMixin,
+    # P1 Mixins
+    AggregateQueryMixin,
+    SortingLimitingMixin,
+    ConditionalUpdateMixin,
+    # P2 Mixins
+    GroupByQueryMixin,
+    SoftDeleteEnhancedMixin,
+    # P3 Mixins
+    RandomSamplingMixin,
+    # Base
+    IRepository[AR, ID],
+):
     """Repository Adapter implementing Domain Repository Port.
 
     This adapter provides the bridge between Domain layer (Aggregate Roots)

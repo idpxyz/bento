@@ -112,7 +112,13 @@ async def get_create_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
 ) -> CreateOrderUseCase:
     """Get create order use case (dependency)."""
-    return CreateOrderUseCase(uow)
+    from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
+        ProductCatalogAdapter,
+    )
+
+    # 创建反腐败层适配器
+    product_catalog = ProductCatalogAdapter(uow.session)
+    return CreateOrderUseCase(uow, product_catalog)
 
 
 async def get_list_orders_use_case(

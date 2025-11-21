@@ -73,11 +73,10 @@ class ListUsersResponse(BaseModel):
 # ==================== Dependency Injection ====================
 
 
-async def get_create_user_use_case() -> CreateUserUseCase:
+async def get_create_user_use_case(
+    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
+) -> CreateUserUseCase:
     """Get create user use case (dependency)."""
-    from shared.infrastructure.dependencies import get_unit_of_work
-
-    uow = await get_unit_of_work()
     return CreateUserUseCase(uow)
 
 

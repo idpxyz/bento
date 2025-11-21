@@ -1,4 +1,11 @@
-"""Order Mapper 实现 - 处理 Order + OrderItem 聚合映射"""
+"""Order Mapper 实现 - 零配置智能映射
+
+✅ 框架改进后的超简化版本：
+- AutoMapper 自动处理 ID ↔ str 转换
+- 自动处理 Enum 转换
+- 自动忽略审计字段
+- 无需手动编写任何转换逻辑
+"""
 
 from bento.application.mapper import AutoMapper
 
@@ -9,54 +16,28 @@ from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
 
 class OrderMapper(AutoMapper[Order, OrderPO]):
-    """Order Mapper - 使用 Bento AutoMapper
+    """Order Mapper - 零配置智能映射
 
-    AutoMapper 自动处理：
-    - 同名字段映射
-    - OrderStatus enum 转换
-    - 审计字段由 Interceptor 处理（ignored）
-
-    注意：items 集合需要在 Repository 层单独处理
+    ✅ 框架自动处理：
+    - ID(uuid) ↔ str 双向转换
+    - OrderStatus enum ↔ str 转换
+    - 审计字段自动忽略
+    - 同名字段自动映射
     """
 
     def __init__(self):
-        super().__init__(
-            domain_type=Order,
-            po_type=OrderPO,
-        )
+        super().__init__(Order, OrderPO)
 
-        # 忽略审计和元数据字段（由 Interceptor 自动处理）
-        self.ignore_fields(
-            "created_at",
-            "created_by",
-            "updated_at",
-            "updated_by",
-            "version",
-            "deleted_at",
-            "deleted_by",
-        )
-
-        # items 集合在 Repository 层处理
-        self.ignore_fields("items")
+        # ✅ 只需要配置业务规则，技术细节由框架处理
+        self.ignore_fields("items")  # 聚合子实体在 Repository 层处理
 
 
-# OrderItem Mapper（简单映射，审计字段由 Interceptor 处理）
 class OrderItemMapper(AutoMapper[OrderItem, OrderItemPO]):
-    """OrderItem Mapper - 使用 AutoMapper"""
+    """OrderItem Mapper - 零配置智能映射
+
+    ✅ 继承即用，无需任何配置
+    """
 
     def __init__(self):
-        super().__init__(
-            domain_type=OrderItem,
-            po_type=OrderItemPO,
-        )
-
-        # 忽略审计字段
-        self.ignore_fields(
-            "created_at",
-            "created_by",
-            "updated_at",
-            "updated_by",
-            "version",
-            "deleted_at",
-            "deleted_by",
-        )
+        super().__init__(OrderItem, OrderItemPO)
+        # ✅ 完全零配置：框架自动处理所有字段映射

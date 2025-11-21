@@ -11,10 +11,12 @@ The Unit of Work pattern ensures that:
 
 from typing import Protocol, TypeVar
 
+from bento.core.ids import EntityId
 from bento.domain.domain_event import DomainEvent
-from bento.domain.repository import Repository
+from bento.domain.entity import Entity
+from bento.domain.ports.repository import Repository
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Entity)
 
 
 class UnitOfWork(Protocol):
@@ -145,7 +147,7 @@ class UnitOfWork(Protocol):
         """
         ...
 
-    def repository(self, aggregate_type: type[T]) -> Repository[T]:
+    def repository(self, aggregate_type: type[T]) -> Repository[T, EntityId]:
         """Get repository for a specific aggregate type.
 
         Args:

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from bento.core.ids import EntityId
 from bento.domain.entity import Entity
-from bento.domain.repository import Repository
+from bento.domain.ports.repository import Repository
 
 
-class InMemoryRepository[T: Entity](Repository[T]):
+class InMemoryRepository[T: Entity](Repository[T, EntityId]):
     def __init__(self) -> None:
         self._store: dict[str, T] = {}
 

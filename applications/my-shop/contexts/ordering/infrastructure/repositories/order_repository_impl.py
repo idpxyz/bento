@@ -1,8 +1,15 @@
-"""Order Repository 实现 - 使用 Bento RepositoryAdapter"""
+"""Order Repository 实现 - 使用 Bento RepositoryAdapter
+
+This is the infrastructure adapter that implements the IOrderRepository port.
+Following Hexagonal Architecture:
+- Port (interface): domain/ports/repositories/i_order_repository.py
+- Adapter (implementation): infrastructure/repositories/order_repository_impl.py (this file)
+"""
 
 from __future__ import annotations
 
-from bento.infrastructure.repository import RepositoryAdapter
+from bento.core.ids import ID
+from bento.infrastructure.repository import CascadeConfig, CascadeMixin, RepositoryAdapter
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import delete, select
@@ -17,8 +24,10 @@ from contexts.ordering.infrastructure.models.order_po import OrderPO
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
 
-class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
-    """Order Repository - 使用 Bento RepositoryAdapter
+class OrderRepository(CascadeMixin, RepositoryAdapter[Order, OrderPO, ID]):
+    """Order Repository - Secondary Adapter (Infrastructure Implementation)
+
+    Implements: IOrderRepository (domain/ports/repositories/i_order_repository.py)
 
     提供：
     - 自动 CRUD 操作（通过 RepositoryAdapter）
@@ -49,15 +58,25 @@ class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
         # 初始化适配器
         super().__init__(repository=base_repo, mapper=order_mapper)
 
+        # 保存 session 和 actor（CascadeMixin 需要）
         self.session = session
         self.actor = actor
+
+        # ✨ 配置级联关系 - 使用 Bento 级联助手
+        self.cascade_configs = {
+            "items": CascadeConfig(
+                child_po_type=OrderItemPO,
+                child_mapper=self.item_mapper.map,
+                foreign_key_field="order_id",
+            )
+        }
 
         # Get current UoW from ContextVar for automatic tracking
         from bento.persistence.uow import _current_uow
 
         self._uow = _current_uow.get()
 
-    async def get(self, order_id: str) -> Order | None:
+    async def get(self, order_id: ID) -> Order | None:
         """获取 Order + OrderItems（聚合加载）
 
         步骤：
@@ -72,7 +91,7 @@ class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
 
         # 2. 加载 OrderItems
         result = await self.session.execute(
-            select(OrderItemPO).where(OrderItemPO.order_id == order_id)
+            select(OrderItemPO).where(OrderItemPO.order_id == str(order_id))
         )
         item_pos = result.scalars().all()
 
@@ -89,44 +108,28 @@ class OrderRepository(RepositoryAdapter[Order, OrderPO, str]):
     async def save(self, order: Order) -> None:
         """保存 Order + OrderItems（聚合级联）
 
-        步骤：
-        1. 保存 Order（通过 RepositoryAdapter，自动处理审计字段）
-        2. 删除旧的 OrderItems
-        3. 保存新的 OrderItems（通过 BaseRepository，自动审计）
+        ✨ 使用 Bento 级联助手自动处理：
+        1. 保存 Order（通过 RepositoryAdapter，自动审计）
+        2. 自动级联 OrderItems（删除旧的，创建新的）
+        3. 自动审计所有子实体
+
+        无需手动管理级联逻辑！
         """
-        # 1. 保存 Order（使用父类方法，自动处理审计字段）
-        await super().save(order)
-
-        # 2. 删除旧的 OrderItems
-        await self.session.execute(delete(OrderItemPO).where(OrderItemPO.order_id == order.id))
-
-        # 3. 保存新的 OrderItems（使用 BaseRepository 自动处理审计）
-        item_base_repo = BaseRepository(
-            session=self.session,
-            po_type=OrderItemPO,
-            actor=self.actor,
-            interceptor_chain=create_default_chain(self.actor),
-        )
-
-        for item in order.items:
-            item_po = self.item_mapper.map(item)
-            await item_base_repo.create_po(item_po)
-
-        # ✅ Automatically track aggregate for event collection
-        if self._uow:
-            self._uow.track(order)
-
+        # ✨ 一行代码处理所有级联操作！
+        await self.save_with_cascade(order, self.cascade_configs)
         await self.session.flush()
 
     async def delete(self, order: Order) -> None:
         """删除 Order 聚合（软删除）"""
-        order_po = await self.session.get(OrderPO, order.id)
+        order_po = await self.session.get(OrderPO, order.id.value)
         if order_po:
             # 软删除 Order
             await self.session.delete(order_po)
 
             # 删除所有 OrderItem（硬删除，因为它们不需要软删除）
-            await self.session.execute(delete(OrderItemPO).where(OrderItemPO.order_id == order.id))
+            await self.session.execute(
+                delete(OrderItemPO).where(OrderItemPO.order_id == order.id.value)
+            )
 
         await self.session.flush()
 

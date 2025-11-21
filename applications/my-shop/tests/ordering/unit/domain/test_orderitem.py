@@ -1,5 +1,7 @@
 """OrderItem 聚合根单元测试"""
+
 import pytest
+
 from contexts.ordering.domain.orderitem import OrderItem
 
 
@@ -11,41 +13,110 @@ class TestOrderItem:
     """
 
     def test_create_valid_orderitem(self):
-        """测试创建有效的聚合根"""
+        """测试创建有效的实体"""
         # Arrange & Act
         orderitem = OrderItem(
             id="test-id-123",
-            # TODO: 添加其他字段
+            order_id="order-456",
+            product_id="product-789",
+            product_name="Test Product",
+            quantity=2,
+            unit_price=100.0,
         )
 
         # Assert
         assert orderitem.id == "test-id-123"
-        # TODO: 验证其他字段
+        assert orderitem.order_id == "order-456"
+        assert orderitem.product_id == "product-789"
+        assert orderitem.product_name == "Test Product"
+        assert orderitem.quantity == 2
+        assert orderitem.unit_price == 100.0
+        assert orderitem.subtotal == 200.0
 
     def test_orderitem_invariants(self):
-        """测试聚合根不变量"""
-        # TODO: 测试违反不变量的场景
-        # 例如：
-        # with pytest.raises(ValueError, match="must not be empty"):
-        #     OrderItem(id="", name="Test")
-        pass
+        """测试实体不变量"""
+        # 产品ID不能为空
+        with pytest.raises(ValueError, match="产品ID不能为空"):
+            OrderItem(
+                id="item-1",
+                order_id="order-1",
+                product_id="",
+                product_name="Test",
+                quantity=1,
+                unit_price=100.0,
+            )
+
+        # 产品名称不能为空
+        with pytest.raises(ValueError, match="产品名称不能为空"):
+            OrderItem(
+                id="item-1",
+                order_id="order-1",
+                product_id="product-1",
+                product_name="",
+                quantity=1,
+                unit_price=100.0,
+            )
+
+        # 数量必须大于0
+        with pytest.raises(ValueError, match="数量必须大于0"):
+            OrderItem(
+                id="item-1",
+                order_id="order-1",
+                product_id="product-1",
+                product_name="Test",
+                quantity=0,
+                unit_price=100.0,
+            )
+
+        # 单价不能为负数
+        with pytest.raises(ValueError, match="单价不能为负数"):
+            OrderItem(
+                id="item-1",
+                order_id="order-1",
+                product_id="product-1",
+                product_name="Test",
+                quantity=1,
+                unit_price=-10.0,
+            )
 
     def test_orderitem_business_rules(self):
         """测试业务规则"""
-        # TODO: 测试业务方法
-        # 例如：
-        # orderitem = OrderItem(id="123", is_active=True)
-        # orderitem.deactivate()
-        # assert orderitem.is_active is False
-        pass
+        orderitem = OrderItem(
+            id="item-1",
+            order_id="order-1",
+            product_id="product-1",
+            product_name="Test Product",
+            quantity=2,
+            unit_price=100.0,
+        )
 
-    def test_orderitem_raises_domain_events(self):
-        """测试领域事件发布"""
-        # TODO: 测试领域事件
-        # 例如：
-        # orderitem = OrderItem(id="123")
-        # orderitem.some_action()
-        # events = orderitem.collect_events()
-        # assert len(events) == 1
-        # assert isinstance(events[0], OrderItemSomethingHappened)
-        pass
+        # 测试更新数量
+        orderitem.update_quantity(5)
+        assert orderitem.quantity == 5
+        assert orderitem.subtotal == 500.0
+
+        # 测试更新价格
+        orderitem.update_price(80.0)
+        assert orderitem.unit_price == 80.0
+        assert orderitem.subtotal == 400.0
+
+        # 更新数量时数量必须大于0
+        with pytest.raises(ValueError, match="数量必须大于0"):
+            orderitem.update_quantity(0)
+
+        # 更新价格时单价不能为负数
+        with pytest.raises(ValueError, match="单价不能为负数"):
+            orderitem.update_price(-10.0)
+
+    def test_orderitem_subtotal_calculation(self):
+        """测试小计计算"""
+        orderitem = OrderItem(
+            id="item-1",
+            order_id="order-1",
+            product_id="product-1",
+            product_name="Test Product",
+            quantity=3,
+            unit_price=150.0,
+        )
+
+        assert orderitem.subtotal == 450.0
