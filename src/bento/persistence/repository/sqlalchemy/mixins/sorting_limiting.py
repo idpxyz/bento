@@ -4,6 +4,9 @@ Provides sorting and limiting operations:
 - find_first_po: Find first matching entity
 - find_last_po: Find last matching entity
 - find_top_n_po: Find top N entities
+- find_paginated_po: Find entities with pagination
+
+With caching support via CacheInterceptor.
 """
 
 from __future__ import annotations
@@ -22,11 +25,15 @@ class SortingLimitingMixin:
     This mixin assumes the class has:
     - self._po_type: The persistence object type
     - self._session: AsyncSession instance
+    - self._interceptor_chain: Optional interceptor chain for caching
+    - self._actor: Actor performing the operation
     """
 
     # Type hints for attributes provided by BaseRepository
     _po_type: type[Any]
     _session: AsyncSession
+    _interceptor_chain: Any  # InterceptorChain[Any] | None
+    _actor: str
 
     async def find_first_po(
         self, spec: Any | None = None, order_by: str | None = None
@@ -55,6 +62,28 @@ class SortingLimitingMixin:
             )
             ```
         """
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.SORT_LIMIT,
+                actor=self._actor,
+                context_data={
+                    "method": "first",
+                    "order_by": order_by or "",
+                    "limit": 1,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         stmt = select(self._po_type)  # type: ignore
 
         if spec:
@@ -69,7 +98,13 @@ class SortingLimitingMixin:
 
         stmt = stmt.limit(1)
         result = await self._session.execute(stmt)  # type: ignore
-        return result.scalar_one_or_none()
+        result_value = result.scalar_one_or_none()
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def find_last_po(
         self, spec: Any | None = None, order_by: str = "created_at"
@@ -128,6 +163,28 @@ class SortingLimitingMixin:
         if n <= 0:
             return []
 
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.SORT_LIMIT,
+                actor=self._actor,
+                context_data={
+                    "method": "top_n",
+                    "order_by": order_by or "",
+                    "limit": n,
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         stmt = select(self._po_type)  # type: ignore
 
         if spec:
@@ -142,7 +199,13 @@ class SortingLimitingMixin:
 
         stmt = stmt.limit(n)
         result = await self._session.execute(stmt)  # type: ignore
-        return list(result.scalars().all())
+        result_value = list(result.scalars().all())
+
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
 
     async def find_paginated_po(
         self,
@@ -178,6 +241,28 @@ class SortingLimitingMixin:
         if page_size < 1:
             page_size = 20
 
+        # Try interceptor cache first
+        context = None
+        if self._interceptor_chain:
+            from bento.persistence.interceptor import InterceptorContext, OperationType
+
+            context = InterceptorContext(
+                session=self._session,  # type: ignore
+                entity_type=self._po_type,
+                operation=OperationType.PAGINATE,
+                actor=self._actor,
+                context_data={
+                    "page": page,
+                    "page_size": page_size,
+                    "order_by": order_by or "",
+                    "specification": spec,
+                },
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        # Execute query
         # Build base query
         stmt = select(self._po_type)  # type: ignore
 
@@ -207,5 +292,10 @@ class SortingLimitingMixin:
 
         result = await self._session.execute(stmt)  # type: ignore
         entities = list(result.scalars().all())
+        result_value = (entities, total)
 
-        return entities, total
+        # Process result through interceptor (for caching)
+        if self._interceptor_chain and context is not None:
+            result_value = await self._interceptor_chain.process_result(context, result_value)
+
+        return result_value
