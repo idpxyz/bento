@@ -176,11 +176,13 @@ class TestOrderAPI:
             "items": [
                 {
                     "product_id": "prod-1",
+                    "product_name": "Test Product 1",
                     "quantity": 2,
                     "unit_price": 99.99,
                 },
                 {
                     "product_id": "prod-2",
+                    "product_name": "Test Product 2",
                     "quantity": 1,
                     "unit_price": 49.99,
                 },
@@ -203,6 +205,7 @@ class TestOrderAPI:
             "items": [
                 {
                     "product_id": "prod-1",
+                    "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
                 }
@@ -217,7 +220,8 @@ class TestOrderAPI:
         assert pay_response.json()["status"] == "paid"
 
         # Ship order
-        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship")
+        ship_data = {"tracking_number": "TRACK123"}
+        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship", json=ship_data)
         assert ship_response.status_code == 200
         assert ship_response.json()["status"] == "shipped"
 
@@ -229,6 +233,7 @@ class TestOrderAPI:
             "items": [
                 {
                     "product_id": "prod-1",
+                    "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
                 }
@@ -238,7 +243,8 @@ class TestOrderAPI:
         order_id = create_response.json()["id"]
 
         # Cancel order
-        cancel_response = test_app.post(f"/api/v1/orders/{order_id}/cancel")
+        cancel_data = {"reason": "Customer requested cancellation"}
+        cancel_response = test_app.post(f"/api/v1/orders/{order_id}/cancel", json=cancel_data)
         assert cancel_response.status_code == 200
         assert cancel_response.json()["status"] == "cancelled"
 
@@ -250,6 +256,7 @@ class TestOrderAPI:
             "items": [
                 {
                     "product_id": "prod-1",
+                    "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
                 }
@@ -259,8 +266,9 @@ class TestOrderAPI:
         order_id = create_response.json()["id"]
 
         # Try to ship without paying
-        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship")
-        assert ship_response.status_code == 400  # Bad request
+        ship_data = {"tracking_number": "TRACK456"}
+        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship", json=ship_data)
+        assert ship_response.status_code == 400  # Should fail request
 
 
 class TestHealthEndpoints:
