@@ -52,7 +52,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
 
     Example:
         ```python
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         # Setup (in composition root)
         outbox = SqlAlchemyOutbox(session)
@@ -277,7 +277,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         if self.pending_events and listener_enabled:
             import importlib
 
-            importlib.import_module("bento.persistence.sqlalchemy.outbox_listener")
+            importlib.import_module("bento.persistence.outbox.listener")
 
         # 2. Persist events to Outbox (if we have an outbox and events)
         # We do this manually because after_flush listeners don't reliably trigger with AsyncSession
@@ -285,7 +285,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         if self.pending_events and self._outbox and not listener_enabled:
             from sqlalchemy import select
 
-            from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+            from bento.persistence.outbox.record import OutboxRecord
 
             logger.debug("Persisting %d events to Outbox", len(self.pending_events))
 
@@ -446,7 +446,7 @@ class UnitOfWorkFactory:
 
     Example:
         ```python
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         factory = UnitOfWorkFactory(session_factory)
         uow = await factory.create()
@@ -467,7 +467,7 @@ class UnitOfWorkFactory:
         Returns:
             New UnitOfWork instance configured with Outbox pattern
         """
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         session = self._session_factory()
         outbox = SqlAlchemyOutbox(session)

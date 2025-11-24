@@ -10,7 +10,7 @@ from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
 from bento.persistence.config import is_outbox_listener_enabled
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+from bento.persistence.outbox.record import OutboxRecord
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 logger = logging.getLogger(__name__)

@@ -11,8 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from bento.domain.domain_event import DomainEvent
 from bento.messaging.outbox import Outbox
-
-from .base import Base
+from bento.persistence.po import Base
 
 
 class OutboxRecord(Base):

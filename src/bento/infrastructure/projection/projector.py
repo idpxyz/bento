@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from bento.application.ports.message_bus import MessageBus
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import deserialize_event
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+from bento.persistence.outbox.record import OutboxRecord
 
 from .config import (
     DEFAULT_BATCH_SIZE,
