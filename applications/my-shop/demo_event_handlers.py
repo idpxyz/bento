@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 sys.path.insert(0, str(Path(__file__).parent))
 
 from bento.adapters.messaging.inprocess import InProcessMessageBus
-from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 from contexts.catalog.domain.product import Product

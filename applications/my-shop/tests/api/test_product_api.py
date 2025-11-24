@@ -6,19 +6,13 @@ Run with:
     pytest tests/api/test_product_api.py -v
 """
 
-from fastapi.testclient import TestClient
-
-from main import app
-
-client = TestClient(app)
-
 
 class TestProductAPI:
     """Product API integration tests"""
 
-    def test_list_products(self):
+    def test_list_products(self, test_app):
         """Test listing products with pagination"""
-        response = client.get("/api/v1/products?page=1&page_size=10")
+        response = test_app.get("/api/v1/products?page=1&page_size=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -35,15 +29,15 @@ class TestProductAPI:
         assert data["page"] == 1
         assert data["page_size"] == 10
 
-    def test_list_products_with_category_filter(self):
+    def test_list_products_with_category_filter(self, test_app):
         """Test filtering products by category"""
-        response = client.get("/api/v1/products?category_id=test-category")
+        response = test_app.get("/api/v1/products?category_id=test-category")
 
         assert response.status_code == 200
         data = response.json()
         assert "items" in data
 
-    def test_create_product(self):
+    def test_create_product(self, test_app):
         """Test creating a product"""
         product_data = {
             "name": "Test Product",
@@ -52,7 +46,7 @@ class TestProductAPI:
             "stock": 100,
         }
 
-        response = client.post("/api/v1/products", json=product_data)
+        response = test_app.post("/api/v1/products", json=product_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -64,18 +58,18 @@ class TestProductAPI:
         assert data["stock"] == product_data["stock"]
         assert "id" in data
 
-    def test_create_product_invalid_data(self):
+    def test_create_product_invalid_data(self, test_app):
         """Test creating product with invalid data"""
         invalid_data = {
             "name": "",  # Empty name should fail
             "price": -10,  # Negative price should fail
         }
 
-        response = client.post("/api/v1/products", json=invalid_data)
+        response = test_app.post("/api/v1/products", json=invalid_data)
 
         assert response.status_code == 422  # Validation error
 
-    def test_get_product(self):
+    def test_get_product(self, test_app):
         """Test getting a product by ID"""
         # First create a product
         product_data = {
@@ -83,25 +77,25 @@ class TestProductAPI:
             "price": 49.99,
             "stock": 50,
         }
-        create_response = client.post("/api/v1/products", json=product_data)
+        create_response = test_app.post("/api/v1/products", json=product_data)
         product_id = create_response.json()["id"]
 
         # Then retrieve it
-        response = client.get(f"/api/v1/products/{product_id}")
+        response = test_app.get(f"/api/v1/products/{product_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == product_id
         assert data["name"] == product_data["name"]
 
-    def test_get_product_not_found(self):
+    def test_get_product_not_found(self, test_app):
         """Test getting a non-existent product"""
-        response = client.get("/api/v1/products/non-existent-id")
+        response = test_app.get("/api/v1/products/non-existent-id")
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    def test_update_product(self):
+    def test_update_product(self, test_app):
         """Test updating a product"""
         # First create a product
         product_data = {
@@ -109,7 +103,7 @@ class TestProductAPI:
             "price": 79.99,
             "stock": 30,
         }
-        create_response = client.post("/api/v1/products", json=product_data)
+        create_response = test_app.post("/api/v1/products", json=product_data)
         product_id = create_response.json()["id"]
 
         # Then update it
@@ -117,14 +111,14 @@ class TestProductAPI:
             "price": 69.99,
             "stock": 40,
         }
-        response = client.put(f"/api/v1/products/{product_id}", json=update_data)
+        response = test_app.put(f"/api/v1/products/{product_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
         assert data["price"] == update_data["price"]
         assert data["stock"] == update_data["stock"]
 
-    def test_delete_product(self):
+    def test_delete_product(self, test_app):
         """Test deleting a product"""
         # First create a product
         product_data = {
@@ -132,23 +126,23 @@ class TestProductAPI:
             "price": 29.99,
             "stock": 10,
         }
-        create_response = client.post("/api/v1/products", json=product_data)
+        create_response = test_app.post("/api/v1/products", json=product_data)
         product_id = create_response.json()["id"]
 
         # Then delete it
-        response = client.delete(f"/api/v1/products/{product_id}")
+        response = test_app.delete(f"/api/v1/products/{product_id}")
 
         assert response.status_code == 204
 
         # Verify it's deleted
-        get_response = client.get(f"/api/v1/products/{product_id}")
+        get_response = test_app.get(f"/api/v1/products/{product_id}")
         assert get_response.status_code == 404
 
-    def test_pagination(self):
+    def test_pagination(self, test_app):
         """Test pagination functionality"""
         # Create multiple products
         for i in range(15):
-            client.post(
+            test_app.post(
                 "/api/v1/products",
                 json={
                     "name": f"Pagination Test Product {i}",
@@ -158,12 +152,12 @@ class TestProductAPI:
             )
 
         # Test first page
-        response1 = client.get("/api/v1/products?page=1&page_size=10")
+        response1 = test_app.get("/api/v1/products?page=1&page_size=10")
         data1 = response1.json()
         assert len(data1["items"]) <= 10
 
         # Test second page
-        response2 = client.get("/api/v1/products?page=2&page_size=10")
+        response2 = test_app.get("/api/v1/products?page=2&page_size=10")
         data2 = response2.json()
         assert len(data2["items"]) >= 0
 
@@ -171,7 +165,7 @@ class TestProductAPI:
 class TestOrderAPI:
     """Order API integration tests"""
 
-    def test_create_order(self):
+    def test_create_order(self, test_app):
         """Test creating an order"""
         order_data = {
             "customer_id": "test-customer",
@@ -189,7 +183,7 @@ class TestOrderAPI:
             ],
         }
 
-        response = client.post("/api/v1/orders", json=order_data)
+        response = test_app.post("/api/v1/orders", json=order_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -197,7 +191,7 @@ class TestOrderAPI:
         assert len(data["items"]) == 2
         assert "id" in data
 
-    def test_order_state_transitions(self):
+    def test_order_state_transitions(self, test_app):
         """Test order state transitions (pending -> paid -> shipped)"""
         # Create order
         order_data = {
@@ -210,20 +204,20 @@ class TestOrderAPI:
                 }
             ],
         }
-        create_response = client.post("/api/v1/orders", json=order_data)
+        create_response = test_app.post("/api/v1/orders", json=order_data)
         order_id = create_response.json()["id"]
 
         # Pay order
-        pay_response = client.post(f"/api/v1/orders/{order_id}/pay")
+        pay_response = test_app.post(f"/api/v1/orders/{order_id}/pay")
         assert pay_response.status_code == 200
         assert pay_response.json()["status"] == "paid"
 
         # Ship order
-        ship_response = client.post(f"/api/v1/orders/{order_id}/ship")
+        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship")
         assert ship_response.status_code == 200
         assert ship_response.json()["status"] == "shipped"
 
-    def test_cancel_order(self):
+    def test_cancel_order(self, test_app):
         """Test cancelling an order"""
         # Create order
         order_data = {
@@ -236,15 +230,15 @@ class TestOrderAPI:
                 }
             ],
         }
-        create_response = client.post("/api/v1/orders", json=order_data)
+        create_response = test_app.post("/api/v1/orders", json=order_data)
         order_id = create_response.json()["id"]
 
         # Cancel order
-        cancel_response = client.post(f"/api/v1/orders/{order_id}/cancel")
+        cancel_response = test_app.post(f"/api/v1/orders/{order_id}/cancel")
         assert cancel_response.status_code == 200
         assert cancel_response.json()["status"] == "cancelled"
 
-    def test_cannot_ship_unpaid_order(self):
+    def test_cannot_ship_unpaid_order(self, test_app):
         """Test that unpaid orders cannot be shipped"""
         # Create order
         order_data = {
@@ -257,37 +251,37 @@ class TestOrderAPI:
                 }
             ],
         }
-        create_response = client.post("/api/v1/orders", json=order_data)
+        create_response = test_app.post("/api/v1/orders", json=order_data)
         order_id = create_response.json()["id"]
 
         # Try to ship without paying
-        ship_response = client.post(f"/api/v1/orders/{order_id}/ship")
+        ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship")
         assert ship_response.status_code == 400  # Bad request
 
 
 class TestHealthEndpoints:
     """Test health check endpoints"""
 
-    def test_root_endpoint(self):
+    def test_root_endpoint(self, test_app):
         """Test root endpoint"""
-        response = client.get("/")
+        response = test_app.get("/")
 
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
         assert "status" in data
 
-    def test_health_endpoint(self):
+    def test_health_endpoint(self, test_app):
         """Test health check endpoint"""
-        response = client.get("/health")
+        response = test_app.get("/health")
 
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
 
-    def test_api_ping(self):
+    def test_api_ping(self, test_app):
         """Test API ping endpoint"""
-        response = client.get("/api/v1/ping")
+        response = test_app.get("/api/v1/ping")
 
         assert response.status_code == 200
         data = response.json()

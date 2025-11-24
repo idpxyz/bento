@@ -1,9 +1,28 @@
 """Pytest Configuration and Fixtures"""
-import pytest
+
 import asyncio
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+import sys
+from collections.abc import AsyncGenerator
+from pathlib import Path
+
+import pytest
+
+# Import Base from Bento Framework
+from bento.persistence import Base
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
+
+# Add application to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import all PO models to register them with Base.metadata
+# Import Base to create all tables
+
+from contexts.catalog.infrastructure.models.category_po import CategoryPO  # noqa: F401
+from contexts.catalog.infrastructure.models.product_po import ProductPO  # noqa: F401
+from contexts.identity.infrastructure.models.user_po import UserPO  # noqa: F401
+from contexts.ordering.infrastructure.models.order_po import OrderPO  # noqa: F401
+from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO  # noqa: F401
 
 # Test database URL (in-memory SQLite)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -19,19 +38,22 @@ def event_loop():
 
 @pytest.fixture(scope="function")
 async def db_engine():
-    """Create a test database engine"""
+    """Create a test database engine with all tables"""
     engine = create_async_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
 
-    # TODO: Import and create tables
-    # from infrastructure.models import Base
-    # async with engine.begin() as conn:
-    #     await conn.run_sync(Base.metadata.create_all)
+    # Create all tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     yield engine
+
+    # Clean up
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 
@@ -48,6 +70,54 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
         await session.rollback()
+
+
+@pytest.fixture(scope="function")
+def test_app():
+    """Create a test FastAPI app with test database"""
+    import asyncio
+
+    from fastapi.testclient import TestClient
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from main import app
+    from shared.infrastructure.dependencies import get_db_session
+
+    # Create test engine and tables
+    test_engine = create_async_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    # Create all tables synchronously
+    async def setup_db():
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    asyncio.run(setup_db())
+
+    # Create session factory
+    test_session_factory = async_sessionmaker(test_engine, expire_on_commit=False)
+
+    async def override_get_db_session():
+        """Override session dependency for testing"""
+        async with test_session_factory() as session:
+            yield session
+
+    # Override dependency
+    app.dependency_overrides[get_db_session] = override_get_db_session
+
+    yield TestClient(app)
+
+    # Clean up
+    async def teardown_db():
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        await test_engine.dispose()
+
+    asyncio.run(teardown_db())
+    app.dependency_overrides.clear()
 
 
 # TODO: Add more fixtures as needed

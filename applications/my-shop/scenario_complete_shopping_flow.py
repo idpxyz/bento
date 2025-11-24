@@ -31,7 +31,7 @@ from bento.adapters.messaging.inprocess import InProcessMessageBus
 from bento.core.ids import ID
 from bento.infrastructure.database import DatabaseConfig, create_async_engine_from_config
 from bento.infrastructure.projection.projector import OutboxProjector
-from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 

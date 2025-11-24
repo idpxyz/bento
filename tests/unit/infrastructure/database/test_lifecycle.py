@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Protocol
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
@@ -11,6 +13,12 @@ from bento.infrastructure.database.lifecycle import (
     init_database,
 )
 from bento.persistence.po.base import Base
+
+
+class EngineProtocol(Protocol):
+    """Minimal engine protocol for testing."""
+
+    def connect(self): ...  # noqa: ANN201
 
 
 @pytest.mark.asyncio
@@ -52,4 +60,5 @@ async def test_health_check_failure_branch():
             return Boom()
 
     fe = FakeEngine()
-    assert await health_check(fe) is False
+    # Type ignore: FakeEngine is a test mock that intentionally doesn't fully implement AsyncEngine
+    assert await health_check(fe) is False  # type: ignore[arg-type]

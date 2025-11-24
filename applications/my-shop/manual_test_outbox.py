@@ -19,7 +19,7 @@ from pathlib import Path
 # Bento framework imports (before path modification)
 from bento.core.ids import ID
 from bento.infrastructure.database import create_async_engine_from_config
-from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker

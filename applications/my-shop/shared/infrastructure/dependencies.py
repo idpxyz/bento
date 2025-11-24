@@ -9,7 +9,7 @@ This module provides FastAPI dependencies using Bento's infrastructure:
 from collections.abc import AsyncGenerator
 
 from bento.infrastructure.database import create_async_engine_from_config
-from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
