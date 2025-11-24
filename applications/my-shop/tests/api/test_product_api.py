@@ -74,6 +74,7 @@ class TestProductAPI:
         # First create a product
         product_data = {
             "name": "Get Test Product",
+            "description": "A test product for getting",
             "price": 49.99,
             "stock": 50,
         }
@@ -100,6 +101,7 @@ class TestProductAPI:
         # First create a product
         product_data = {
             "name": "Update Test Product",
+            "description": "A test product for updating",
             "price": 79.99,
             "stock": 30,
         }
@@ -123,6 +125,7 @@ class TestProductAPI:
         # First create a product
         product_data = {
             "name": "Delete Test Product",
+            "description": "A test product for deleting",
             "price": 29.99,
             "stock": 10,
         }
