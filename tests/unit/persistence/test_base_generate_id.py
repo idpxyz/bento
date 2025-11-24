@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bento.persistence.base import Base
+from bento.persistence.po.base import Base
 
 
 def test_base_generate_id_format():
