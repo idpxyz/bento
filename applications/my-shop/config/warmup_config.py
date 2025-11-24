@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from bento.adapters.cache.warmup_coordinator import CacheWarmupCoordinator
+
 # 导入各BC的预热策略
 from contexts.catalog.application.warmup import (
     CategoryWarmupStrategy,
     HotProductsWarmupStrategy,
 )
-from shared.infrastructure.cache.warmup import CacheWarmupCoordinator
 
 if TYPE_CHECKING:
     from bento.application.ports.cache import Cache
@@ -86,14 +87,14 @@ async def setup_cache_warmup(
 
     coordinator.register_strategy(
         HotProductsWarmupStrategy(product_repository),
-        bc_name="catalog",
-        description="预热热销商品（最常访问的100个商品）",
+        tags=["catalog", "product", "high-priority"],
+        metadata={"description": "预热热销商品（最常访问的100个商品）"},
     )
 
     coordinator.register_strategy(
         CategoryWarmupStrategy(category_repository),
-        bc_name="catalog",
-        description="预热分类数据（所有分类+列表页）",
+        tags=["catalog", "category"],
+        metadata={"description": "预热分类数据（所有分类+列表页）"},
     )
 
     # 3. TODO: 注册其他BC的预热策略
@@ -113,7 +114,8 @@ async def setup_cache_warmup(
     strategies = coordinator.list_strategies()
     logger.info(f"✅ 已注册 {len(strategies)} 个预热策略:")
     for name, metadata in strategies.items():
-        logger.info(f"   - {name} (BC: {metadata['bc_name']}, Priority: {metadata['priority']})")
+        tags_str = ", ".join(metadata.get("tags", []))
+        logger.info(f"   - {name} (Tags: {tags_str}, Priority: {metadata['priority']})")
 
     # 5. 可选：执行启动时预热
     if warmup_on_startup:
@@ -146,12 +148,12 @@ async def warmup_catalog_only(
 
     coordinator.register_strategy(
         HotProductsWarmupStrategy(product_repository),
-        bc_name="catalog",
+        tags=["catalog"],
     )
 
     coordinator.register_strategy(
         CategoryWarmupStrategy(category_repository),
-        bc_name="catalog",
+        tags=["catalog"],
     )
 
-    return await coordinator.warmup_by_bc("catalog")
+    return await coordinator.warmup_by_tags(["catalog"])
