@@ -14,6 +14,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+
+# Import settings from top-level config.py (not the config package)
 from contextlib import asynccontextmanager
 
 from bento.adapters.cache import CacheBackend, CacheConfig, CacheFactory
@@ -23,7 +25,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings
+from config import settings  # Config package exports settings from top-level config.py
 from config.warmup_config import setup_cache_warmup
 from contexts.catalog.infrastructure.repositories.category_repository_impl import (
     CategoryRepository,
