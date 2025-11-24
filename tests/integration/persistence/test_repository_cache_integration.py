@@ -8,6 +8,7 @@
 """
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, sessionmaker
@@ -46,7 +47,7 @@ class ProductRepository(BaseRepository[ProductPO, str]):
 # ==================== Fixtures ====================
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def engine():
     """创建内存数据库引擎"""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
@@ -56,7 +57,7 @@ async def engine():
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def session(engine):
     """创建数据库会话"""
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -64,7 +65,7 @@ async def session(engine):
         yield session
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def cache():
     """创建缓存实例"""
     return await CacheFactory.create(
@@ -72,7 +73,7 @@ async def cache():
     )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def repository(session, cache):
     """创建带缓存的仓库"""
     cache_interceptor = CacheInterceptor(
@@ -96,7 +97,7 @@ async def repository(session, cache):
     )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_products(session):
     """创建示例数据"""
     products = [
