@@ -13,7 +13,7 @@ from typing import Protocol, cast, runtime_checkable
 
 from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
-from bento.domain.entity import Entity
+from bento.domain.aggregate import AggregateRoot
 from bento.domain.ports.repository import Repository as IRepository
 from bento.infrastructure.repository.mixins import (
     AggregateQueryMixin,
@@ -34,7 +34,7 @@ class HasVersion(Protocol):
     version: int | None
 
 
-class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
+class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
     # P0 Mixins
     BatchOperationsMixin,
     UniquenessChecksMixin,

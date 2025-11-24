@@ -29,10 +29,15 @@ class {{Name}}PO(Base):
 # 实际项目中的实现示例
 # ============================================================================
 #
-# 从框架统一的 Base 继承：
-# from bento.persistence.sqlalchemy.base import Base
+# 从框架统一的 Base 和 Mixins 继承：
+# from bento.persistence import (
+#     Base,
+#     AuditFieldsMixin,
+#     SoftDeleteFieldsMixin,
+#     OptimisticLockFieldMixin,
+# )
 #
-# class {{Name}}PO(Base):
+# class {{Name}}PO(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFieldMixin):
 #     __tablename__: str = "{{table_name}}"
 #     # ... 字段定义
 #
