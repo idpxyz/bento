@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import logging
+import random
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, TypeVar
 
 from bento.application.ports.cache import Cache
+from bento.persistence.interceptor.singleflight import SingleflightGroup
 
 from ..core import (
     Interceptor,
@@ -13,7 +17,18 @@ from ..core import (
     OperationType,
 )
 
+logger = logging.getLogger(__name__)
+
 T = TypeVar("T")
+
+
+class _CacheNullValue:
+    """Marker for cached null values to prevent cache penetration."""
+
+    pass
+
+
+CACHE_NULL = _CacheNullValue()
 
 
 class CacheInterceptor(Interceptor[T]):
@@ -45,12 +60,35 @@ class CacheInterceptor(Interceptor[T]):
         ttl_config: dict[OperationType, int] | None = None,
         enabled: bool = True,
         prefix: str = "",
+        # Performance optimizations
+        enable_singleflight: bool = True,
+        enable_jitter: bool = True,
+        jitter_range: float = 0.1,
+        # Cache penetration protection
+        enable_null_cache: bool = True,
+        null_cache_ttl: int = 10,
+        # Fault tolerance
+        fail_open: bool = True,
+        cache_timeout: float = 0.1,
     ) -> None:
         self._cache = cache
         self._ttl = ttl  # Default TTL
         self._ttl_config = ttl_config or self.DEFAULT_TTL_CONFIG
         self._enabled = enabled
         self._prefix = prefix
+
+        # Performance optimizations
+        self._singleflight = SingleflightGroup() if enable_singleflight else None
+        self._enable_jitter = enable_jitter
+        self._jitter_range = jitter_range  # ±10% by default
+
+        # Cache penetration protection
+        self._enable_null_cache = enable_null_cache
+        self._null_cache_ttl = null_cache_ttl
+
+        # Fault tolerance
+        self._fail_open = fail_open
+        self._cache_timeout = cache_timeout
 
     @property
     def priority(self) -> InterceptorPriority:
@@ -149,6 +187,24 @@ class CacheInterceptor(Interceptor[T]):
         """Get TTL for operation type."""
         return self._ttl_config.get(operation, self._ttl)
 
+    def _apply_jitter(self, base_ttl: int) -> int:
+        """Apply random jitter to TTL to prevent cache avalanche.
+
+        Args:
+            base_ttl: Base TTL in seconds
+
+        Returns:
+            TTL with random jitter applied (±jitter_range%)
+
+        Example:
+            base_ttl=600, jitter_range=0.1 → 540~660 seconds
+        """
+        if not self._enable_jitter or base_ttl == 0:
+            return base_ttl
+
+        multiplier = random.uniform(1 - self._jitter_range, 1 + self._jitter_range)
+        return int(base_ttl * multiplier)
+
     def _is_write(self, op: OperationType) -> bool:
         return op in (
             OperationType.CREATE,
@@ -171,11 +227,51 @@ class CacheInterceptor(Interceptor[T]):
         if not key:
             return await next_interceptor(context)
 
-        cached = await self._cache.get(self._full_key(key))
+        # Use singleflight to prevent cache breakdown
+        if self._singleflight:
+
+            async def query_cache():
+                return await self._get_from_cache_with_fallback(key)
+
+            cached = await self._singleflight.do(key, query_cache)
+        else:
+            cached = await self._get_from_cache_with_fallback(key)
+
+        # Handle null value marker
+        if isinstance(cached, _CacheNullValue):
+            return None  # Prevents database query for known null values
+
         if cached is not None:
             return cached
 
         return await next_interceptor(context)
+
+    async def _get_from_cache_with_fallback(self, key: str) -> Any:
+        """Get from cache with fault tolerance.
+
+        Implements fail-open pattern: cache failures don't block the application.
+        """
+        try:
+            cached = await asyncio.wait_for(
+                self._cache.get(self._full_key(key)), timeout=self._cache_timeout
+            )
+            return cached
+
+        except TimeoutError:
+            logger.warning(
+                f"Cache timeout for key: {key}", extra={"key": key, "timeout": self._cache_timeout}
+            )
+            if self._fail_open:
+                return None  # Fail open: continue without cache
+            raise
+
+        except Exception as e:
+            logger.error(
+                f"Cache error for key: {key}", extra={"key": key, "error": str(e)}, exc_info=True
+            )
+            if self._fail_open:
+                return None  # Fail open: continue without cache
+            raise
 
     async def process_result(
         self,
@@ -188,10 +284,32 @@ class CacheInterceptor(Interceptor[T]):
 
         if self._is_read(context.operation):
             key = self._get_cache_key(context)
-            if key and result is not None:
-                # Use operation-specific TTL
-                ttl = self._get_ttl(context.operation)
-                await self._cache.set(self._full_key(key), result, ttl=ttl)
+            if key:
+                # Cache null values to prevent penetration
+                if result is None and self._enable_null_cache:
+                    cache_value = CACHE_NULL
+                    ttl = self._null_cache_ttl  # Short TTL for null values
+                elif result is not None:
+                    cache_value = result
+                    ttl = self._get_ttl(context.operation)
+                    # Apply jitter to prevent cache avalanche
+                    ttl = self._apply_jitter(ttl)
+                else:
+                    # result is None and null cache disabled
+                    return await next_interceptor(context, result)
+
+                # Set cache with fault tolerance
+                try:
+                    await asyncio.wait_for(
+                        self._cache.set(self._full_key(key), cache_value, ttl=ttl),
+                        timeout=self._cache_timeout,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to set cache for key: {key}", extra={"key": key, "error": str(e)}
+                    )
+                    # Continue even if cache set fails (fail-open)
+
                 return await next_interceptor(context, result)
 
         if self._is_write(context.operation):
@@ -212,9 +330,20 @@ class CacheInterceptor(Interceptor[T]):
         if context.operation is OperationType.QUERY:
             key = self._get_cache_key(context)
             if key is not None:
-                # Use operation-specific TTL
+                # Use operation-specific TTL with jitter
                 ttl = self._get_ttl(context.operation)
-                await self._cache.set(self._full_key(key), results, ttl=ttl)
+                ttl = self._apply_jitter(ttl)
+
+                try:
+                    await asyncio.wait_for(
+                        self._cache.set(self._full_key(key), results, ttl=ttl),
+                        timeout=self._cache_timeout,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to set batch cache for key: {key}",
+                        extra={"key": key, "error": str(e)},
+                    )
         elif context.operation in (
             OperationType.BATCH_CREATE,
             OperationType.BATCH_UPDATE,
