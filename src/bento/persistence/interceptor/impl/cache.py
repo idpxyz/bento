@@ -23,9 +23,17 @@ T = TypeVar("T")
 
 
 class _CacheNullValue:
-    """Marker for cached null values to prevent cache penetration."""
+    """Marker for cached null values to prevent cache penetration.
 
-    pass
+    Supports pickle serialization for compatibility with different cache backends.
+    """
+
+    def __reduce__(self):
+        """Support pickle serialization."""
+        return (_CacheNullValue, ())
+
+    def __repr__(self) -> str:
+        return "<CacheNull>"
 
 
 CACHE_NULL = _CacheNullValue()
@@ -62,6 +70,7 @@ class CacheInterceptor(Interceptor[T]):
         prefix: str = "",
         # Performance optimizations
         enable_singleflight: bool = True,
+        singleflight_timeout: float = 5.0,
         enable_jitter: bool = True,
         jitter_range: float = 0.1,
         # Cache penetration protection
@@ -79,6 +88,7 @@ class CacheInterceptor(Interceptor[T]):
 
         # Performance optimizations
         self._singleflight = SingleflightGroup() if enable_singleflight else None
+        self._singleflight_timeout = singleflight_timeout
         self._enable_jitter = enable_jitter
         self._jitter_range = jitter_range  # ±10% by default
 
@@ -89,6 +99,16 @@ class CacheInterceptor(Interceptor[T]):
         # Fault tolerance
         self._fail_open = fail_open
         self._cache_timeout = cache_timeout
+
+        # Statistics for monitoring
+        self._stats = {
+            "singleflight_saved": 0,  # Queries saved by singleflight
+            "singleflight_timeout": 0,  # Singleflight timeouts
+            "fail_open_count": 0,  # Fail-open degradations
+            "null_cache_hits": 0,  # Null cache hits
+            "cache_hits": 0,  # Total cache hits
+            "cache_misses": 0,  # Total cache misses
+        }
 
     @property
     def priority(self) -> InterceptorPriority:
@@ -233,16 +253,39 @@ class CacheInterceptor(Interceptor[T]):
             async def query_cache():
                 return await self._get_from_cache_with_fallback(key)
 
-            cached = await self._singleflight.do(key, query_cache)
+            try:
+                # Add timeout to prevent slow queries from blocking all requests
+                cached = await asyncio.wait_for(
+                    self._singleflight.do(key, query_cache), timeout=self._singleflight_timeout
+                )
+                # Check if we saved queries (singleflight was effective)
+                stats = self._singleflight.stats()
+                if key in stats.get("keys", []):
+                    self._stats["singleflight_saved"] += 1
+
+            except TimeoutError:
+                self._stats["singleflight_timeout"] += 1
+                logger.error(
+                    f"Singleflight timeout for key: {key}",
+                    extra={"key": key, "timeout": self._singleflight_timeout},
+                )
+                if self._fail_open:
+                    cached = None  # Fail open: continue without cache
+                else:
+                    raise
         else:
             cached = await self._get_from_cache_with_fallback(key)
 
         # Handle null value marker
         if isinstance(cached, _CacheNullValue):
+            self._stats["null_cache_hits"] += 1
             return None  # Prevents database query for known null values
 
         if cached is not None:
+            self._stats["cache_hits"] += 1
             return cached
+
+        self._stats["cache_misses"] += 1
 
         return await next_interceptor(context)
 
@@ -258,6 +301,7 @@ class CacheInterceptor(Interceptor[T]):
             return cached
 
         except TimeoutError:
+            self._stats["fail_open_count"] += 1
             logger.warning(
                 f"Cache timeout for key: {key}", extra={"key": key, "timeout": self._cache_timeout}
             )
@@ -266,6 +310,7 @@ class CacheInterceptor(Interceptor[T]):
             raise
 
         except Exception as e:
+            self._stats["fail_open_count"] += 1
             logger.error(
                 f"Cache error for key: {key}", extra={"key": key, "error": str(e)}, exc_info=True
             )
@@ -392,3 +437,33 @@ class CacheInterceptor(Interceptor[T]):
 
         # Invalidate pagination caches
         await self._cache.delete_pattern(self._full_key(f"{et}:page:*"))
+
+    def get_stats(self) -> dict[str, int]:
+        """Get cache statistics.
+
+        Returns:
+            Dictionary containing cache statistics:
+            - singleflight_saved: Number of queries saved by singleflight
+            - singleflight_timeout: Number of singleflight timeouts
+            - fail_open_count: Number of fail-open degradations
+            - null_cache_hits: Number of null cache hits
+            - cache_hits: Total cache hits
+            - cache_misses: Total cache misses
+
+        Example:
+            ```python
+            stats = cache_interceptor.get_stats()
+            hit_rate = stats['cache_hits'] / (stats['cache_hits'] + stats['cache_misses'])
+            print(f"Cache hit rate: {hit_rate:.2%}")
+            print(f"Singleflight savings: {stats['singleflight_saved']}")
+            ```
+        """
+        return self._stats.copy()
+
+    def reset_stats(self) -> None:
+        """Reset cache statistics.
+
+        Useful for testing or periodic metric collection.
+        """
+        for key in self._stats:
+            self._stats[key] = 0
