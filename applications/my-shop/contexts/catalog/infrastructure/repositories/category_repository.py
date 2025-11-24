@@ -2,6 +2,8 @@
 
 from typing import Protocol
 
+from bento.core.ids import ID
+
 from contexts.catalog.domain.category import Category
 
 
@@ -19,15 +21,15 @@ class ICategoryRepository(Protocol):
     - exists(id) - 检查是否存在
     """
 
-    async def get(self, id: str) -> Category | None:
+    async def get(self, id: ID) -> Category | None:
         """根据ID获取聚合根"""
         ...
 
-    async def save(self, entity: Category) -> None:
+    async def save(self, aggregate: Category) -> None:
         """保存聚合根（创建或更新）"""
         ...
 
-    async def delete(self, id: str) -> None:
+    async def delete(self, aggregate: Category) -> None:
         """删除聚合根"""
         ...
 

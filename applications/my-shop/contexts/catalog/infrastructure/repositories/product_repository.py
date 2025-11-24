@@ -1,5 +1,9 @@
 """Product 仓储接口"""
+
 from typing import Protocol
+
+from bento.core.ids import ID
+
 from contexts.catalog.domain.product import Product
 
 
@@ -17,15 +21,15 @@ class IProductRepository(Protocol):
     - exists(id) - 检查是否存在
     """
 
-    async def get(self, id: str) -> Product | None:
+    async def get(self, id: ID) -> Product | None:
         """根据ID获取聚合根"""
         ...
 
-    async def save(self, entity: Product) -> None:
+    async def save(self, aggregate: Product) -> None:
         """保存聚合根（创建或更新）"""
         ...
 
-    async def delete(self, id: str) -> None:
+    async def delete(self, aggregate: Product) -> None:
         """删除聚合根"""
         ...
 
