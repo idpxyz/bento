@@ -300,7 +300,7 @@ async def test_different_pages_separate_cache(repository, sample_products):
 async def test_paginate_cache_invalidation(repository, session, sample_products):
     """测试分页缓存在数据变更后失效"""
     # 1. 预热缓存
-    products1, total1 = await repository.find_paginated_po(page=1, page_size=10, order_by="name")
+    _, total1 = await repository.find_paginated_po(page=1, page_size=10, order_by="name")
     assert total1 == 5
 
     # 2. 添加新产品
@@ -309,7 +309,7 @@ async def test_paginate_cache_invalidation(repository, session, sample_products)
     await session.commit()
 
     # 3. 再次查询 - 缓存应该已失效
-    products2, total2 = await repository.find_paginated_po(page=1, page_size=10, order_by="name")
+    _, total2 = await repository.find_paginated_po(page=1, page_size=10, order_by="name")
     assert total2 == 6  # 总数增加
 
 
