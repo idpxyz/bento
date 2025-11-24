@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from bento.core.ids import ID
+
 if TYPE_CHECKING:
     from contexts.catalog.infrastructure.repositories.category_repository import (
         ICategoryRepository,
@@ -47,7 +49,10 @@ class CategoryWarmupStrategy:
             # 1. 只查询一级和二级分类
             # 2. 查询有商品的分类
             # 3. 按热度排序
-            categories = await self._category_repo.list(limit=200)
+            # 4. 使用Specification查询特定条件的分类
+
+            # 调用框架的 list() 方法，不传参数表示查询全部
+            categories = await self._category_repo.list()
 
             # 生成缓存键
             cache_keys = [f"Category:id:{category.id}" for category in categories]
@@ -74,18 +79,18 @@ class CategoryWarmupStrategy:
         try:
             # 特殊处理：分类列表
             if key == "Category:list:all":
-                categories = await self._category_repo.list(limit=200)
+                categories = await self._category_repo.list()
                 logger.debug(f"成功加载分类列表: {len(categories)} 个")
                 return categories
 
-            # 单个分类
-            category_id = key.split(":")[-1]
-            category = await self._category_repo.get(category_id)
+            # 单个分类（使用ID类型）
+            category_id_str = key.split(":")[-1]
+            category = await self._category_repo.get(ID(category_id_str))
 
             if category:
-                logger.debug(f"成功加载分类: {category_id}")
+                logger.debug(f"成功加载分类: {category_id_str}")
             else:
-                logger.warning(f"分类不存在: {category_id}")
+                logger.warning(f"分类不存在: {category_id_str}")
 
             return category
 

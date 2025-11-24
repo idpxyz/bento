@@ -3,6 +3,7 @@
 from typing import Protocol
 
 from bento.core.ids import ID
+from bento.persistence.specification import CompositeSpecification
 
 from contexts.catalog.domain.product import Product
 
@@ -13,12 +14,13 @@ class IProductRepository(Protocol):
     遵循依赖反转原则，Domain/Application 层只依赖此协议。
     Infrastructure 层提供具体实现。
 
-    标准仓储操作：
+    标准仓储操作（匹配 Bento RepositoryAdapter 签名）：
     - get(id) - 根据 ID 查询聚合根
-    - save(entity) - 保存聚合根（创建或更新）
-    - delete(id) - 删除聚合根
-    - list() - 查询列表
-    - exists(id) - 检查是否存在
+    - save(aggregate) - 保存聚合根（创建或更新）
+    - delete(aggregate) - 删除聚合根
+    - list(specification) - 查询列表（支持规约模式）
+
+    注意：Protocol 签名与框架 RepositoryAdapter 完全一致
     """
 
     async def get(self, id: ID) -> Product | None:
@@ -33,12 +35,17 @@ class IProductRepository(Protocol):
         """删除聚合根"""
         ...
 
-    async def list(self, limit: int = 100, offset: int = 0) -> list[Product]:
-        """查询聚合根列表"""
-        ...
+    async def list(
+        self, specification: CompositeSpecification[Product] | None = None
+    ) -> list[Product]:
+        """查询聚合根列表（支持规约模式）
 
-    async def exists(self, id: str) -> bool:
-        """检查聚合根是否存在"""
+        Args:
+            specification: 可选的查询规约，None 表示查询全部
+
+        Returns:
+            Product 列表
+        """
         ...
 
 

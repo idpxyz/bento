@@ -1,5 +1,6 @@
 """Category Repository Implementation using Bento's RepositoryAdapter"""
 
+from bento.core.ids import ID
 from bento.infrastructure.repository import RepositoryAdapter
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
@@ -10,7 +11,7 @@ from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapp
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 
 
-class CategoryRepository(RepositoryAdapter[Category, CategoryPO, str]):
+class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
     """
     Category Repository using Bento's RepositoryAdapter.
 
@@ -54,8 +55,17 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, str]):
 
         self._uow = _current_uow.get()
 
+    # ==================== Inherited from RepositoryAdapter ====================
+    # The following methods are inherited from RepositoryAdapter and match ICategoryRepository Protocol:
+    # - async def get(self, id: ID) -> Category | None
+    # - async def save(self, aggregate: Category) -> None
+    # - async def delete(self, aggregate: Category) -> None
+    # - async def list(specification: CompositeSpecification[Category] | None = None) -> list[Category]
+    # - async def paginate(...) -> Page[Category]
+    # - async def count(specification) -> int
+    # ... and many more from Mixins
+
     # Additional custom query methods can be added here
     # For example:
     # async def find_by_parent_id(self, parent_id: str | None) -> list[Category]:
     #     """Find categories by parent ID."""
-    #     ...

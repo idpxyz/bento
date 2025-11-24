@@ -60,13 +60,15 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
         # ❌ 不需要重写 save() 方法
         # ❌ 不需要手动追踪实体
 
-    # ==================== Other Bento Framework Methods ====================
-    # The following methods are inherited from RepositoryAdapter:
-    # - async def get(self, id: str) -> Product | None
-    # - async def list(self, specification=None) -> list[Product]
-    # - async def exists(self, id: str) -> bool
-    # - async def delete(self, id: str) -> None
+    # ==================== Inherited from RepositoryAdapter ====================
+    # The following methods are inherited from RepositoryAdapter and match IProductRepository Protocol:
+    # - async def get(self, id: ID) -> Product | None
+    # - async def save(self, aggregate: Product) -> None
+    # - async def delete(self, aggregate: Product) -> None
+    # - async def list(self, specification: CompositeSpecification[Product] | None = None) -> list[Product]
     # - async def paginate(...) -> Page[Product]
+    # - async def count(specification) -> int
+    # ... and many more from Mixins
 
     # ==================== Custom Query Methods ====================
 

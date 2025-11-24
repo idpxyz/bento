@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from bento.core.ids import ID
+
 if TYPE_CHECKING:
     from contexts.catalog.infrastructure.repositories.product_repository import (
         IProductRepository,
@@ -47,7 +49,11 @@ class HotProductsWarmupStrategy:
             # 1. 使用聚合查询统计浏览量/销量
             # 2. 从订单系统获取热销商品ID
             # 3. 从推荐系统获取热门商品
-            products = await self._product_repo.list(limit=100)
+            # 4. 使用Specification查询特定条件的商品
+
+            # 调用框架的 list() 方法，不传参数表示查询全部
+            # 在生产环境中应该使用Specification来过滤和排序
+            products = await self._product_repo.list()
 
             # 生成缓存键
             cache_keys = [f"Product:id:{product.id}" for product in products]
@@ -70,15 +76,15 @@ class HotProductsWarmupStrategy:
         """
         try:
             # 从键中提取商品ID
-            product_id = key.split(":")[-1]
+            product_id_str = key.split(":")[-1]
 
-            # 通过Repository加载聚合根
-            product = await self._product_repo.get(product_id)
+            # 通过Repository加载聚合根（使用ID类型）
+            product = await self._product_repo.get(ID(product_id_str))
 
             if product:
-                logger.debug(f"成功加载商品: {product_id}")
+                logger.debug(f"成功加载商品: {product_id_str}")
             else:
-                logger.warning(f"商品不存在: {product_id}")
+                logger.warning(f"商品不存在: {product_id_str}")
 
             return product
 
