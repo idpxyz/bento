@@ -94,7 +94,8 @@ class TestProductAPI:
         response = test_app.get("/api/v1/products/non-existent-id")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        data = response.json()
+        assert "not found" in data.get("message", data.get("detail", "")).lower()
 
     def test_update_product(self, test_app):
         """Test updating a product"""

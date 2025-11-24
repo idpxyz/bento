@@ -48,6 +48,10 @@ class UpdateProductRequest(BaseModel):
     name: str | None = None
     description: str | None = None
     price: float | None = None
+    stock: int | None = None
+    sku: str | None = None
+    brand: str | None = None
+    is_active: bool | None = None
 
 
 class ProductResponse(BaseModel):
@@ -180,9 +184,17 @@ async def get_product(
     use_case: Annotated[GetProductUseCase, Depends(get_get_product_use_case)],
 ) -> dict[str, Any]:
     """Get a product by ID."""
-    query = GetProductQuery(product_id=product_id)
-    product = await use_case.execute(query)
-    return product_to_dict(product)
+    from bento.core.errors import ApplicationException
+    from fastapi import HTTPException
+
+    try:
+        query = GetProductQuery(product_id=product_id)
+        product = await use_case.execute(query)
+        return product_to_dict(product)
+    except ApplicationException as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put(
@@ -201,6 +213,10 @@ async def update_product(
         name=request.name,
         description=request.description,
         price=request.price,
+        stock=request.stock,
+        sku=request.sku,
+        brand=request.brand,
+        is_active=request.is_active,
     )
 
     product = await use_case.execute(command)
@@ -227,5 +243,15 @@ async def delete_product(
     use_case: Annotated[DeleteProductUseCase, Depends(get_delete_product_use_case)],
 ) -> None:
     """Delete a product (soft delete)."""
-    command = DeleteProductCommand(product_id=product_id)
-    await use_case.execute(command)
+    from bento.core.errors import ApplicationException
+    from fastapi import HTTPException
+
+    try:
+        command = DeleteProductCommand(product_id=product_id)
+        await use_case.execute(command)
+    except ApplicationException as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="Product not found") from None
+        raise HTTPException(status_code=400, detail=str(e)) from None
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error") from None

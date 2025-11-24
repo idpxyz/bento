@@ -19,6 +19,10 @@ class UpdateProductCommand:
     name: str | None = None
     description: str | None = None
     price: float | None = None
+    stock: int | None = None
+    sku: str | None = None
+    brand: str | None = None
+    is_active: bool | None = None
     category_id: str | None = None  # 可选：更新分类
 
 
@@ -41,6 +45,10 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
             not command.name
             and not command.description
             and not command.price
+            and command.stock is None
+            and not command.sku
+            and not command.brand
+            and command.is_active is None
             and command.category_id is None
         ):
             raise ApplicationException(
@@ -76,6 +84,18 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
 
         if command.price is not None:
             product.change_price(command.price)  # 使用业务方法
+
+        if command.stock is not None:
+            product.stock = command.stock
+
+        if command.sku is not None:
+            product.sku = command.sku
+
+        if command.brand is not None:
+            product.brand = command.brand
+
+        if command.is_active is not None:
+            product.is_active = command.is_active
 
         if command.category_id is not None:
             if command.category_id:

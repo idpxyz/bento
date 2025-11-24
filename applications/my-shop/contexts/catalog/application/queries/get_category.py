@@ -46,3 +46,6 @@ class GetCategoryUseCase(BaseUseCase[GetCategoryQuery, Category]):
             )
 
         return category
+
+
+s

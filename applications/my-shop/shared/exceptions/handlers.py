@@ -59,11 +59,20 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         f"Application exception for {request.url.path}: {app_exc.error_code} - {app_exc.details}",
     )
 
+    # 根据错误类型映射 HTTP 状态码
+    status_code = status.HTTP_400_BAD_REQUEST
+    error_message = str(app_exc)
+
+    # Resource not found 应该返回 404
+    if "not found" in error_message.lower() or "resource not found" in error_message.lower():
+        status_code = status.HTTP_404_NOT_FOUND
+        error_message = "Resource not found"
+
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=status_code,
         content={
             "error": "Application Error",
-            "message": str(app_exc),
+            "message": error_message,
             "error_code": str(app_exc.error_code),
             "details": app_exc.details,
             "path": str(request.url.path),
