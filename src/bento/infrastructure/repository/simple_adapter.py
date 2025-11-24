@@ -16,17 +16,17 @@ as RepositoryAdapter, ensuring API consistency while reducing complexity.
 from __future__ import annotations
 
 from bento.core.ids import EntityId
-from bento.domain.entity import Entity
-from bento.domain.ports.repository import Repository as IRepository
+from bento.domain.aggregate import AggregateRoot
+from bento.domain.ports.repository import IRepository
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
 
 
-class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
+class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](IRepository[AR, ID]):
     """Simple Repository Adapter for AR = PO scenarios.
 
     This adapter is designed for cases where the Aggregate Root and
-    Persistence Object are the same entity (e.g., using SQLAlchemy
+    Persistence Object are the same (e.g., using SQLAlchemy
     DeclarativeBase with AggregateRoot).
 
     Key Features:
@@ -89,23 +89,23 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         ```
     """
 
-    def __init__(self, repository: BaseRepository[T, ID]) -> None:
+    def __init__(self, repository: BaseRepository[AR, ID]) -> None:
         """Initialize simple repository adapter.
 
         Args:
             repository: BaseRepository for PO operations
-                       Note: T here is both AR and PO (same entity)
+                       Note: AR here is both AR and PO (same entity)
         """
         self._repository = repository
 
     @property
-    def repository(self) -> BaseRepository[T, ID]:
+    def repository(self) -> BaseRepository[AR, ID]:
         """Get underlying repository."""
         return self._repository
 
     # ==================== IRepository Implementation ====================
 
-    async def get(self, id: ID) -> T | None:
+    async def get(self, id: ID) -> AR | None:
         """Get aggregate root by ID.
 
         Since AR = PO, directly return from repository without conversion.
@@ -118,7 +118,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         """
         return await self._repository.get_po_by_id(id)
 
-    async def save(self, aggregate: T) -> None:
+    async def save(self, aggregate: AR) -> None:
         """Save aggregate root (create or update).
 
         Since AR = PO, directly save without conversion.
@@ -141,7 +141,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
                 # Update
                 await self._repository.update_po(aggregate)
 
-    async def list(self, specification: CompositeSpecification[T] | None = None) -> list[T]:
+    async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
         """List aggregate roots matching specification.
 
         Args:
@@ -155,7 +155,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
 
     # ==================== Extended Query Methods ====================
 
-    async def find_one(self, specification: CompositeSpecification[T]) -> T | None:
+    async def find_one(self, specification: CompositeSpecification[AR]) -> AR | None:
         """Find single aggregate root matching specification.
 
         Args:
@@ -164,12 +164,12 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         Returns:
             First matching aggregate root or None
         """
-        page = Page.create(items=[], total=0, page=1, size=1)
-        limited_spec = specification.with_page(page)
+        page_params = PageParams(page=1, size=1)
+        limited_spec = specification.with_page(page_params)
         results = await self._repository.query_po_by_spec(limited_spec)
         return results[0] if results else None
 
-    async def find_all(self, specification: CompositeSpecification[T]) -> list[T]:
+    async def find_all(self, specification: CompositeSpecification[AR]) -> list[AR]:
         """Find all aggregate roots matching specification.
 
         Args:
@@ -182,9 +182,9 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
 
     async def find_page(
         self,
-        specification: CompositeSpecification[T],
+        specification: CompositeSpecification[AR],
         page_params: PageParams,
-    ) -> Page[T]:
+    ) -> Page[AR]:
         """Find paginated results matching specification.
 
         Args:
@@ -201,8 +201,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
             return Page.create(items=[], total=0, page=1, size=page_params.size)
 
         # Get page of results
-        page = Page.create(items=[], total=0, page=page_params.page, size=page_params.size)
-        paged_spec = specification.with_page(page)
+        paged_spec = specification.with_page(page_params)
         items = await self._repository.query_po_by_spec(paged_spec)
 
         return Page.create(
@@ -212,7 +211,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
             size=page_params.size,
         )
 
-    async def count(self, specification: CompositeSpecification[T]) -> int:
+    async def count(self, specification: CompositeSpecification[AR]) -> int:
         """Count aggregate roots matching specification.
 
         Args:
@@ -223,7 +222,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         """
         return await self._repository.count_po_by_spec(specification)
 
-    async def exists(self, specification: CompositeSpecification[T]) -> bool:
+    async def exists(self, specification: CompositeSpecification[AR]) -> bool:
         """Check if any aggregate roots match specification.
 
         Args:
@@ -235,7 +234,46 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
         count = await self.count(specification)
         return count > 0
 
-    async def delete(self, aggregate: T) -> None:
+    async def paginate(
+        self,
+        specification: CompositeSpecification[AR] | None = None,
+        page: int = 1,
+        size: int = 20,
+    ) -> Page[AR]:
+        """Convenient pagination method without creating PageParams.
+
+        This is a simplified version of find_page() that doesn't require
+        creating a PageParams object. Ideal for simple pagination scenarios.
+
+        Args:
+            specification: Optional specification to filter results
+            page: Page number, starting from 1 (default: 1)
+            size: Page size (items per page) (default: 20)
+
+        Returns:
+            Page object with paginated data and metadata
+
+        Example:
+            ```python
+            # Simple pagination
+            page = await repo.paginate(page=1, size=20)
+
+            # With specification
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            page = await repo.paginate(spec, page=2, size=10)
+            ```
+        """
+        page_params = PageParams(page=page, size=size)
+
+        # If no specification provided, create an empty one
+        if specification is None:
+            from bento.persistence.specification import CompositeSpecification
+
+            specification = CompositeSpecification()
+
+        return await self.find_page(specification, page_params)
+
+    async def delete(self, aggregate: AR) -> None:
         """Delete aggregate root.
 
         Note:
@@ -248,7 +286,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
 
     # ==================== Batch Operations ====================
 
-    async def save_all(self, aggregates: list[T]) -> None:
+    async def save_all(self, aggregates: list[AR]) -> None:
         """Save multiple aggregate roots (batch operation).
 
         Args:
@@ -259,7 +297,7 @@ class SimpleRepositoryAdapter[T: Entity, ID: EntityId](IRepository[T, ID]):
 
         await self._repository.batch_po_create(aggregates)
 
-    async def delete_all(self, aggregates: list[T]) -> None:
+    async def delete_all(self, aggregates: list[AR]) -> None:
         """Delete multiple aggregate roots (batch operation).
 
         Args:

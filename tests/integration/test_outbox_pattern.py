@@ -18,7 +18,7 @@ from bento.application.ports.message_bus import MessageBus
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import register_event
 from bento.infrastructure.projection.projector import OutboxProjector
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord, SqlAlchemyOutbox
+from bento.persistence.outbox.record import OutboxRecord, SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork, register_event_from_aggregate
 
 # ==================== Test Events ====================
@@ -87,8 +87,8 @@ async def engine():
     # Create tables
     from sqlalchemy import JSON
 
-    from bento.persistence.sqlalchemy.base import Base
-    from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+    from bento.persistence.outbox.record import OutboxRecord
+    from bento.persistence.po.base import Base
 
     # SQLite doesn't support JSONB and UUID natively, so we need to replace them for testing
     # This is a test-only modification
@@ -126,7 +126,7 @@ async def session(session_factory):
 async def test_event_registration_via_context_var(session_factory):
     """Test that events are registered via ContextVar."""
     # Import listener to register it
-    import bento.persistence.sqlalchemy.outbox_listener  # noqa: F401
+    import bento.persistence.outbox.listener  # noqa: F401
 
     # Create event
     event = OrderCreatedEvent(
@@ -176,7 +176,7 @@ async def test_event_registration_via_context_var(session_factory):
 async def test_outbox_listener_automatic_persistence(session_factory):
     """Test that Event Listener automatically persists events to Outbox."""
     # Import listener to register it
-    import bento.persistence.sqlalchemy.outbox_listener  # noqa: F401
+    import bento.persistence.outbox.listener  # noqa: F401
 
     # Create multiple events
     events = [
@@ -218,7 +218,7 @@ async def test_outbox_listener_automatic_persistence(session_factory):
 async def test_outbox_idempotency(session_factory):
     """Test that duplicate events are not persisted (idempotency)."""
     # Import listener
-    import bento.persistence.sqlalchemy.outbox_listener  # noqa: F401
+    import bento.persistence.outbox.listener  # noqa: F401
 
     # Create event with fixed ID
     event_id = uuid4()

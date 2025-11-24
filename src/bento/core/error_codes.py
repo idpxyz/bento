@@ -98,6 +98,20 @@ class CommonErrors:
     )
     """Message bus/queue error"""
 
+    ALREADY_EXISTS = ErrorCode(
+        code="COMMON_009",
+        message="Resource already exists",
+        http_status=409,
+    )
+    """Resource already exists"""
+
+    NOT_FOUND = ErrorCode(
+        code="COMMON_010",
+        message="Resource not found",
+        http_status=404,
+    )
+    """Resource doesn't exist"""
+
 
 class RepositoryErrors:
     """Repository/persistence framework error codes.

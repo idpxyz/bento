@@ -39,17 +39,17 @@ class TestOrderValidator:
 
     def test_validate_customer_id_empty_raises(self):
         """Test that empty customer ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_customer_id("")
 
     def test_validate_customer_id_whitespace_raises(self):
         """Test that whitespace-only customer ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_customer_id("   ")
 
     def test_validate_customer_id_too_long_raises(self):
         """Test that too long customer ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_customer_id("C" * 101)  # Over max
 
     # Test order items validation
@@ -69,7 +69,7 @@ class TestOrderValidator:
 
     def test_validate_order_items_none_raises(self):
         """Test that None items raise ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_items(None)
 
     def test_validate_order_items_empty_raises(self):
@@ -92,7 +92,7 @@ class TestOrderValidator:
             for i in range(101)
         ]
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_items(too_many_items)
 
     # Test individual item validation
@@ -105,7 +105,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_empty_product_id_raises(self):
@@ -117,7 +117,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_missing_product_name_raises(self):
@@ -128,7 +128,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_product_name_too_long_raises(self):
@@ -140,7 +140,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_quantity_zero_raises(self):
@@ -152,7 +152,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_quantity_negative_raises(self):
@@ -164,7 +164,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_quantity_too_large_raises(self):
@@ -176,7 +176,7 @@ class TestOrderValidator:
             "unit_price": 10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_unit_price_zero_raises(self):
@@ -188,7 +188,7 @@ class TestOrderValidator:
             "unit_price": 0.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_unit_price_negative_raises(self):
@@ -200,7 +200,7 @@ class TestOrderValidator:
             "unit_price": -10.0,
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     def test_validate_order_item_unit_price_too_large_raises(self):
@@ -212,7 +212,7 @@ class TestOrderValidator:
             "unit_price": 2_000_000.0,  # Over MAX_UNIT_PRICE
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_item(invalid_item)
 
     # Test cancel reason validation
@@ -225,22 +225,22 @@ class TestOrderValidator:
 
     def test_validate_cancel_reason_none_raises(self):
         """Test that None reason raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_cancel_reason(None)
 
     def test_validate_cancel_reason_empty_raises(self):
         """Test that empty reason raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_cancel_reason("")
 
     def test_validate_cancel_reason_whitespace_raises(self):
         """Test that whitespace-only reason raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_cancel_reason("   ")
 
     def test_validate_cancel_reason_too_long_raises(self):
         """Test that too long reason raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_cancel_reason("R" * 501)  # Over MAX_REASON_LENGTH
 
     # Test order ID validation
@@ -253,17 +253,17 @@ class TestOrderValidator:
 
     def test_validate_order_id_none_raises(self):
         """Test that None order ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_id(None)
 
     def test_validate_order_id_empty_raises(self):
         """Test that empty order ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_id("")
 
     def test_validate_order_id_whitespace_raises(self):
         """Test that whitespace-only order ID raises ApplicationException."""
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_order_id("   ")
 
     # Test complete command validation
@@ -299,7 +299,7 @@ class TestOrderValidator:
             ],
         }
 
-        with pytest.raises(ApplicationException) as exc_info:
+        with pytest.raises(ApplicationException):
             OrderValidator.validate_create_order_command(invalid_command)
 
     def test_validate_create_order_command_empty_items_raises(self):
@@ -363,7 +363,8 @@ class TestValidatorEdgeCases:
     def test_item_with_wrong_type_raises(self):
         """Test that wrong item type raises ApplicationException."""
         with pytest.raises(ApplicationException) as exc_info:
-            OrderValidator.validate_order_item("not a dict", 0)
+            OrderValidator.validate_order_item("not a dict", 0)  # type: ignore[arg-type]
+        assert exc_info.value.error_code.code == "ORDER_009"  # WRONG_ITEM_TYPE
 
     def test_item_with_non_numeric_quantity_raises(self):
         """Test that non-numeric quantity raises ApplicationException."""
@@ -376,3 +377,4 @@ class TestValidatorEdgeCases:
 
         with pytest.raises(ApplicationException) as exc_info:
             OrderValidator.validate_order_item(invalid_item)
+        assert exc_info.value.error_code.code == "ORDER_008"  # NON_NUMERIC_QUANTITY

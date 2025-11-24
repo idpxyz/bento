@@ -41,7 +41,10 @@ class TestErrorCode:
         """Test that error codes are immutable."""
         error = ErrorCode(code="TEST_003", message="Test")
 
-        with pytest.raises(Exception):  # FrozenInstanceError
+        # dataclass(frozen=True) raises FrozenInstanceError on mutation
+        from dataclasses import FrozenInstanceError
+
+        with pytest.raises(FrozenInstanceError):
             error.code = "NEW_CODE"
 
 

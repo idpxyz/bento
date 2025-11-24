@@ -11,15 +11,14 @@ Features:
 """
 
 import asyncio
-import json
-import pickle
 import time
 from collections.abc import Callable
 from typing import Any
 
 from redis.asyncio import Redis
 
-from bento.adapters.cache.config import CacheConfig, SerializerType
+from bento.adapters.cache.config import CacheConfig
+from bento.adapters.cache.serializer import CacheSerializer
 from bento.adapters.cache.stats import CacheStats
 
 
@@ -84,14 +83,22 @@ class RedisCache:
             RuntimeError: If connection fails
         """
         try:
-            self._client = Redis.from_url(
-                self.config.redis_url,  # type: ignore
+            client = Redis.from_url(
+                self.config.redis_url,  # type: ignore[arg-type]
                 encoding="utf-8",
                 decode_responses=False,  # We use custom serialization
             )
 
+            # Defensive guard: Redis.from_url should never return None, but type
+            # checkers treat self._client as Optional. Keep a local reference so
+            # we can prove non-None before storing and using it.
+            if client is None:  # pragma: no cover - safety net
+                raise RuntimeError("Redis.from_url returned None")
+
+            self._client = client
+
             # Test connection
-            await self._client.ping()
+            await client.ping()
 
         except Exception as e:
             self._client = None
@@ -512,47 +519,29 @@ class RedisCache:
             ```
         """
         if self._client:
-            await self._client.aclose()
+            await self._client.close()
             self._client = None
 
     # ==================== Internal Methods ====================
 
     def _serialize(self, value: Any) -> bytes:
-        """Serialize value to bytes.
+        """Serialize value to bytes using unified serializer.
 
         Args:
             value: Value to serialize
 
         Returns:
             Serialized bytes
-
-        Raises:
-            ValueError: If serialization fails
         """
-        try:
-            if self.config.serializer == SerializerType.JSON:
-                return json.dumps(value).encode("utf-8")
-            else:  # PICKLE
-                return pickle.dumps(value)
-        except Exception as e:
-            raise ValueError(f"Failed to serialize value: {e}") from e
+        return CacheSerializer.serialize(value, self.config.serializer)
 
     def _deserialize(self, data: bytes) -> Any:
-        """Deserialize bytes to value.
+        """Deserialize bytes to value using unified serializer.
 
         Args:
             data: Serialized bytes
 
         Returns:
             Deserialized value
-
-        Raises:
-            ValueError: If deserialization fails
         """
-        try:
-            if self.config.serializer == SerializerType.JSON:
-                return json.loads(data.decode("utf-8"))
-            else:  # PICKLE
-                return pickle.loads(data)
-        except Exception as e:
-            raise ValueError(f"Failed to deserialize value: {e}") from e
+        return CacheSerializer.deserialize(data, self.config.serializer)

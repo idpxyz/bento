@@ -5,42 +5,56 @@ All repository implementations must conform to this protocol.
 
 The repository pattern provides an abstraction over data access, allowing the
 domain layer to remain independent of persistence implementation details.
+
+In DDD, repositories provide access to Aggregate Roots only, not arbitrary entities.
+
+Naming Convention:
+    IRepository - The 'I' prefix indicates this is an interface/protocol.
+    This follows industry standards (similar to IUserService, IOrderRepository)
+    and clearly distinguishes the protocol from concrete implementations.
 """
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from bento.core.ids import EntityId
-from bento.domain.entity import Entity
+from bento.domain.aggregate import AggregateRoot
 
 
-class Repository[E: Entity, ID: EntityId](Protocol):
-    """Repository protocol - defines the contract for entity persistence.
+class IRepository[AR: AggregateRoot, ID: EntityId](Protocol):
+    """Repository protocol - defines the contract for aggregate root persistence.
+
+    The 'I' prefix indicates this is an interface/protocol, not a concrete implementation.
 
     This is a Protocol (not an abstract base class), which means:
     1. No inheritance required - structural subtyping
     2. Type checkers can verify implementations
     3. Domain layer doesn't depend on concrete implementations
 
+    Important - DDD Principle:
+        Repositories operate on Aggregate Roots only.
+        Entities within an aggregate are accessed through their aggregate root.
+        This enforces proper aggregate boundaries and maintains consistency.
+
     Type Parameters:
-        E: Entity type (contravariant)
-        ID: Entity ID type
+        AR: Aggregate Root type (must extend AggregateRoot)
+        ID: Aggregate Root ID type
 
     Example:
         ```python
         # Domain layer defines the contract
-        class UserRepository(Protocol):
-            async def get(self, id: UserId) -> Optional[User]:
+        class UserRepository(Repository[User, UserId], Protocol):
+            async def find_by_email(self, email: str) -> User | None:
                 ...
 
         # Infrastructure layer implements it
         class SqlUserRepository:
-            async def get(self, id: UserId) -> Optional[User]:
+            async def get(self, id: UserId) -> User | None:
                 # SQLAlchemy implementation
                 ...
         ```
     """
 
-    async def get(self, id: ID) -> E | None:
+    async def get(self, id: ID) -> AR | None:
         """Get an entity by its ID.
 
         Args:
@@ -58,17 +72,20 @@ class Repository[E: Entity, ID: EntityId](Protocol):
         """
         ...
 
-    async def save(self, entity: E) -> E:
-        """Save an entity (create or update).
+    async def save(self, aggregate: AR) -> AR:
+        """Save an aggregate root (create or update).
 
         This method handles both create and update operations. The repository
-        implementation should detect whether the entity is new or existing.
+        implementation should detect whether the aggregate is new or existing.
+
+        Note: In DDD, Repository operates on Aggregate Roots, not arbitrary entities.
+        The aggregate root is the entry point to the aggregate.
 
         Args:
-            entity: The entity to save
+            aggregate: The aggregate root to save
 
         Returns:
-            The saved entity (may include generated values like timestamps)
+            The saved aggregate root (may include generated values like timestamps)
 
         Raises:
             May raise domain-specific errors (e.g., validation, conflicts)
@@ -81,15 +98,18 @@ class Repository[E: Entity, ID: EntityId](Protocol):
         """
         ...
 
-    async def delete(self, entity: E) -> None:
-        """Delete an entity.
+    async def delete(self, aggregate: AR) -> None:
+        """Delete an aggregate root.
 
         Args:
-            entity: The entity to delete
+            aggregate: The aggregate root to delete
 
         Note:
             Some implementations may use soft delete (logical deletion)
             instead of hard delete (physical removal).
+
+            In DDD, deleting an aggregate root should also handle
+            the deletion of all entities within the aggregate boundary.
 
         Example:
             ```python
@@ -98,31 +118,55 @@ class Repository[E: Entity, ID: EntityId](Protocol):
         """
         ...
 
-    async def find_all(self) -> list[E]:
-        """Find all entities.
+    async def find_all(self, specification: Any | None = None) -> list[AR]:
+        """Find all aggregate roots, optionally filtered by specification.
+
+        This is the primary query method for retrieving multiple aggregate roots.
+        It supports both filtered and unfiltered queries through an optional
+        specification parameter.
+
+        Args:
+            specification: Optional specification to filter results.
+                          Can be a CompositeSpecification or domain-specific query object.
+                          If None, returns all aggregate roots.
 
         Returns:
-            List of all entities (may be empty)
+            List of aggregate roots matching the specification (may be empty)
+
+        Note:
+            The specification parameter is typed as Any to avoid circular dependencies
+            with the specification module. Implementations should accept
+            CompositeSpecification[AR] or similar query objects.
 
         Warning:
-            This method may be inefficient for large datasets.
+            Without specification, this may return large datasets.
             Consider using pagination or specifications for production use.
+
+            In DDD, this returns aggregate roots, not all entities.
+            Entities within aggregates are accessed through their aggregate root.
 
         Example:
             ```python
+            # Get all users
             all_users = await repo.find_all()
+
+            # Get users matching a specification
+            from bento.persistence.specification import EntitySpecificationBuilder
+
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            active_users = await repo.find_all(spec)
             ```
         """
         ...
 
     async def exists(self, id: ID) -> bool:
-        """Check if an entity exists by ID.
+        """Check if an aggregate root exists by ID.
 
         Args:
-            id: The entity ID to check
+            id: The aggregate root ID to check
 
         Returns:
-            True if entity exists, False otherwise
+            True if aggregate root exists, False otherwise
 
         Example:
             ```python
@@ -133,10 +177,10 @@ class Repository[E: Entity, ID: EntityId](Protocol):
         ...
 
     async def count(self) -> int:
-        """Count total number of entities.
+        """Count total number of aggregate roots.
 
         Returns:
-            Total count of entities
+            Total count of aggregate roots
 
         Example:
             ```python

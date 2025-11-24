@@ -15,11 +15,11 @@ from __future__ import annotations
 import inspect
 import logging
 import types
-from collections.abc import Callable
-from dataclasses import MISSING, is_dataclass
+from collections.abc import Callable, Iterable
+from dataclasses import MISSING, dataclass, is_dataclass
 from dataclasses import fields as dataclass_fields
 from enum import Enum
-from typing import Annotated, Any, ClassVar, Union, get_args, get_origin, get_type_hints
+from typing import Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
 from bento.application.mapper.base import BaseMapper, MappingContext
 from bento.core.ids import ID, EntityId
@@ -51,20 +51,29 @@ class FieldMapping:
 # -----------------------------
 # Type analyzer (reflection)
 # -----------------------------
+@dataclass(frozen=True)
+class FieldInfo:
+    name: str
+    original_type: Any
+    unwrapped_type: Any
+    is_optional: bool
+
+
 class TypeAnalyzer:
     """Analyzes types and infers conversion rules (IDs, Enums, simple types, lists)."""
 
-    _fields_cache: ClassVar[dict[type, dict[str, type]]] = {}
+    _fields_cache: dict[type, dict[str, type]] = {}
+    _field_infos_cache: dict[type, dict[str, FieldInfo]] = {}
 
     @staticmethod
-    def _unwrap_annotated(t: type) -> type:
+    def _unwrap_annotated(t: Any) -> Any:
         """Unwrap Annotated type to get the inner type."""
         if get_origin(t) is Annotated:
             return get_args(t)[0]
         return t
 
     @staticmethod
-    def _unwrap_optional(field_type: type) -> type:
+    def _unwrap_optional(field_type: Any) -> Any:
         """Return inner type if Optional/Union[..., None]; also unwrap Annotated."""
         field_type = TypeAnalyzer._unwrap_annotated(field_type)
         origin = get_origin(field_type)
@@ -125,6 +134,70 @@ class TypeAnalyzer:
                 fields_dict[name] = type(value)
         cache[klass] = fields_dict
         return fields_dict
+
+    @staticmethod
+    def get_field_infos(klass: type) -> dict[str, FieldInfo]:
+        """Return field infos with original/unwrapped/optional flags preserved."""
+        cache = TypeAnalyzer._field_infos_cache
+        if klass in cache:
+            return cache[klass]
+
+        infos: dict[str, FieldInfo] = {}
+        if is_dataclass(klass):
+            for f in dataclass_fields(klass):
+                original = f.type  # type: ignore[attr-defined]
+                ann = TypeAnalyzer._unwrap_annotated(original)
+                unwrapped = TypeAnalyzer._unwrap_optional(original)
+                origin = get_origin(ann)
+                is_u = origin is Union or (
+                    hasattr(types, "UnionType") and origin is types.UnionType
+                )
+                is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                infos[f.name] = FieldInfo(f.name, original, unwrapped, is_opt)
+            cache[klass] = infos
+            return infos
+
+        try:
+            import sys
+
+            globalns = (
+                vars(sys.modules[klass.__module__]) if klass.__module__ in sys.modules else {}
+            )
+            hints = get_type_hints(klass, globalns=globalns, localns=None)
+            if hints:
+                for name, original in hints.items():
+                    ann = TypeAnalyzer._unwrap_annotated(original)
+                    unwrapped = TypeAnalyzer._unwrap_optional(original)
+                    origin = get_origin(ann)
+                    is_u = origin is Union or (
+                        hasattr(types, "UnionType") and origin is types.UnionType
+                    )
+                    is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                    infos[name] = FieldInfo(name, original, unwrapped, is_opt)
+                cache[klass] = infos
+                return infos
+        except Exception:
+            pass
+
+        if hasattr(klass, "__annotations__"):
+            for name, original in dict(klass.__annotations__).items():
+                ann = TypeAnalyzer._unwrap_annotated(original)
+                unwrapped = TypeAnalyzer._unwrap_optional(original)
+                origin = get_origin(ann)
+                is_u = origin is Union or (
+                    hasattr(types, "UnionType") and origin is types.UnionType
+                )
+                is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                infos[name] = FieldInfo(name, original, unwrapped, is_opt)
+            cache[klass] = infos
+            return infos
+
+        for name, value in inspect.getmembers(klass):
+            if not name.startswith("_") and not callable(value):
+                t = type(value)
+                infos[name] = FieldInfo(name, t, t, False)
+        cache[klass] = infos
+        return infos
 
     @staticmethod
     def is_id_type(field_type: type) -> bool:
@@ -217,8 +290,6 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         ```
     """
 
-    _converter_kind_cache: ClassVar[dict[tuple[type, type], str]] = {}
-
     def __init__(
         self,
         domain_type: type[Domain],
@@ -230,6 +301,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         map_children_auto: bool = True,
         default_id_type: type = ID,
         id_factory: Callable[[str], Any] | None = None,
+        domain_factory: Callable[[dict[str, Any]], Domain] | None = None,
+        po_factory: Callable[[dict[str, Any]], PO] | None = None,
         context: MappingContext | None = None,
     ) -> None:
         """Initialize auto mapper with type analysis.
@@ -243,6 +316,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
             map_children_auto: Whether to automatically map child entities
             default_id_type: Default ID type to use when converting strings
             id_factory: Optional factory function for creating custom ID types
+            domain_factory: Optional factory to construct domain objects from dict
+            po_factory: Optional factory to construct PO objects from dict
             context: Optional mapping context for propagating tenant/org/actor info
         """
         super().__init__(
@@ -265,6 +340,10 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         self._debug_enabled: bool = debug
         self._logger = logging.getLogger(__name__)
         self._map_children_auto: bool = map_children_auto
+        self._domain_factory = domain_factory
+        self._po_factory = po_factory
+        # Instance-level converter cache (avoid cross-mapper pollution)
+        self._converter_kind_cache: dict[tuple[type, type], str] = {}
 
         # 延迟初始化：首次使用时才分析类型（性能优化）
         # 如果 strict 模式，立即分析以便早期发现错误
@@ -372,8 +451,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
 
         if kind == "id":
             return (
-                lambda v: self.convert_id_to_str(v),
-                lambda v: self.convert_str_to_id(v, d_unwrapped),
+                lambda v: str(v) if v is not None else None,  # ✅ 智能转换：ID → str
+                lambda v: d_unwrapped(v) if v is not None else None,  # ✅ 智能转换：str → ID
             )
         if kind == "enum":
             return (
@@ -500,14 +579,14 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
 
         candidates_ordered = [
             base,
-            base_nid,
-            f"{base_nid}_id",
             to_snake(base),
-            to_snake(base_nid),
-            f"{to_snake(base_nid)}_id",
             to_camel(base),
-            to_camel(base_nid),
-            to_camel(f"{base_nid}_id"),
+            base_nid if base_nid != base else "",
+            (to_snake(base_nid) if base_nid != base else ""),
+            (to_camel(base_nid) if base_nid != base else ""),
+            f"{base_nid}_id" if base_nid else "",
+            (f"{to_snake(base_nid)}_id" if base_nid else ""),
+            (to_camel(f"{base_nid}_id") if base_nid else ""),
         ]
 
         seen = set()
@@ -586,6 +665,15 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         Returns:
             PO instance
         """
+        # Custom factory first (for Pydantic/ORM/special constructors)
+        if self._po_factory is not None:
+            try:
+                return self._po_factory(po_dict)
+            except Exception as e:
+                raise TypeError(
+                    f"AutoMapper: po_factory failed for {self._po_type.__name__} "
+                    f"with keys: {list(po_dict.keys())}. Error: {e}"
+                ) from e
         try:
             return self._po_type(**po_dict)
         except TypeError:
@@ -610,10 +698,17 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     return po
             else:
                 # Non-dataclass: no-arg constructor + setattr
-                po = self._po_type()
-                for k, v in po_dict.items():
-                    setattr(po, k, v)
-                return po
+                try:
+                    po = self._po_type()
+                    for k, v in po_dict.items():
+                        setattr(po, k, v)
+                    return po
+                except Exception as e:
+                    raise TypeError(
+                        f"AutoMapper: failed to construct {self._po_type.__name__} "
+                        f"from keys: {list(po_dict.keys())}. "
+                        f"Consider providing po_factory or override mapping. Error: {e}"
+                    ) from e
 
     def _instantiate_domain(self, domain_dict: dict[str, Any]) -> Domain:
         """Instantiate Domain object with fallback strategy.
@@ -629,6 +724,15 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
         from dataclasses import fields as dataclass_fields
         from dataclasses import is_dataclass
 
+        # Custom factory first (enforce invariants/complex construction)
+        if self._domain_factory is not None:
+            try:
+                return self._domain_factory(domain_dict)
+            except Exception as e:
+                raise TypeError(
+                    f"AutoMapper: domain_factory failed for {self._domain_type.__name__} "
+                    f"with keys: {list(domain_dict.keys())}. Error: {e}"
+                ) from e
         try:
             return self._domain_type(**domain_dict)
         except TypeError:
@@ -653,10 +757,17 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     return domain
             else:
                 # Non-dataclass: no-arg constructor + setattr
-                domain = self._domain_type()
-                for k, v in domain_dict.items():
-                    setattr(domain, k, v)
-                return domain
+                try:
+                    domain = self._domain_type()
+                    for k, v in domain_dict.items():
+                        setattr(domain, k, v)
+                    return domain
+                except Exception as e:
+                    raise TypeError(
+                        f"AutoMapper: failed to construct {self._domain_type.__name__} "
+                        f"from keys: {list(domain_dict.keys())}. "
+                        f"Consider providing domain_factory or override mapping. Error: {e}"
+                    ) from e
 
     # -------------------------
     # Mapping (Domain -> PO)
@@ -699,14 +810,51 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
             po_value = (
                 mapping.to_po_converter(domain_value) if mapping.to_po_converter else domain_value
             )
+            # Safe defaults: coerce common domain types when no explicit converter
+            if mapping.to_po_converter is None:
+                try:
+                    # Enum -> str
+                    if isinstance(domain_value, Enum):
+                        # If target expects int, map to enum ordinal; else use value
+                        if mapping.po_type is int:
+                            enum_type = type(domain_value)
+                            po_value = list(enum_type).index(domain_value)
+                        else:
+                            po_value = domain_value.value
+                    # ID/EntityId -> str
+                    elif (
+                        domain_value is not None
+                        and hasattr(domain_value, "value")
+                        and not isinstance(domain_value, (str, bytes))
+                    ):
+                        po_value = str(domain_value.value)
+                except Exception:
+                    pass
             po_dict[mapping.po_field] = po_value
 
         # 为子字段提供占位，便于构造器（如 dataclass）不报缺参
+        po_fields = self._analyzer.get_fields(self._po_type)
         if self._map_children_auto and self._children:
-            po_fields = self._analyzer.get_fields(self._po_type)
             for child_field in self._children.keys():
                 if child_field in po_fields and child_field not in po_dict:
                     po_dict[child_field] = []
+        # Basic defaults for completely unmapped PO fields only (avoid overwriting mapped-None)
+        try:
+            mapped_po_fields = {m.po_field for m in self._field_mappings.values()}
+            for pname, ptype in po_fields.items():
+                if pname in po_dict:
+                    continue
+                if pname in mapped_po_fields:
+                    # Field participates in mapping; if absent it should remain missing/None
+                    continue
+                if ptype is str:
+                    po_dict[pname] = ""
+                elif ptype is int:
+                    po_dict[pname] = 0
+                elif ptype is bool:
+                    po_dict[pname] = False
+        except Exception:
+            pass
 
         # 构造 PO 实例（支持回退策略）
         po = self._instantiate_po(po_dict)
@@ -766,6 +914,20 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
             domain_value = (
                 mapping.from_po_converter(po_value) if mapping.from_po_converter else po_value
             )
+            # Safe defaults for reverse when no explicit converter
+            if mapping.from_po_converter is None:
+                try:
+                    # Enum from str
+                    domain_fields_types = self._analyzer.get_fields(self._domain_type)
+                    target_t = domain_fields_types.get(mapping.domain_field)
+                    if (
+                        target_t
+                        and self._analyzer.is_enum_type(target_t)
+                        and isinstance(po_value, (str, int))
+                    ):
+                        domain_value = target_t(po_value)  # type: ignore[call-arg]
+                except Exception:
+                    pass
             domain_dict[mapping.domain_field] = domain_value
 
         # 为子字段提供占位，便于构造器（如 dataclass）不报缺参
@@ -775,7 +937,31 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                 if child_field in domain_fields and child_field not in domain_dict:
                     domain_dict[child_field] = []
 
-        # 构造 Domain 实例（支持回退策略）
+        # 构造 Domain 实例前：统一 ID 字段归一化（str → ID/EntityId）
+        try:
+            field_infos = self._analyzer.get_field_infos(self._domain_type)
+            for fname, info in field_infos.items():
+                if fname in domain_dict and isinstance(domain_dict[fname], str):
+                    if self._analyzer.is_id_type(info.unwrapped_type):
+                        factory = getattr(self, "_id_factory", None)
+                        domain_dict[fname] = (
+                            factory(domain_dict[fname])  # type: ignore[call-arg]
+                            if callable(factory)
+                            else self._default_id_type(domain_dict[fname])  # type: ignore[misc]
+                        )
+            # Name-based fallback for *_id fields
+            for fname, val in list(domain_dict.items()):
+                if isinstance(val, str) and fname.endswith("_id"):
+                    # If already wrapped (unlikely, since it's str), skip
+                    factory = getattr(self, "_id_factory", None)
+                    domain_dict[fname] = (
+                        factory(val)  # type: ignore[call-arg]
+                        if callable(factory)
+                        else self._default_id_type(val)  # type: ignore[misc]
+                    )
+        except Exception:
+            # Best-effort normalization; ignore failures to avoid masking original errors
+            pass
         domain = self._instantiate_domain(domain_dict)
 
         # 事件清理（遵循 BaseMapper 约定）
@@ -816,6 +1002,35 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
     def after_map_reverse(self, po: PO, domain: Domain) -> None:  # noqa: D401
         """Hook after mapping PO → domain (override if needed)."""
         return None
+
+    # -------------------------
+    # Event handling
+    # -------------------------
+    def auto_clear_events(self, domain: Domain, exclude_types: set[type] | None = None) -> None:
+        """Clear domain events; allow excluding certain types from clearing."""
+        try:
+            events_fn_obj = getattr(domain, "get_events", None)
+            clear_fn_obj = getattr(domain, "clear_events", None)
+            if callable(events_fn_obj) and callable(clear_fn_obj):
+                events_fn = cast(Callable[[], Iterable[Any]], events_fn_obj)
+                clear_fn = cast(Callable[[], None], clear_fn_obj)
+                if exclude_types:
+                    current = list(events_fn())
+                    remaining = [e for e in current if type(e) in exclude_types]
+                    if hasattr(domain, "_events"):
+                        domain._events = remaining  # type: ignore[attr-defined]
+                    else:
+                        clear_fn()
+                        add_fn_obj = getattr(domain, "add_event", None)
+                        if callable(add_fn_obj):
+                            add_fn = cast(Callable[[Any], None], add_fn_obj)
+                            for e in remaining:
+                                add_fn(e)
+                else:
+                    clear_fn()
+        except Exception:
+            # Best effort; don't fail mapping due to event cleanup
+            pass
 
 
 __all__ = ["AutoMapper", "TypeAnalyzer", "FieldMapping"]

@@ -3,7 +3,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, PositiveFloat, PositiveInt
 
 from applications.ecommerce.modules.order.application import (
     CancelOrderCommand,
@@ -21,6 +21,9 @@ from applications.ecommerce.modules.order.application.commands.create_order impo
 from applications.ecommerce.modules.order.application.queries.order_query_service import (
     OrderQueryService,
 )
+from applications.ecommerce.modules.order.interfaces.presenters import (
+    order_to_dict,
+)
 from bento.core.error_handler import get_error_responses_schema
 
 # Create router
@@ -36,8 +39,8 @@ class OrderItemRequest(BaseModel):
 
     product_id: str
     product_name: str
-    quantity: int
-    unit_price: float
+    quantity: PositiveInt
+    unit_price: PositiveFloat
 
 
 class CreateOrderRequest(BaseModel):
@@ -151,8 +154,7 @@ async def create_order(
 
     # Execute use case
     order = await use_case.execute(command)
-
-    return order
+    return order_to_dict(order)
 
 
 @router.get(
@@ -204,7 +206,7 @@ async def get_order(
     """
     query = GetOrderQuery(order_id=order_id)
     order = await use_case.execute(query)
-    return order
+    return order_to_dict(order)
 
 
 @router.post(
@@ -231,7 +233,7 @@ async def pay_order(
     """
     command = PayOrderCommand(order_id=order_id)
     order = await use_case.execute(command)
-    return order
+    return order_to_dict(order)
 
 
 @router.post(
@@ -261,4 +263,4 @@ async def cancel_order(
         reason=request.reason,
     )
     order = await use_case.execute(command)
-    return order
+    return order_to_dict(order)

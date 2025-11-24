@@ -13,9 +13,9 @@ Based on Legend system's projector architecture with:
 
 Architecture:
     Database (Outbox Table)
-        �?(poll)
+        ↓ (poll)
     OutboxProjector
-        �?(publish)
+        ↓ (publish)
     MessageBus (Pulsar/Kafka/Redis)
 
 Design highlights:
@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from bento.application.ports.message_bus import MessageBus
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import deserialize_event
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+from bento.persistence.outbox.record import OutboxRecord
 
 from .config import (
     DEFAULT_BATCH_SIZE,
@@ -56,7 +56,7 @@ class OutboxProjector:
     This projector implements the Transactional Outbox Pattern with multi-tenant support:
     1. Polls Outbox table for pending events (filtered by tenant_id)
     2. Publishes events to MessageBus in batches
-    3. Updates event status (NEW �?SENT/ERR)
+    3. Updates event status (NEW → SENT/ERR)
 
     Features:
     - Multi-tenant shard support (one projector instance per tenant)

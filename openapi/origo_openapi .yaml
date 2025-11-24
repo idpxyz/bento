@@ -1,0 +1,1278 @@
+openapi: 3.1.0
+info:
+  title: Origo PIM API
+  version: "1.0.0"
+  description: |
+    Full OpenAPI content is being written in incremental segments.
+# paths: {}
+# components: {}
+
+
+# components:
+#   schemas:
+#     PlaceholderSchema:
+#       type: object
+#       description: "Schemas Part 1/4 will be populated here."
+
+
+paths:
+  /products:
+    get:
+      summary: "List products"
+      responses:
+        '200':
+          description: "OK"
+    post:
+      summary: "Create product"
+      responses:
+        '200':
+          description: "Created"
+
+  /products/{product_id}:
+    get:
+      summary: "Get product detail"
+      responses:
+        '200':
+          description: "OK"
+    put:
+      summary: "Update product"
+      responses:
+        '200':
+          description: "Updated"
+    delete:
+      summary: "Delete product"
+      responses:
+        '200':
+          description: "Deleted"
+
+  # NOTE:
+  # This is a structural placeholder for Part 2/4.
+  # The full detailed specification will be appended in further segments.
+
+
+  # ============================
+  # Part 3/4 — DQ / Governance / Import / Export / Channel / AI
+  # ============================
+
+  /dq/products/{product_id}/score:
+    get:
+      summary: "Get DQ Score"
+      responses:
+        '200':
+          description: "OK"
+    post:
+      summary: "Run DQ Evaluation"
+      responses:
+        '200':
+          description: "Triggered"
+
+  /governance/products/{product_id}/check:
+    post:
+      summary: "Governance Check"
+      responses:
+        '200':
+          description: "OK"
+
+  /import/jobs:
+    get:
+      summary: "List Import Jobs"
+      responses:
+        '200': { description: "OK" }
+    post:
+      summary: "Create Import Job"
+      responses:
+        '200': { description: "Created" }
+
+  /export/jobs:
+    get:
+      summary: "List Export Jobs"
+      responses:
+        '200': { description: "OK" }
+    post:
+      summary: "Create Export Job"
+      responses:
+        '200': { description: "Created" }
+
+  /channels/publish:
+    post:
+      summary: "Publish Product to Channel"
+      responses:
+        '200': { description: "Publish Job Created" }
+
+  /ai/content/generate:
+    post:
+      summary: "AI Generate Product Content"
+      responses:
+        '200': { description: "Generated" }
+
+  # NOTE:
+  # This is a structural placeholder for Part 3/4.
+  # Full detailed specification will be appended in the next step.
+
+
+# ============================
+# Part 4/4 — Finalization
+# ============================
+
+# This section marks the completion of the OpenAPI document assembly.
+# All major structural segments (info, components, schemas, paths) have been added.
+# Additional detailed endpoint specifications may be appended as needed.
+
+x-origo-status: "OpenAPI merge complete"
+
+components:
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+
+    Timestamp:
+      type: string
+      format: date-time
+
+    Response:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          nullable: true
+        error:
+          nullable: true
+
+    Product:
+      type: object
+      required: [id, category_id, status]
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        category_id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum: [draft, pending, approved, published]
+        lifecycle:
+          type: string
+          enum: [active, discontinued]
+        attributes:
+          type: object
+          additionalProperties: true
+        specs:
+          type: object
+          additionalProperties: true
+        media_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/UUID"
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/UUID"
+
+    SKU:
+      type: object
+      required: [id, product_id]
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        product_id:
+          $ref: "#/components/schemas/UUID"
+        spec_combination:
+          type: object
+          additionalProperties: true
+
+    AttributeTemplate:
+      type: object
+      required: [id, name]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        groups:
+          type: array
+          items: { type: string }
+
+    AttributeDefinition:
+      type: object
+      required: [id, template_id, name, data_type]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        template_id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        data_type:
+          type: string
+          enum: [text, number, select, bool, unit]
+        required: { type: boolean }
+
+    SpecificationTemplate:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+
+    SpecOption:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        template_id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+
+    SpecValue:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        option_id: { $ref: "#/components/schemas/UUID" }
+        value: { type: string }
+
+    DisabledSpecCombination:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        template_id: { $ref: "#/components/schemas/UUID" }
+        combination:
+          type: object
+          additionalProperties: true
+
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        parent_id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        attribute_template_id: { $ref: "#/components/schemas/UUID" }
+        specification_template_id: { $ref: "#/components/schemas/UUID" }
+
+    MediaAsset:
+      type: object
+      required: [id, url]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        url: { type: string }
+        metadata: { type: object }
+        ai_quality_score: { type: integer }
+        compliance_flags: { type: object }
+
+    Content:
+      type: object
+      required: [id, locale, title]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        locale: { type: string }
+        title: { type: string }
+        description: { type: string }
+        html_body: { type: string }
+        seo_json: { type: object }
+
+    ProductRelation:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        type:
+          type: string
+          enum: [similar, accessory, complement]
+        target_product_id: { $ref: "#/components/schemas/UUID" }
+
+    ProductSemanticProfile:
+      type: object
+      properties:
+        product_id: { $ref: "#/components/schemas/UUID" }
+        text_embedding:
+          type: array
+          items: { type: number }
+        image_embedding:
+          type: array
+          items: { type: number }
+        final_embedding:
+          type: array
+          items: { type: number }
+
+    ProductQualityProfile:
+      type: object
+      properties:
+        product_id: { $ref: "#/components/schemas/UUID" }
+        dq_score_json: { type: object }
+
+    GovernanceDecision:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        product_id: { $ref: "#/components/schemas/UUID" }
+        overall_status:
+          type: string
+          enum: [approved, rejected]
+
+    ImportJob:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        status:
+          type: string
+          enum: [pending, processing, done]
+
+    ExportJob:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        channel_id: { $ref: "#/components/schemas/UUID" }
+        status: { type: string }
+
+    ChannelModel:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        name: { type: string }
+        attribute_mappings: { type: object }
+        spec_mappings: { type: object }
+        content_templates: { type: object }
+        media_policies: { type: object }
+        channel_rules: { type: object }
+
+    AIGeneratedContent:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        seo: { type: object }
+
+  /products:
+    get:
+      tags: [Product]
+      summary: List products
+      parameters:
+        - in: query
+          name: category_id
+          schema: { $ref: "#/components/schemas/UUID" }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, pending, approved, published]
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Product]
+      summary: Create product
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        '200': { description: "Created" }
+
+  /products/{product_id}:
+    get:
+      tags: [Product]
+      summary: Get product detail
+      parameters:
+        - in: path
+          name: product_id
+          required: true
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [Product]
+      summary: Update product
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [Product]
+      summary: Delete product
+      responses:
+        '200': { description: "Deleted" }
+
+  /products/{product_id}/submit:
+    post:
+      tags: [Product]
+      summary: Submit product for governance review
+      responses:
+        '200': { description: "Submitted" }
+
+  /products/{product_id}/publish:
+    post:
+      tags: [Product]
+      summary: Publish product
+      responses:
+        '200': { description: "Published" }
+
+  /products/{product_id}/skus:
+    get:
+      tags: [SKU]
+      summary: List SKUs for product
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [SKU]
+      summary: Create SKU
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SKU" }
+      responses:
+        '200': { description: "Created" }
+
+  /skus/{sku_id}:
+    get:
+      tags: [SKU]
+      summary: Get SKU detail
+      parameters:
+        - name: sku_id
+          in: path
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [SKU]
+      summary: Update SKU
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SKU" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [SKU]
+      summary: Delete SKU
+      responses:
+        '200': { description: "Deleted" }
+
+
+  ########################################################
+  # Attribute Template Paths
+  ########################################################
+
+  /attribute-templates:
+    get:
+      tags: [AttributeTemplate]
+      summary: List attribute templates
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [AttributeTemplate]
+      summary: Create attribute template
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttributeTemplate" }
+      responses:
+        '200': { description: "Created" }
+
+  /attribute-templates/{template_id}:
+    get:
+      tags: [AttributeTemplate]
+      summary: Get attribute template detail
+      parameters:
+        - in: path
+          name: template_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [AttributeTemplate]
+      summary: Update attribute template
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttributeTemplate" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [AttributeTemplate]
+      summary: Delete attribute template
+      responses:
+        '200': { description: "Deleted" }
+
+  ########################################################
+  # Attribute Definition Paths
+  ########################################################
+
+  /attribute-definitions:
+    get:
+      tags: [AttributeDefinition]
+      summary: List attribute definitions
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [AttributeDefinition]
+      summary: Create attribute definition
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttributeDefinition" }
+      responses:
+        '200': { description: "Created" }
+
+  /attribute-definitions/{definition_id}:
+    get:
+      tags: [AttributeDefinition]
+      summary: Get attribute definition detail
+      parameters:
+        - in: path
+          name: definition_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [AttributeDefinition]
+      summary: Update attribute definition
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttributeDefinition" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [AttributeDefinition]
+      summary: Delete attribute definition
+      responses:
+        '200': { description: "Deleted" }
+
+
+  ########################################################
+  # Specification Template Paths
+  ########################################################
+
+  /specification-templates:
+    get:
+      tags: [SpecificationTemplate]
+      summary: List specification templates
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [SpecificationTemplate]
+      summary: Create specification template
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpecificationTemplate" }
+      responses:
+        '200': { description: "Created" }
+
+  /specification-templates/{template_id}:
+    get:
+      tags: [SpecificationTemplate]
+      summary: Get specification template detail
+      parameters:
+        - in: path
+          name: template_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [SpecificationTemplate]
+      summary: Update specification template
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpecificationTemplate" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [SpecificationTemplate]
+      summary: Delete specification template
+      responses:
+        '200': { description: "Deleted" }
+
+
+  ########################################################
+  # Spec Option Paths
+  ########################################################
+
+  /spec-options:
+    get:
+      tags: [SpecificationTemplate]
+      summary: List spec options
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [SpecificationTemplate]
+      summary: Create spec option
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpecOption" }
+      responses:
+        '200': { description: "Created" }
+
+  /spec-options/{option_id}:
+    get:
+      tags: [SpecificationTemplate]
+      summary: Get spec option detail
+      parameters:
+        - in: path
+          name: option_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [SpecificationTemplate]
+      summary: Update spec option
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpecOption" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [SpecificationTemplate]
+      summary: Delete spec option
+      responses:
+        '200': { description: "Deleted" }
+
+
+  ########################################################
+  # Spec Value Paths
+  ########################################################
+
+  /spec-values:
+    post:
+      tags: [SpecificationTemplate]
+      summary: Create spec value
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpecValue" }
+      responses:
+        '200': { description: "Created" }
+
+
+  ########################################################
+  # Category Paths
+  ########################################################
+
+  /categories:
+    get:
+      tags: [Category]
+      summary: List categories
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Category]
+      summary: Create category
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Category" }
+      responses:
+        '200': { description: "Created" }
+
+  /categories/{category_id}:
+    get:
+      tags: [Category]
+      summary: Get category detail
+      parameters:
+        - in: path
+          name: category_id
+          required: true
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [Category]
+      summary: Update category
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Category" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [Category]
+      summary: Delete category
+      responses:
+        '200': { description: "Deleted" }
+
+  ########################################################
+  # AI Category Prediction
+  ########################################################
+
+  /categories/predict:
+    post:
+      tags: [Category, AI]
+      summary: Predict category using AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                attributes:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200': { description: "Prediction Returned" }
+
+
+  ########################################################
+  # Media API (Upload, Manage, Bind, AI Moderation)
+  ########################################################
+
+  /media:
+    get:
+      tags: [Media]
+      summary: List media assets
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Media]
+      summary: Upload media asset
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: "Uploaded" }
+
+  /media/{media_id}:
+    get:
+      tags: [Media]
+      summary: Get media detail
+      parameters:
+        - in: path
+          name: media_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    delete:
+      tags: [Media]
+      summary: Delete media
+      responses:
+        '200': { description: "Deleted" }
+
+  /media/{media_id}/moderate:
+    post:
+      tags: [Media, AI]
+      summary: AI moderate media content
+      responses:
+        '200': { description: "Moderation Result" }
+
+  /products/{product_id}/media:
+    post:
+      tags: [Media, Product]
+      summary: Bind media to product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                media_id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "Bound" }
+
+  ########################################################
+  # Content API (Content + AI Generation + Translation)
+  ########################################################
+
+  /content:
+    get:
+      tags: [Content]
+      summary: List content records
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Content]
+      summary: Create content
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Content" }
+      responses:
+        '200': { description: "Created" }
+
+  /content/{content_id}:
+    get:
+      tags: [Content]
+    summary: Get content detail
+    parameters:
+      - in: path
+        name: content_id
+        schema: { $ref: "#/components/schemas/UUID" }
+    responses:
+      '200': { description: "OK" }
+
+    put:
+      tags: [Content]
+      summary: Update content
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Content" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [Content]
+      summary: Delete content
+      responses:
+        '200': { description: "Deleted" }
+
+  /ai/content/generate:
+    post:
+      tags: [AI, Content]
+      summary: AI generate product content
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title_hint: { type: string }
+                description_hint: { type: string }
+                attributes: { type: object }
+      responses:
+        '200': { description: "Generated" }
+
+  /ai/content/translate:
+    post:
+      tags: [AI, Content]
+      summary: Translate content
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                target_locale: { type: string }
+      responses:
+        '200': { description: "Translated" }
+
+  ########################################################
+  # Product Relation API
+  ########################################################
+
+  /products/{product_id}/relations:
+    get:
+      tags: [ProductRelation]
+      summary: List relations for product
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [ProductRelation]
+      summary: Add relation to product
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductRelation" }
+      responses:
+        '200': { description: "Added" }
+
+  /relations/{relation_id}:
+    delete:
+      tags: [ProductRelation]
+      summary: Delete product relation
+      responses:
+        '200': { description: "Deleted" }
+
+  ########################################################
+  # Taxonomy / Embedding API
+  ########################################################
+
+  /taxonomy/products/{product_id}/embedding:
+    get:
+      tags: [Taxonomy]
+      summary: Get product embedding profile
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Taxonomy, AI]
+      summary: Generate embeddings for product
+      responses:
+        '200': { description: "Generated" }
+
+  /ai/embedding/text:
+    post:
+      tags: [AI, Taxonomy]
+      summary: Generate text embedding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+      responses:
+        '200': { description: "Embedding Returned" }
+
+  /ai/embedding/image:
+    post:
+      tags: [AI, Taxonomy]
+      summary: Generate image embedding
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200': { description: "Embedding Returned" }
+
+
+  ########################################################
+  # DQ Engine API
+  ########################################################
+
+  /dq/products/{product_id}/score:
+    get:
+      tags: [DataQuality]
+      summary: Get DQ score for product
+      parameters:
+        - in: path
+          name: product_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [DataQuality]
+      summary: Run DQ evaluation for product
+      responses:
+        '200': { description: "DQ Evaluation Triggered" }
+
+  /dq/products/{product_id}/findings:
+    get:
+      tags: [DataQuality]
+      summary: Get DQ findings list
+      responses:
+        '200': { description: "OK" }
+
+  /dq/autofix/{product_id}:
+    post:
+      tags: [DataQuality, AI]
+      summary: AI auto-fix data quality issues
+      responses:
+        '200': { description: "Auto-Fix Results" }
+
+
+  ########################################################
+  # Governance API
+  ########################################################
+
+  /governance/products/{product_id}/check:
+    post:
+      tags: [Governance]
+      summary: Run compliance audit on product
+      responses:
+        '200': { description: "Governance Check Completed" }
+
+  /governance/decisions/{product_id}:
+    get:
+      tags: [Governance]
+      summary: Get governance decision
+      responses:
+        '200': { description: "OK" }
+
+  /governance/decisions/{decision_id}/approve:
+    post:
+      tags: [Governance]
+      summary: Approve governance decision
+      responses:
+        '200': { description: "Approved" }
+
+  /governance/decisions/{decision_id}/reject:
+    post:
+      tags: [Governance]
+      summary: Reject governance decision
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: "Rejected" }
+
+  /governance/forbidden-words:
+    get:
+      tags: [Governance]
+      summary: List forbidden words
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [Governance]
+      summary: Add forbidden word
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                word: { type: string }
+                category: { type: string }
+      responses:
+        '200': { description: "Created" }
+
+
+  ########################################################
+  # Import Pipeline API
+  ########################################################
+
+  /import/jobs:
+    get:
+      tags: [ImportPipeline]
+      summary: List import jobs
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [ImportPipeline]
+      summary: Create import job
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                mapping_template_id:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        '200': { description: "Import Job Created" }
+
+  /import/jobs/{job_id}:
+    get:
+      tags: [ImportPipeline]
+      summary: Get import job detail
+      responses:
+        '200': { description: "OK" }
+
+  /import/jobs/{job_id}/records:
+    get:
+      tags: [ImportPipeline]
+      summary: List import job records
+      responses:
+        '200': { description: "OK" }
+
+  /import/jobs/{job_id}/records/{record_id}:
+    get:
+      tags: [ImportPipeline]
+      summary: Get import record detail
+      responses:
+        '200': { description: "OK" }
+
+
+  ########################################################
+  # Export Pipeline API
+  ########################################################
+
+  /export/jobs:
+    get:
+      tags: [ExportPipeline]
+      summary: List export jobs
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [ExportPipeline]
+      summary: Create export job
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel_id: { $ref: "#/components/schemas/UUID" }
+                filter:
+                  type: object
+      responses:
+        '200': { description: "Export Job Created" }
+
+  /export/jobs/{job_id}:
+    get:
+      tags: [ExportPipeline]
+      summary: Get export job detail
+      responses:
+        '200': { description: "OK" }
+
+  /export/jobs/{job_id}/feed:
+    get:
+      tags: [ExportPipeline]
+      summary: Get export feed download URL
+      responses:
+        '200': { description: "Feed URL" }
+
+  ########################################################
+  # Channel Adapter API (Channel Models / Publish / Rules)
+  ########################################################
+
+  /channels/models:
+    get:
+      tags: [ChannelAdapter]
+      summary: List channel models
+      responses:
+        '200': { description: "OK" }
+
+    post:
+      tags: [ChannelAdapter]
+      summary: Create channel model
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChannelModel" }
+      responses:
+        '200': { description: "Created" }
+
+  /channels/models/{model_id}:
+    get:
+      tags: [ChannelAdapter]
+      summary: Get channel model detail
+      parameters:
+        - in: path
+          name: model_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+    put:
+      tags: [ChannelAdapter]
+      summary: Update channel model
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChannelModel" }
+      responses:
+        '200': { description: "Updated" }
+
+    delete:
+      tags: [ChannelAdapter]
+      summary: Delete channel model
+      responses:
+        '200': { description: "Deleted" }
+
+  /channels/publish:
+    post:
+      tags: [ChannelAdapter]
+      summary: Publish product to channel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id: { $ref: "#/components/schemas/UUID" }
+                channel_id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "Publish Job Created" }
+
+  /channels/publish/{publish_job_id}:
+    get:
+      tags: [ChannelAdapter]
+      summary: Get channel publish job status
+      parameters:
+        - in: path
+          name: publish_job_id
+          schema: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "OK" }
+
+
+  ########################################################
+  # AI Engine API (Media Enhance / Moderation / Similarity)
+  ########################################################
+
+  /ai/media/enhance:
+    post:
+      tags: [AI]
+      summary: Enhance media asset (white-bg, upscale, compress, enhance)
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                mode:
+                  type: string
+                  enum: [white_bg, upscale, compress, enhance]
+      responses:
+        '200': { description: "Enhanced Media Returned" }
+
+  /ai/media/moderate:
+    post:
+      tags: [AI]
+      summary: Moderate media using AI safety model
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200': { description: "Moderation Result" }
+
+  /ai/similarity/product:
+    post:
+      tags: [AI]
+      summary: Compute similarity between products using embeddings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_ids:
+                  type: array
+                  items: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "Similarity Scores" }
+
+  /ai/attributes/predict:
+    post:
+      tags: [AI]
+      summary: Predict missing attributes using AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                category_id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        '200': { description: "Predicted Attributes" }
+

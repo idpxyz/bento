@@ -21,6 +21,7 @@ from bento.application.ports.message_bus import MessageBus
 from bento.application.ports.uow import UnitOfWork as IUnitOfWork
 from bento.domain.domain_event import DomainEvent
 from bento.messaging.outbox import Outbox
+from bento.persistence.config import is_outbox_listener_enabled
 
 T = TypeVar("T")
 
@@ -51,7 +52,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
 
     Example:
         ```python
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         # Setup (in composition root)
         outbox = SqlAlchemyOutbox(session)
@@ -97,7 +98,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self.pending_events: list[DomainEvent] = []
         self._tracked_aggregates: list[Any] = []  # Track aggregates for event collection
         self._ctx_token: contextvars.Token | None = None
-        logger.info(
+        logger.debug(
             "UoW initialized with outbox: %s, event_bus: %s",
             outbox.__class__.__name__ if outbox else "None",
             event_bus.__class__.__name__ if event_bus else "None",
@@ -247,6 +248,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         # We only reset the ContextVar here
         if self._ctx_token is not None:
             _current_uow.reset(self._ctx_token)
+        if hasattr(self._session, "sync_session"):
+            self._session.sync_session.info.pop("uow", None)
+        else:
+            self._session.info.pop("uow", None)
         logger.debug("UoW cleanup completed")
 
     async def commit(self) -> None:
@@ -267,13 +272,20 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         # 1. Collect events from aggregates
         await self.collect_events()
 
+        listener_enabled = is_outbox_listener_enabled()
+
+        if self.pending_events and listener_enabled:
+            import importlib
+
+            importlib.import_module("bento.persistence.outbox.listener")
+
         # 2. Persist events to Outbox (if we have an outbox and events)
         # We do this manually because after_flush listeners don't reliably trigger with AsyncSession
         # when there are no entity changes
-        if self.pending_events and self._outbox:
+        if self.pending_events and self._outbox and not listener_enabled:
             from sqlalchemy import select
 
-            from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+            from bento.persistence.outbox.record import OutboxRecord
 
             logger.debug("Persisting %d events to Outbox", len(self.pending_events))
 
@@ -434,7 +446,7 @@ class UnitOfWorkFactory:
 
     Example:
         ```python
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         factory = UnitOfWorkFactory(session_factory)
         uow = await factory.create()
@@ -455,7 +467,7 @@ class UnitOfWorkFactory:
         Returns:
             New UnitOfWork instance configured with Outbox pattern
         """
-        from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
 
         session = self._session_factory()
         outbox = SqlAlchemyOutbox(session)

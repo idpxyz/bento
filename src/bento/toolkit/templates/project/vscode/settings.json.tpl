@@ -1,0 +1,70 @@
+{
+  // Python 解释器配置 - 使用 uv 管理的虚拟环境
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.venvPath": "${workspaceFolder}",
+  "python.terminal.activateEnvironment": true,
+
+  // Python 路径配置 - 让 Pylance 能够识别项目中的模块
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}",
+    "${workspaceFolder}/src"
+  ],
+
+  // 启用类型检查
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.completeFunctionParens": true,
+
+  // 排除不需要分析的文件/目录
+  "python.analysis.exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.git",
+    "**/.venv",
+    "**/venv",
+    "**/env"
+  ],
+
+  // 终端配置 - 跨平台 PYTHONPATH
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"
+  },
+  "terminal.integrated.inheritEnv": true,
+
+  // 行尾符配置（Linux 使用 LF）
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  // 代码格式化 - 使用 Ruff
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.ruff": "explicit"
+    }
+  },
+
+  // Ruff 配置
+  "ruff.nativeServer": true,
+  "ruff.lineLength": 100,
+
+  // 禁用 Python 扩展内置 Lint（避免与 Ruff 冲突）
+  "python.linting.enabled": false,
+  "python.linting.flake8Enabled": false,
+  "python.linting.pylintEnabled": false,
+
+  // 显示 100 列标尺
+  "editor.rulers": [100],
+
+  // 测试配置
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests",
+    "-v"
+  ]
+}

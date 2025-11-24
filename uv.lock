@@ -96,13 +96,14 @@ wheels = [
 
 [[package]]
 name = "bento-framework"
-version = "0.1.0a2"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "pulsar-client" },
     { name = "pydantic" },
     { name = "python-dateutil" },
@@ -138,6 +139,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<2.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
     { name = "import-linter", marker = "extra == 'dev'", specifier = ">=2.0,<3.0" },
+    { name = "jinja2", specifier = ">=3.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11,<2.0" },
     { name = "pulsar-client", specifier = ">=3.4" },
     { name = "pydantic", specifier = ">=2.7,<3.0" },
@@ -146,7 +148,7 @@ requires-dist = [
     { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },
     { name = "python-dateutil", specifier = ">=2.8" },
-    { name = "redis", specifier = ">=5.0,<6.0" },
+    { name = "redis", specifier = ">=5.0,<8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6,<1.0" },
     { name = "sphinx", marker = "extra == 'dev'", specifier = ">=7.2" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=2.0" },

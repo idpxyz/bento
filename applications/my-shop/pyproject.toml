@@ -1,0 +1,69 @@
+[project]
+name = "my_shop"
+version = "0.1.0"
+description = "完整测试项目"
+requires-python = ">=3.12"
+dependencies = [
+    # 应用特定依赖
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    # 🔄 注意：其他依赖现在通过 bento-framework 自动引入：
+    # - pydantic>=2.7.0 (通过 bento-framework)
+    # - sqlalchemy[asyncio]>=2.0 (通过 bento-framework)
+    # - aiosqlite>=0.19.0 (通过 bento-framework)
+    # - alembic>=1.13 (通过 bento-framework)
+    # - redis>=5.0,<8.0 (通过 bento-framework)
+    # - tenacity>=8.2 (通过 bento-framework)
+    "email-validator>=2.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # ✅ Bento Framework 作为可编辑开发依赖
+    "bento-framework @ file:///workspace/bento",
+
+    # 测试和开发工具
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["contexts", "api"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "B008"]
+
+[tool.uv.sources]
+bento-framework = { path = "../../", editable = true }
+
+[dependency-groups]
+dev = [
+    "bento-framework",
+    "httpx>=0.28.1",
+    "pytest>=9.0.1",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+]

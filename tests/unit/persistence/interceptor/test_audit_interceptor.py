@@ -305,7 +305,7 @@ async def test_batch_update_all_entities(audit_interceptor, mock_session):
     entities = []
     original_created_at = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
 
-    for i in range(5):
+    for _i in range(5):
         entity = AuditedEntity()
         entity.created_at = original_created_at
         entity.created_by = "original@example.com"

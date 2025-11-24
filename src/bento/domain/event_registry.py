@@ -7,20 +7,18 @@ enabling proper deserialization from the Outbox table.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bento.domain.domain_event import DomainEvent
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", bound="DomainEvent")
-
 # Global event registry: event_type_name -> event_class
 _EVENT_REGISTRY: dict[str, type[DomainEvent]] = {}
 
 
-def register_event(event_class: type[T]) -> type[T]:
+def register_event[T: "DomainEvent"](event_class: type[T]) -> type[T]:
     """Decorator to register a domain event class.
 
     This allows the Projector to deserialize events from the Outbox

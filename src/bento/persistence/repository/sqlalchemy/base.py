@@ -18,6 +18,16 @@ from bento.persistence.interceptor import (
     InterceptorContext,
     OperationType,
 )
+from bento.persistence.repository.sqlalchemy.mixins import (
+    AggregateQueryMixin,
+    BatchOperationsMixin,
+    ConditionalUpdateMixin,
+    GroupByQueryMixin,
+    RandomSamplingMixin,
+    SoftDeleteEnhancedMixin,
+    SortingLimitingMixin,
+    UniquenessChecksMixin,
+)
 from bento.persistence.specification import CompositeSpecification
 
 # Type variables for Persistence Objects
@@ -25,7 +35,20 @@ PO = TypeVar("PO")  # Persistence Object
 ID = TypeVar("ID")  # ID type
 
 
-class BaseRepository[PO, ID]:
+class BaseRepository[PO, ID](
+    # P0 Mixins
+    BatchOperationsMixin,
+    UniquenessChecksMixin,
+    # P1 Mixins
+    AggregateQueryMixin,
+    SortingLimitingMixin,
+    ConditionalUpdateMixin,
+    # P2 Mixins
+    GroupByQueryMixin,
+    SoftDeleteEnhancedMixin,
+    # P3 Mixins
+    RandomSamplingMixin,
+):
     """Base repository for Persistence Object (PO) operations.
 
     This repository provides database operations for POs (SQLAlchemy models)
@@ -115,7 +138,37 @@ class BaseRepository[PO, ID]:
         Returns:
             Persistence object if found, None otherwise
         """
-        return await self._session.get(self._po_type, id)
+        # Accept both raw PK (str/UUID/int) and ID-like wrappers that expose .value
+        pk = getattr(id, "value", id)
+
+        # Interceptor: allow cache short-circuit
+        if self._interceptor_chain:
+            context = InterceptorContext(
+                session=self._session,
+                entity_type=self._po_type,
+                operation=OperationType.GET,
+                actor=self._actor,
+                context_data={"entity_id": pk},
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
+        entity = await self._session.get(self._po_type, pk)
+
+        if self._interceptor_chain and entity is not None:
+            # Reuse same context when possible
+            if "context" not in locals():
+                context = InterceptorContext(
+                    session=self._session,
+                    entity_type=self._po_type,
+                    operation=OperationType.GET,
+                    actor=self._actor,
+                    context_data={"entity_id": pk},
+                )
+            entity = await self._interceptor_chain.process_result(context, entity)
+
+        return entity
 
     async def query_po_by_spec(self, spec: CompositeSpecification[PO]) -> list[PO]:
         """Query persistence objects using specification.
@@ -126,11 +179,37 @@ class BaseRepository[PO, ID]:
         Returns:
             List of matching persistence objects
         """
+        # Prepare context (optionally add serializable spec params if available)
+        context = None
+        if self._interceptor_chain:
+            params: dict | None = None
+            to_cache_params = getattr(spec, "to_cache_params", None)
+            if callable(to_cache_params):
+                try:
+                    params = to_cache_params()  # type: ignore[misc]
+                except Exception:
+                    params = None
+            context = InterceptorContext(
+                session=self._session,
+                entity_type=self._po_type,
+                operation=OperationType.QUERY,
+                actor=self._actor,
+                context_data={"query_params": params} if params else {},
+            )
+            cached = await self._interceptor_chain.execute_before(context)
+            if cached is not None:
+                return cached
+
         # Simplified implementation
-        # Full implementation would use QueryBuilder
         stmt = select(self._po_type)
         result = await self._session.execute(stmt)
-        return list(result.scalars().all())
+        rows = list(result.scalars().all())
+
+        if self._interceptor_chain and context is not None and rows is not None:
+            # Batch process to allow caching strategies
+            rows = await self._interceptor_chain.process_batch_results(context, rows)
+
+        return rows
 
     async def count_po_by_spec(self, spec: CompositeSpecification[PO]) -> int:
         """Count persistence objects matching specification.
@@ -169,7 +248,6 @@ class BaseRepository[PO, ID]:
 
         self._session.add(po)
         await self._session.flush()
-
         if self._interceptor_chain:
             po = await self._interceptor_chain.process_result(context, po)
 
@@ -221,8 +299,15 @@ class BaseRepository[PO, ID]:
             )
             await self._interceptor_chain.execute_before(context)
 
-        await self._session.delete(po)
+        # Ensure the object is in the session before deleting
+        merged_po = await self._session.merge(po)
+        await self._session.delete(merged_po)
         await self._session.flush()
+
+        # Trigger invalidation if needed
+        if self._interceptor_chain:
+            # pass through result None to allow invalidation logic in interceptors
+            await self._interceptor_chain.process_result(context, po)  # type: ignore[arg-type]
 
     # ==================== Batch Operations ====================
 
@@ -252,6 +337,9 @@ class BaseRepository[PO, ID]:
             self._session.add(po)
 
         await self._session.flush()
+
+        if self._interceptor_chain:
+            pos = await self._interceptor_chain.process_batch_results(context, pos)
         return pos
 
     async def batch_po_update(self, pos: list[PO]) -> list[PO]:
@@ -280,6 +368,8 @@ class BaseRepository[PO, ID]:
             await self._session.merge(po)
 
         await self._session.flush()
+        if self._interceptor_chain:
+            pos = await self._interceptor_chain.process_batch_results(context, pos)
         return pos
 
     async def batch_po_delete(self, pos: list[PO]) -> None:
@@ -302,6 +392,9 @@ class BaseRepository[PO, ID]:
             await self._interceptor_chain.execute_before(context)
 
         for po in pos:
-            await self._session.delete(po)
+            merged_po = await self._session.merge(po)
+            await self._session.delete(merged_po)
 
         await self._session.flush()
+        if self._interceptor_chain:
+            await self._interceptor_chain.process_batch_results(context, pos)

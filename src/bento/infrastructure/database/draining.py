@@ -68,7 +68,10 @@ class ConnectionDrainer:
             ```python
             drainer = ConnectionDrainer(engine, timeout=30.0)
             stats = await drainer.drain()
-            print(f"Drained {stats['connections_at_start']} connections in {stats['time_taken']:.2f}s")
+            print(
+                f"Drained {stats['connections_at_start']} connections "
+                f"in {stats['time_taken']:.2f}s"
+            )
             ```
         """
         if self._is_draining:
@@ -165,10 +168,13 @@ class ConnectionDrainer:
         """
         try:
             pool = self.engine.pool
-            if hasattr(pool, "checkedout"):
-                return pool.checkedout()
+            # checkedout is a method, not an attribute
+            # Note: Only available on QueuePool and AsyncAdaptedQueuePool, not StaticPool
+            if hasattr(pool, "checkedout") and callable(pool.checkedout):  # type: ignore[attr-defined]
+                count = pool.checkedout()  # type: ignore[attr-defined]
+                return int(count)  # type: ignore[arg-type]
             else:
-                # Pool doesn't support connection tracking
+                # Pool doesn't support connection tracking (e.g., StaticPool for SQLite)
                 return 0
         except Exception as e:
             logger.debug(f"Unable to get connection count: {e}")

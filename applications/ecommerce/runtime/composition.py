@@ -4,18 +4,20 @@ This module wires up all dependencies for the e-commerce application.
 Uses Bento's database infrastructure for configuration and lifecycle management.
 """
 
+import os
 from collections.abc import AsyncGenerator
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.persistence import OrderRepository
-from bento.application.ports import IUnitOfWork
 from bento.infrastructure.database import (
     DatabaseConfig,
     cleanup_database,
     create_async_engine_from_config,
     create_async_session_factory,
+    drop_all_tables,
     init_database,
 )
 from bento.persistence import Base
@@ -99,36 +101,51 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_unit_of_work(actor: str = "system", use_interceptors: bool = True) -> IUnitOfWork:
-    """Get unit of work.
+# ==================== DEPRECATED - REMOVED ====================
+# get_unit_of_work() has been removed due to Session lifecycle issues.
+# Use get_uow() with proper FastAPI dependency injection instead.
+#
+# New pattern (CORRECT):
+#     async def get_uow(
+#         session: AsyncSession = Depends(get_db_session),
+#     ) -> AsyncGenerator[SQLAlchemyUnitOfWork, None]:
+#         uow = SQLAlchemyUnitOfWork(session, outbox)
+#         try:
+#             yield uow
+#         finally:
+#             pass  # session managed by FastAPI
+# =========================================================
+
+
+async def get_uow(
+    session: AsyncSession = Depends(get_session),
+    actor: str = "system",
+) -> AsyncGenerator[UnitOfWork, None]:
+    """✅ CORRECTED: Get unit of work with proper session lifecycle.
 
     Args:
+        session: Database session (managed by FastAPI)
         actor: Current actor/user identifier for audit tracking
-        use_interceptors: Whether to use repositories with Interceptor support
 
-    Returns:
+    Yields:
         Unit of work instance with repositories registered
 
-    Note:
-        When use_interceptors=True (default), repositories will have:
-        - Automatic audit fields
-        - Soft delete support
-        - Optimistic locking
+    Usage:
+        async def create_order_use_case(
+            uow: UnitOfWork = Depends(get_uow)
+        ) -> CreateOrderUseCase:
+            return CreateOrderUseCase(uow)
     """
     # Ensure database is initialized
     await init_db()
 
-    # Get session
-    session = async_session_factory()
-
-    # Create outbox first
+    # Create outbox
     outbox = SqlAlchemyOutbox(session)
 
     # Create unit of work with outbox
     uow = UnitOfWork(session=session, outbox=outbox, repository_factories={})
 
     # Register repository factories
-    # Note: OrderRepository always includes interceptor support
     repository_factories = {
         Order: lambda s: OrderRepository(
             session=s,
@@ -139,7 +156,11 @@ async def get_unit_of_work(actor: str = "system", use_interceptors: bool = True)
     # Update the repository factories
     uow._repository_factories = repository_factories
 
-    return uow
+    try:
+        yield uow
+    finally:
+        # Cleanup is handled by session dependency
+        pass
 
 
 # ==================== Database Initialization ====================
@@ -161,18 +182,18 @@ async def init_db() -> None:
     if _db_initialized:
         return
 
-    # Import all models to register them with Base
-    # This is required for SQLAlchemy to create tables
-    from applications.ecommerce.modules.order.persistence.models import (  # noqa: F401
-        OrderItemModel,
-        OrderModel,
-    )
-
     # Import framework models (Outbox) - must import models to register them
     from bento.persistence.sqlalchemy.base import Base as FrameworkBase
 
-    # Initialize application tables
-    await init_database(engine, Base, check_tables=True)
+    # In test mode, reset the application schema to avoid stale columns
+    reset_flag = os.getenv("BENTO_TEST_RESET_DB")
+    is_pytest = "PYTEST_CURRENT_TEST" in os.environ
+    if (reset_flag and reset_flag.lower() in {"1", "true", "yes"}) or is_pytest:
+        await drop_all_tables(engine, Base)
+        await init_database(engine, Base, check_tables=False)
+    else:
+        # Initialize application tables (idempotent create if empty)
+        await init_database(engine, Base, check_tables=True)
 
     # Initialize framework tables (Outbox) - use check_tables=False to force creation
     await init_database(engine, FrameworkBase, check_tables=False)

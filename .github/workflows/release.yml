@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 触发条件：推送 v* 标签（如 v0.1.0）
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 需要写权限来创建 Release
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整历史以便生成 changelog
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Get version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+    - name: Update version in pyproject.toml
+      run: |
+        sed -i "s/version = \".*\"/version = \"${{ steps.get_version.outputs.version }}\"/" pyproject.toml
+        cat pyproject.toml | grep version
+
+    - name: Build package
+      run: python -m build
+
+    - name: Check package
+      run: twine check dist/*
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        echo "## What's Changed" > RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+
+        # 检查是否有之前的 tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+        if [ -z "$PREV_TAG" ]; then
+          # 第一个 release，显示所有提交
+          echo "🎉 Initial release of Bento Framework!" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### Recent commits:" >> RELEASE_NOTES.md
+          git log --pretty=format:"- %s (%h)" -n 20 >> RELEASE_NOTES.md
+        else
+          # 显示自上个 tag 以来的更改
+          git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD >> RELEASE_NOTES.md
+        fi
+
+        echo "" >> RELEASE_NOTES.md
+        echo "---" >> RELEASE_NOTES.md
+        echo "📦 **Note**: This version is under Proprietary License." >> RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "For licensing inquiries, please contact: licensing@idp.xyz" >> RELEASE_NOTES.md
+
+        cat RELEASE_NOTES.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.version, 'a') || contains(steps.get_version.outputs.version, 'b') || contains(steps.get_version.outputs.version, 'rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # PyPI 发布已禁用 - 使用 Proprietary License，不公开发布
+    # 如需发布，请手动执行或使用私有 PyPI
+
+    # - name: Publish to PyPI
+    #   if: ${{ !contains(steps.get_version.outputs.version, 'a') }}
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+    #   run: |
+    #     twine upload dist/*
+
+    # - name: Publish to Test PyPI
+    #   if: contains(steps.get_version.outputs.version, 'a')
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    #   run: |
+    #     twine upload --repository testpypi dist/*

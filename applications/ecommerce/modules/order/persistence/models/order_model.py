@@ -6,8 +6,9 @@ Persistence objects for Order aggregate.
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from bento.persistence import (
@@ -38,10 +39,34 @@ class OrderModel(Base, AuditFieldsMixin, SoftDeleteFieldsMixin, OptimisticLockFi
     status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Order-level money fields (use Numeric for precision)
+    discount_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
+    tax_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # Shipping address (flattened)
+    shipping_address_line1: Mapped[str | None] = mapped_column(String, nullable=True)
+    shipping_city: Mapped[str | None] = mapped_column(String, nullable=True)
+    shipping_country: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Polymorphic discriminators (payment/shipment)
+    payment_method: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    shipment_carrier: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # Common payment fields (minimal, optional)
+    payment_card_last4: Mapped[str | None] = mapped_column(String, nullable=True)
+    payment_card_brand: Mapped[str | None] = mapped_column(String, nullable=True)
+    payment_paypal_payer_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Common shipment fields (minimal, optional)
+    shipment_tracking_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    shipment_service: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     items: Mapped[list[OrderItemModel]] = relationship(
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"
+    )
+    discounts: Mapped[list[OrderDiscountModel]] = relationship(
+        "OrderDiscountModel", back_populates="order", cascade="all, delete-orphan"
+    )
+    tax_lines: Mapped[list[OrderTaxLineModel]] = relationship(
+        "OrderTaxLineModel", back_populates="order", cascade="all, delete-orphan"
     )
 
     @property
@@ -69,12 +94,53 @@ class OrderItemModel(Base):
     product_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     product_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-    unit_price: Mapped[float] = mapped_column(Float, nullable=False)
+    # Use Numeric for precision
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    # Polymorphic discriminator for line item kinds
+    kind: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="simple",
+        server_default="simple",
+        index=True,
+    )
 
     # Relationships
     order: Mapped[OrderModel] = relationship("OrderModel", back_populates="items")
 
     @property
     def subtotal(self) -> float:
-        """Calculate item subtotal."""
-        return self.unit_price * self.quantity
+        """Calculate item subtotal (for display only)."""
+        from decimal import Decimal
+
+        return float(Decimal(self.unit_price) * Decimal(self.quantity))
+
+
+class OrderDiscountModel(Base):
+    """Order discount rows."""
+
+    __tablename__ = "order_discounts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    order_id: Mapped[str] = mapped_column(
+        String, ForeignKey("orders.id"), index=True, nullable=False
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    order: Mapped[OrderModel] = relationship("OrderModel", back_populates="discounts")
+
+
+class OrderTaxLineModel(Base):
+    """Order tax rows."""
+
+    __tablename__ = "order_tax_lines"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    order_id: Mapped[str] = mapped_column(
+        String, ForeignKey("orders.id"), index=True, nullable=False
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    tax_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    order: Mapped[OrderModel] = relationship("OrderModel", back_populates="tax_lines")

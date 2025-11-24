@@ -1,7 +1,6 @@
 """Create order command and use case."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from applications.ecommerce.modules.order.domain.events import OrderCreated
 from applications.ecommerce.modules.order.domain.order import Order
@@ -35,7 +34,7 @@ class CreateOrderCommand:
     items: list[OrderItemDTO]
 
 
-class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, dict[str, Any]]):
+class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
     """Create order use case.
 
     Handles order creation with validation and persistence.
@@ -75,7 +74,7 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, dict[str, Any]]):
                 details={"field": "items", "reason": "must contain at least one item"},
             )
 
-    async def handle(self, command: CreateOrderCommand) -> dict[str, Any]:
+    async def handle(self, command: CreateOrderCommand) -> Order:
         order_id = ID.generate()
         customer_id = ID(command.customer_id)
 
@@ -101,4 +100,4 @@ class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, dict[str, Any]]):
         # Persist via repository inside UoW
         order_repo = self.uow.repository(Order)
         await order_repo.save(order)
-        return order.to_dict()
+        return order

@@ -7,10 +7,13 @@
 4. Domain Entity 与 PO 的分离
 """
 
-from bento.persistence.mixins import AuditFieldsMixin, OptimisticLockFieldMixin, FullAuditMixin
+from bento.persistence.po.mixins import (
+    AuditFieldsMixin,
+    FullAuditMixin,
+    OptimisticLockFieldMixin,
+)
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-
 
 # ============== 1. 定义基础设施组件 ==============
 

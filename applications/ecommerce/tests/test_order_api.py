@@ -18,18 +18,8 @@ async def test_create_order(client: AsyncClient):
     """Test creating an order."""
     # Note: This will fail until we properly wire up the UoW in the app
     # For now, it's a placeholder showing the test structure
-    order_data = {
-        "customer_id": "customer-123",
-        "items": [
-            {
-                "product_id": "product-1",
-                "product_name": "iPhone 15 Pro",
-                "quantity": 1,
-                "unit_price": 999.99
-            }
-        ]
-    }
-    
+    pytest.skip("Placeholder until API wiring is implemented")
+
     # This test is a placeholder - actual implementation depends on
     # properly setting up the database and dependency injection
     # response = await client.post("/api/orders", json=order_data)
@@ -44,4 +34,3 @@ async def test_openapi_docs(client: AsyncClient):
     data = response.json()
     assert "openapi" in data
     assert data["info"]["title"] == "E-commerce API"
-

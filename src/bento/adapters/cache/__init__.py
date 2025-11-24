@@ -39,6 +39,7 @@ from bento.adapters.cache.config import CacheBackend, CacheConfig, SerializerTyp
 from bento.adapters.cache.factory import CacheFactory, create_cache
 from bento.adapters.cache.memory import MemoryCache
 from bento.adapters.cache.redis import RedisCache
+from bento.adapters.cache.serializer import CacheSerializer
 from bento.adapters.cache.stats import CacheStats
 
 __all__ = [
@@ -49,5 +50,6 @@ __all__ = [
     "RedisCache",
     "CacheFactory",
     "create_cache",
+    "CacheSerializer",
     "CacheStats",
 ]

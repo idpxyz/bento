@@ -31,8 +31,12 @@ class InterceptorPriority(IntEnum):
 
 
 class OperationType(Enum):
-    """Database operation types."""
+    """Database operation types.
 
+    Extended to support Repository Mixins operations for unified caching.
+    """
+
+    # Basic CRUD operations
     CREATE = auto()
     READ = auto()
     GET = auto()
@@ -40,11 +44,34 @@ class OperationType(Enum):
     QUERY = auto()
     UPDATE = auto()
     DELETE = auto()
+
+    # Batch operations
     BATCH_CREATE = auto()
     BATCH_UPDATE = auto()
     BATCH_DELETE = auto()
+
+    # Transaction operations
     COMMIT = auto()
     ROLLBACK = auto()
+
+    # Aggregate query operations (P1 Repository Mixins)
+    AGGREGATE = auto()  # sum_field, avg_field, min_field, max_field, count_field
+
+    # Group by operations (P2 Repository Mixins)
+    GROUP_BY = auto()  # group_by_field, group_by_date, group_by_multiple_fields
+
+    # Sorting and limiting operations (P1 Repository Mixins)
+    SORT_LIMIT = auto()  # find_first, find_last, find_top_n
+
+    # Pagination operations (P1 Repository Mixins)
+    PAGINATE = auto()  # find_paginated
+
+    # Random sampling operations (P3 Repository Mixins)
+    RANDOM_SAMPLE = auto()  # find_random, find_random_n, find_sample
+
+    # Conditional operations (P1 Repository Mixins)
+    CONDITIONAL_UPDATE = auto()  # update_by_field, update_by_spec
+    CONDITIONAL_DELETE = auto()  # delete_by_field, delete_by_spec
 
 
 @dataclass

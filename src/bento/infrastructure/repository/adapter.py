@@ -9,17 +9,47 @@ Architecture:
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Protocol, cast, runtime_checkable
 
 from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
-from bento.domain.entity import Entity
-from bento.domain.ports.repository import Repository as IRepository
+from bento.domain.aggregate import AggregateRoot
+from bento.domain.ports.repository import IRepository
+from bento.infrastructure.repository.mixins import (
+    AggregateQueryMixin,
+    BatchOperationsMixin,
+    ConditionalUpdateMixin,
+    GroupByQueryMixin,
+    RandomSamplingMixin,
+    SoftDeleteEnhancedMixin,
+    SortingLimitingMixin,
+    UniquenessChecksMixin,
+)
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
 
 
-class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
+@runtime_checkable
+class HasVersion(Protocol):
+    version: int | None
+
+
+class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
+    # P0 Mixins
+    BatchOperationsMixin,
+    UniquenessChecksMixin,
+    # P1 Mixins
+    AggregateQueryMixin,
+    SortingLimitingMixin,
+    ConditionalUpdateMixin,
+    # P2 Mixins
+    GroupByQueryMixin,
+    SoftDeleteEnhancedMixin,
+    # P3 Mixins
+    RandomSamplingMixin,
+    # Base
+    IRepository[AR, ID],
+):
     """Repository Adapter implementing Domain Repository Port.
 
     This adapter provides the bridge between Domain layer (Aggregate Roots)
@@ -129,7 +159,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
             return None
         return self._mapper.map_reverse(po)  # PO �?AR
 
-    async def save(self, aggregate: AR) -> None:
+    async def save(self, aggregate: AR) -> AR:
         """Save aggregate root (create or update).
 
         Flow: AR �?PO �?Database
@@ -140,39 +170,65 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         Args:
             aggregate: Aggregate root to save
 
+        Returns:
+            The saved aggregate root (same instance, for fluent API)
+
         Example:
             ```python
             user = User(id="user-001", name="John")
-            await repo.save(user)  # Creates or updates
+            saved_user = await repo.save(user)  # Creates or updates
             ```
         """
         # Convert AR �?PO
         po = self._mapper.map(aggregate)
 
-        # Check if entity exists (has ID)
-        entity_id = getattr(po, "id", None)
+        # Check if aggregate exists (has ID)
+        aggregate_id = getattr(po, "id", None)
 
-        if entity_id is None:
+        if aggregate_id is None:
             # Create new
             await self._repository.create_po(po)
         else:
             # Check if exists in database
-            existing = await self._repository.get_po_by_id(entity_id)
+            existing = await self._repository.get_po_by_id(aggregate_id)
             if existing is None:
                 # Create
                 await self._repository.create_po(po)
             else:
+                # Propagate current version to transient PO to satisfy optimistic lock interceptor
+                try:
+                    if isinstance(existing, HasVersion) and isinstance(po, HasVersion):
+                        if po.version in (None, 0):
+                            po.version = existing.version
+                except Exception:
+                    pass
                 # Update
                 await self._repository.update_po(po)
 
-    async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
-        """List aggregate roots matching specification.
+        # Ensure the current UoW can collect domain events from this aggregate
+        try:
+            session = self._repository.session  # AsyncSession
+            sync_sess = getattr(session, "sync_session", None)
+            info = sync_sess.info if sync_sess is not None else session.info
+            uow = info.get("uow")
+            if uow and hasattr(uow, "track"):
+                uow.track(aggregate)  # type: ignore[no-any-return]
+        except Exception:
+            # Best-effort: do not block persistence if UoW is not available
+            pass
 
-        Flow: Database �?PO (batch) �?AR (batch)
+        # Return the saved aggregate for fluent API and to match Repository protocol
+        return aggregate
+
+    async def find_all(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
+        """Find all aggregate roots, optionally filtered by specification.
+
+        This is the primary query method implementing Repository Protocol.
+        Flow: Database → PO (batch) → AR (batch)
 
         Args:
             specification: Optional specification to filter results.
-                         If None, returns all entities.
+                         If None, returns all aggregate roots.
 
         Returns:
             List of matching aggregate roots
@@ -180,23 +236,34 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         Example:
             ```python
             # All users
-            all_users = await repo.list()
+            all_users = await repo.find_all()
 
             # With specification
-            spec = EntitySpecificationBuilder().is_active().build()
-            active_users = await repo.list(spec)
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            active_users = await repo.find_all(spec)
             ```
         """
         if specification is None:
             # Query all
             pos = await self._repository.query_po_by_spec(None)  # type: ignore[arg-type]
         else:
-            # Convert specification AR �?PO
+            # Convert specification AR → PO
             po_spec = self._convert_spec_to_po(specification)
             pos = await self._repository.query_po_by_spec(po_spec)
 
-        # Batch convert PO �?AR
+        # Batch convert PO → AR
         return self._mapper.map_reverse_list(pos)
+
+    async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
+        """Alias for find_all() for backward compatibility.
+
+        Args:
+            specification: Optional specification to filter results
+
+        Returns:
+            List of matching aggregate roots
+        """
+        return await self.find_all(specification)
 
     # ==================== Extended Query Methods ====================
 
@@ -225,19 +292,6 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
             return None
 
         return self._mapper.map_reverse(pos[0])
-
-    async def find_all(self, specification: CompositeSpecification[AR]) -> list[AR]:
-        """Find all aggregate roots matching specification.
-
-        Alias for list() with specification.
-
-        Args:
-            specification: Specification to match
-
-        Returns:
-            List of matching aggregate roots
-        """
-        return await self.list(specification)
 
     async def find_page(
         self,
@@ -323,6 +377,52 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
         count = await self.count(specification)
         return count > 0
 
+    async def paginate(
+        self,
+        specification: CompositeSpecification[AR] | None = None,
+        page: int = 1,
+        size: int = 20,
+    ) -> Page[AR]:
+        """Convenient pagination method without creating PageParams.
+
+        This is a simplified version of find_page() that doesn't require
+        creating a PageParams object. Ideal for simple pagination scenarios.
+
+        Args:
+            specification: Optional specification to filter results
+            page: Page number, starting from 1 (default: 1)
+            size: Page size (items per page) (default: 20)
+
+        Returns:
+            Page object with paginated data and metadata
+
+        Example:
+            ```python
+            # Simple pagination
+            page = await repo.paginate(page=1, size=20)
+            print(f"Total: {page.total}, Items: {len(page.items)}")
+
+            # With specification
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            page = await repo.paginate(spec, page=2, size=10)
+
+            # Access results
+            for item in page.items:
+                print(item.name)
+            if page.has_next:
+                print("More pages available")
+            ```
+        """
+        page_params = PageParams(page=page, size=size)
+
+        # If no specification provided, create an empty one
+        if specification is None:
+            from bento.persistence.specification import CompositeSpecification
+
+            specification = CompositeSpecification()
+
+        return await self.find_page(specification, page_params)
+
     async def delete(self, aggregate: AR) -> None:
         """Delete aggregate root.
 
@@ -333,6 +433,8 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](IRepository[AR, ID]):
 
         Note:
             If SoftDeleteInterceptor is enabled, this will be a soft delete.
+            In DDD, deleting an aggregate root should also handle the deletion
+            of all entities within the aggregate boundary.
 
         Example:
             ```python

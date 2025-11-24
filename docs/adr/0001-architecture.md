@@ -247,7 +247,7 @@ class Repository(Protocol, Generic[T]):
 #### 实现示例
 
 ```python
-# persistence/sqlalchemy/uow_sqlalchemy.py
+# persistence/uow.py (see SQLAlchemyUnitOfWork class)
 class SQLAlchemyUnitOfWork:
     async def commit(self) -> None:
         # 1. 收集聚合的领域事件

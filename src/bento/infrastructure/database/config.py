@@ -28,7 +28,7 @@ class DatabaseConfig(BaseSettings):
         ```python
         # Direct instantiation
         config = DatabaseConfig(
-            url="sqlite+aiosqlite:///./app.db",
+            url="sqlite+aiosqlite:///./bento.db",
             pool_size=10,
         )
         ```

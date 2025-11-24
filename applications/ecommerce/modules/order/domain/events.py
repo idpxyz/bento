@@ -1,11 +1,14 @@
 """Order domain events."""
 
 from datetime import datetime
+from uuid import UUID
 
 from bento.core.ids import ID
 from bento.domain.domain_event import DomainEvent
+from bento.domain.event_registry import register_event
 
 
+@register_event
 class OrderCreated(DomainEvent):
     """Order created event.
 
@@ -23,17 +26,40 @@ class OrderCreated(DomainEvent):
 
     def __init__(
         self,
-        order_id: ID,
-        customer_id: ID,
+        order_id: ID | str,
+        customer_id: ID | str,
         total_amount: float,
+        *,
+        event_id: UUID | None = None,
+        name: str = "OrderCreated",
+        occurred_at: datetime | None = None,
+        tenant_id: str | None = None,
+        aggregate_id: str | None = None,
+        schema_id: str | None = None,
+        schema_version: int = 1,
+        **_: object,
     ) -> None:
         """Initialize OrderCreated event."""
-        super().__init__(
-            name="OrderCreated",
-            aggregate_id=str(order_id),  # ← 设置 aggregate_id
-        )
-        object.__setattr__(self, "order_id", order_id)
-        object.__setattr__(self, "customer_id", customer_id)
+        oid = order_id if isinstance(order_id, ID) else ID(order_id)
+        cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
+
+        _super_kwargs: dict[str, object] = {
+            "name": name,
+            "aggregate_id": aggregate_id or str(oid),
+            "schema_version": schema_version,
+        }
+        if event_id is not None:
+            _super_kwargs["event_id"] = event_id
+        if occurred_at is not None:
+            _super_kwargs["occurred_at"] = occurred_at
+        if tenant_id is not None:
+            _super_kwargs["tenant_id"] = tenant_id
+        if schema_id is not None:
+            _super_kwargs["schema_id"] = schema_id
+
+        super().__init__(**_super_kwargs)  # type: ignore[arg-type]
+        object.__setattr__(self, "order_id", oid)
+        object.__setattr__(self, "customer_id", cid)
         object.__setattr__(self, "total_amount", total_amount)
 
     def to_payload(self) -> dict:
@@ -53,6 +79,7 @@ class OrderCreated(DomainEvent):
         }
 
 
+@register_event
 class OrderPaid(DomainEvent):
     """Order paid event.
 
@@ -72,18 +99,41 @@ class OrderPaid(DomainEvent):
 
     def __init__(
         self,
-        order_id: ID,
-        customer_id: ID,
+        order_id: ID | str,
+        customer_id: ID | str,
         total_amount: float,
         paid_at: datetime | None = None,
+        *,
+        event_id: UUID | None = None,
+        name: str = "OrderPaid",
+        occurred_at: datetime | None = None,
+        tenant_id: str | None = None,
+        aggregate_id: str | None = None,
+        schema_id: str | None = None,
+        schema_version: int = 1,
+        **_: object,
     ) -> None:
         """Initialize OrderPaid event."""
-        super().__init__(
-            name="OrderPaid",
-            aggregate_id=str(order_id),  # ← 设置 aggregate_id
-        )
-        object.__setattr__(self, "order_id", order_id)
-        object.__setattr__(self, "customer_id", customer_id)
+        oid = order_id if isinstance(order_id, ID) else ID(order_id)
+        cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
+
+        _super_kwargs: dict[str, object] = {
+            "name": name,
+            "aggregate_id": aggregate_id or str(oid),
+            "schema_version": schema_version,
+        }
+        if event_id is not None:
+            _super_kwargs["event_id"] = event_id
+        if occurred_at is not None:
+            _super_kwargs["occurred_at"] = occurred_at
+        if tenant_id is not None:
+            _super_kwargs["tenant_id"] = tenant_id
+        if schema_id is not None:
+            _super_kwargs["schema_id"] = schema_id
+
+        super().__init__(**_super_kwargs)  # type: ignore[arg-type]
+        object.__setattr__(self, "order_id", oid)
+        object.__setattr__(self, "customer_id", cid)
         object.__setattr__(self, "total_amount", total_amount)
         object.__setattr__(self, "paid_at", paid_at or datetime.now())
 
@@ -105,6 +155,7 @@ class OrderPaid(DomainEvent):
         }
 
 
+@register_event
 class OrderCancelled(DomainEvent):
     """Order cancelled event.
 
@@ -122,17 +173,40 @@ class OrderCancelled(DomainEvent):
 
     def __init__(
         self,
-        order_id: ID,
-        customer_id: ID,
+        order_id: ID | str,
+        customer_id: ID | str,
         reason: str | None = None,
+        *,
+        event_id: UUID | None = None,
+        name: str = "OrderCancelled",
+        occurred_at: datetime | None = None,
+        tenant_id: str | None = None,
+        aggregate_id: str | None = None,
+        schema_id: str | None = None,
+        schema_version: int = 1,
+        **_: object,
     ) -> None:
         """Initialize OrderCancelled event."""
-        super().__init__(
-            name="OrderCancelled",
-            aggregate_id=str(order_id),  # ← 设置 aggregate_id
-        )
-        object.__setattr__(self, "order_id", order_id)
-        object.__setattr__(self, "customer_id", customer_id)
+        oid = order_id if isinstance(order_id, ID) else ID(order_id)
+        cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
+
+        _super_kwargs: dict[str, object] = {
+            "name": name,
+            "aggregate_id": aggregate_id or str(oid),
+            "schema_version": schema_version,
+        }
+        if event_id is not None:
+            _super_kwargs["event_id"] = event_id
+        if occurred_at is not None:
+            _super_kwargs["occurred_at"] = occurred_at
+        if tenant_id is not None:
+            _super_kwargs["tenant_id"] = tenant_id
+        if schema_id is not None:
+            _super_kwargs["schema_id"] = schema_id
+
+        super().__init__(**_super_kwargs)  # type: ignore[arg-type]
+        object.__setattr__(self, "order_id", oid)
+        object.__setattr__(self, "customer_id", cid)
         object.__setattr__(self, "reason", reason)
 
     def to_payload(self) -> dict:
