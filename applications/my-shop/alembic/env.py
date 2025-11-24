@@ -4,11 +4,17 @@ from logging.config import fileConfig
 
 # Import Base to ensure all models are registered
 from bento.persistence import Base
+
+# Import all models to register them with SQLAlchemy
+from bento.persistence.outbox.record import OutboxRecord  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
-# Import all models to register them with SQLAlchemy
+from contexts.catalog.infrastructure.models.category_po import CategoryPO  # noqa: F401
+from contexts.catalog.infrastructure.models.product_po import ProductPO  # noqa: F401
+from contexts.identity.infrastructure.models.user_po import UserPO  # noqa: F401
+from contexts.ordering.infrastructure.models.order_po import OrderPO  # noqa: F401
+from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config
