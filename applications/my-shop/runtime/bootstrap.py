@@ -14,8 +14,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-
-# Import settings from top-level config.py (not the config package)
 from contextlib import asynccontextmanager
 
 from bento.adapters.cache import CacheBackend, CacheConfig, CacheFactory
