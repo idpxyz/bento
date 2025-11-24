@@ -10,7 +10,7 @@ from bento.infrastructure.database.lifecycle import (
     health_check,
     init_database,
 )
-from bento.persistence.sqlalchemy.base import Base
+from bento.persistence.po.base import Base
 
 
 @pytest.mark.asyncio

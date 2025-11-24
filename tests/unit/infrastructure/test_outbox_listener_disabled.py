@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from bento.domain.domain_event import DomainEvent
-from bento.persistence.sqlalchemy.outbox_listener import persist_events_DISABLED
+from bento.persistence.outbox.listener import persist_events_DISABLED
 
 
 @dataclass(frozen=True)

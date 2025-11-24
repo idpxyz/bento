@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, declared_attr
 
 
 class Base(DeclarativeBase):
@@ -16,6 +16,7 @@ class Base(DeclarativeBase):
     Provides shared metadata and utility methods for all models.
 
     Features:
+    - Auto-generates __tablename__ from class name (lowercased)
     - _generate_id(): Helper method to generate UUID string IDs
     - Can be extended by applications for custom behavior
 
@@ -24,10 +25,23 @@ class Base(DeclarativeBase):
         from bento.persistence import Base
 
         class UserModel(Base):
-            __tablename__ = "users"
+            # __tablename__ auto-generated as "usermodel"
+            id: Mapped[str] = mapped_column(String, primary_key=True)
+
+        # Or explicitly specify:
+        class OrderModel(Base):
+            __tablename__ = "orders"  # Override auto-generation
             # ... fields
         ```
     """
+
+    @declared_attr.directive
+    def __tablename__(cls) -> str:  # type: ignore[misc]
+        """Auto-generate table name from class name (lowercased).
+
+        Can be overridden by explicitly setting __tablename__ in subclass.
+        """
+        return cls.__name__.lower()
 
     @staticmethod
     def _generate_id() -> str:

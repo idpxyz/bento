@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from bento.domain.domain_event import DomainEvent
-from bento.persistence.sqlalchemy.base import Base
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord, SqlAlchemyOutbox
+from bento.persistence.outbox.record import OutboxRecord, SqlAlchemyOutbox
+from bento.persistence.po.base import Base
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 
 

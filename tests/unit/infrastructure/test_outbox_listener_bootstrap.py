@@ -18,7 +18,7 @@ async def test_enable_outbox_listener_idempotent(monkeypatch):
     # Remove any already-loaded module to ensure clean import under patch
     import sys
 
-    mod_name = "bento.persistence.sqlalchemy.outbox_listener"
+    mod_name = "bento.persistence.outbox.listener"
     if mod_name in sys.modules:
         del sys.modules[mod_name]
 

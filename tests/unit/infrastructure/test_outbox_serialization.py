@@ -4,7 +4,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 from bento.domain.domain_event import DomainEvent
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord
+from bento.persistence.outbox.record import OutboxRecord
 
 
 @dataclass(frozen=True, kw_only=True)

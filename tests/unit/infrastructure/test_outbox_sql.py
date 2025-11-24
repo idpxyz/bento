@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from bento.persistence.sqlalchemy.base import Base
-from bento.persistence.sqlalchemy.outbox_sql import OutboxRecord, SqlAlchemyOutbox
+from bento.persistence.outbox.record import OutboxRecord, SqlAlchemyOutbox
+from bento.persistence.po.base import Base
 
 
 @pytest.mark.asyncio
@@ -42,9 +42,11 @@ async def test_outbox_add_pull_mark_publish_and_fail():
             # mark published
             await outbox.mark_published(evt_id)
             await session.flush()
-            rec = (await session.execute(
-                OutboxRecord.__table__.select().where(OutboxRecord.id == evt_id)
-            )).first()
+            rec = (
+                await session.execute(
+                    OutboxRecord.__table__.select().where(OutboxRecord.id == evt_id)
+                )
+            ).first()
             assert rec is not None and rec._mapping["status"] == "SENT"
 
             # add another, test fail path
@@ -56,9 +58,11 @@ async def test_outbox_add_pull_mark_publish_and_fail():
             for _ in range(5):
                 await outbox.mark_failed(evt2_id)
                 await session.flush()
-            rec2 = (await session.execute(
-                OutboxRecord.__table__.select().where(OutboxRecord.id == evt2_id)
-            )).first()
+            rec2 = (
+                await session.execute(
+                    OutboxRecord.__table__.select().where(OutboxRecord.id == evt2_id)
+                )
+            ).first()
             assert rec2 is not None
             assert rec2._mapping["retry_cnt"] >= 5
             assert rec2._mapping["status"] == "ERR"
