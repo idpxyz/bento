@@ -2,7 +2,7 @@ import pytest
 
 from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
-from bento.persistence.repository import InMemoryRepository
+from bento.infrastructure.repository import InMemoryRepository
 
 
 class User(AggregateRoot):

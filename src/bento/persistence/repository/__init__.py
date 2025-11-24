@@ -1,6 +1,12 @@
-"""Repository implementations for Bento Framework."""
+"""Repository implementations for Bento Framework.
 
-from .inmemory import InMemoryRepository
+This module contains Persistence-layer repository implementations
+that operate on Persistence Objects (PO).
+
+For Domain-layer repository adapters (operating on Aggregate Roots),
+see bento.infrastructure.repository.
+"""
+
 from .sqlalchemy import BaseRepository
 
-__all__ = ["BaseRepository", "InMemoryRepository"]
+__all__ = ["BaseRepository"]
