@@ -59,15 +59,40 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
     # The following methods are inherited from RepositoryAdapter
     # and match ICategoryRepository Protocol:
     # - async def get(self, id: ID) -> Category | None
-    # - async def save(self, aggregate: Category) -> None
-    # - async def delete(self, aggregate: Category) -> None
-    # - async def list(specification: CompositeSpecification[Category] | None = None)
-    # -> list[Category]
-    # - async def paginate(...) -> Page[Category]
-    # - async def count(specification) -> int
-    # ... and many more from Mixins
+    # - async def save(self, entity: Category) -> Category
+    # - async def delete(self, entity: Category) -> None
+    # - async def find_all() -> list[Category]
+    # - async def exists(id: ID) -> bool
+    # - async def count() -> int
 
-    # Additional custom query methods can be added here
-    # For example:
-    # async def find_by_parent_id(self, parent_id: str | None) -> list[Category]:
-    #     """Find categories by parent ID."""
+    # ==================== Domain-Specific Query Methods (from ICategoryRepository Protocol) ====================
+
+    async def find_by_name(self, name: str) -> Category | None:
+        """Find category by exact name."""
+        from sqlalchemy import select
+
+        query = select(CategoryPO).where(CategoryPO.name == name)
+        result = await self.repository.session.execute(query)
+        po = result.scalars().first()
+
+        return self.mapper.map_reverse(po) if po else None
+
+    async def find_root_categories(self) -> list[Category]:
+        """Find all root categories (categories without parent)."""
+        from sqlalchemy import select
+
+        query = select(CategoryPO).where(CategoryPO.parent_id.is_(None))
+        result = await self.repository.session.execute(query)
+        pos = result.scalars().all()
+
+        return [self.mapper.map_reverse(po) for po in pos]
+
+    async def find_subcategories(self, parent_id: ID) -> list[Category]:
+        """Find subcategories of a parent category."""
+        from sqlalchemy import select
+
+        query = select(CategoryPO).where(CategoryPO.parent_id == str(parent_id))
+        result = await self.repository.session.execute(query)
+        pos = result.scalars().all()
+
+        return [self.mapper.map_reverse(po) for po in pos]

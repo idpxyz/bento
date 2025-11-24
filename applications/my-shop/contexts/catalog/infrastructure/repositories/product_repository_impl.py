@@ -72,6 +72,33 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
     # - async def count(specification) -> int
     # ... and many more from Mixins
 
+    # ==================== Domain-Specific Query Methods (from IProductRepository Protocol) ====================
+
+    async def find_by_category(self, category_id: ID) -> list[Product]:
+        """Find products by category ID."""
+        return await self.list_products(category_id=str(category_id))
+
+    async def find_by_name(self, name: str) -> list[Product]:
+        """Find products by name (fuzzy search)."""
+        query = select(ProductPO).where(ProductPO.name.contains(name))
+        result = await self.repository.session.execute(query)
+        pos = result.scalars().all()
+        return [self.mapper.map_reverse(po) for po in pos]
+
+    async def find_in_stock(self) -> list[Product]:
+        """Find products that are in stock."""
+        query = select(ProductPO).where(ProductPO.stock > 0)
+        result = await self.repository.session.execute(query)
+        pos = result.scalars().all()
+        return [self.mapper.map_reverse(po) for po in pos]
+
+    async def find_by_price_range(self, min_price: float, max_price: float) -> list[Product]:
+        """Find products within price range."""
+        query = select(ProductPO).where(ProductPO.price >= min_price, ProductPO.price <= max_price)
+        result = await self.repository.session.execute(query)
+        pos = result.scalars().all()
+        return [self.mapper.map_reverse(po) for po in pos]
+
     # ==================== Custom Query Methods ====================
 
     async def find_by_id(self, product_id: ID) -> Product | None:

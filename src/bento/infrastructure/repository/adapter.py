@@ -159,7 +159,7 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
             return None
         return self._mapper.map_reverse(po)  # PO �?AR
 
-    async def save(self, aggregate: AR) -> None:
+    async def save(self, aggregate: AR) -> AR:
         """Save aggregate root (create or update).
 
         Flow: AR �?PO �?Database
@@ -170,24 +170,27 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
         Args:
             aggregate: Aggregate root to save
 
+        Returns:
+            The saved aggregate root (same instance, for fluent API)
+
         Example:
             ```python
             user = User(id="user-001", name="John")
-            await repo.save(user)  # Creates or updates
+            saved_user = await repo.save(user)  # Creates or updates
             ```
         """
         # Convert AR �?PO
         po = self._mapper.map(aggregate)
 
-        # Check if entity exists (has ID)
-        entity_id = getattr(po, "id", None)
+        # Check if aggregate exists (has ID)
+        aggregate_id = getattr(po, "id", None)
 
-        if entity_id is None:
+        if aggregate_id is None:
             # Create new
             await self._repository.create_po(po)
         else:
             # Check if exists in database
-            existing = await self._repository.get_po_by_id(entity_id)
+            existing = await self._repository.get_po_by_id(aggregate_id)
             if existing is None:
                 # Create
                 await self._repository.create_po(po)
@@ -213,6 +216,9 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
         except Exception:
             # Best-effort: do not block persistence if UoW is not available
             pass
+
+        # Return the saved aggregate for fluent API and to match Repository protocol
+        return aggregate
 
     async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
         """List aggregate roots matching specification.
@@ -382,6 +388,8 @@ class RepositoryAdapter[AR: Entity, PO, ID: EntityId](
 
         Note:
             If SoftDeleteInterceptor is enabled, this will be a soft delete.
+            In DDD, deleting an aggregate root should also handle the deletion
+            of all entities within the aggregate boundary.
 
         Example:
             ```python
