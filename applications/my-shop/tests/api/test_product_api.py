@@ -171,17 +171,36 @@ class TestOrderAPI:
 
     def test_create_order(self, test_app):
         """Test creating an order"""
+        # First create products
+        product1_data = {
+            "name": "Test Product 1",
+            "description": "Product for order test",
+            "price": 99.99,
+            "stock": 100,
+        }
+        product2_data = {
+            "name": "Test Product 2",
+            "description": "Product for order test",
+            "price": 49.99,
+            "stock": 100,
+        }
+        prod1_response = test_app.post("/api/v1/products", json=product1_data)
+        prod2_response = test_app.post("/api/v1/products", json=product2_data)
+        prod1_id = prod1_response.json()["id"]
+        prod2_id = prod2_response.json()["id"]
+
+        # Then create order with real product IDs
         order_data = {
             "customer_id": "test-customer",
             "items": [
                 {
-                    "product_id": "prod-1",
+                    "product_id": prod1_id,
                     "product_name": "Test Product 1",
                     "quantity": 2,
                     "unit_price": 99.99,
                 },
                 {
-                    "product_id": "prod-2",
+                    "product_id": prod2_id,
                     "product_name": "Test Product 2",
                     "quantity": 1,
                     "unit_price": 49.99,
@@ -199,12 +218,22 @@ class TestOrderAPI:
 
     def test_order_state_transitions(self, test_app):
         """Test order state transitions (pending -> paid -> shipped)"""
-        # Create order
+        # First create a product
+        product_data = {
+            "name": "Test Product 1",
+            "description": "Product for order test",
+            "price": 99.99,
+            "stock": 100,
+        }
+        prod_response = test_app.post("/api/v1/products", json=product_data)
+        prod_id = prod_response.json()["id"]
+
+        # Create order with real product ID
         order_data = {
             "customer_id": "test-customer",
             "items": [
                 {
-                    "product_id": "prod-1",
+                    "product_id": prod_id,
                     "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
@@ -227,12 +256,22 @@ class TestOrderAPI:
 
     def test_cancel_order(self, test_app):
         """Test cancelling an order"""
-        # Create order
+        # First create a product
+        product_data = {
+            "name": "Test Product 1",
+            "description": "Product for order test",
+            "price": 99.99,
+            "stock": 100,
+        }
+        prod_response = test_app.post("/api/v1/products", json=product_data)
+        prod_id = prod_response.json()["id"]
+
+        # Create order with real product ID
         order_data = {
             "customer_id": "test-customer",
             "items": [
                 {
-                    "product_id": "prod-1",
+                    "product_id": prod_id,
                     "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
@@ -250,12 +289,22 @@ class TestOrderAPI:
 
     def test_cannot_ship_unpaid_order(self, test_app):
         """Test that unpaid orders cannot be shipped"""
-        # Create order
+        # First create a product
+        product_data = {
+            "name": "Test Product 1",
+            "description": "Product for order test",
+            "price": 99.99,
+            "stock": 100,
+        }
+        prod_response = test_app.post("/api/v1/products", json=product_data)
+        prod_id = prod_response.json()["id"]
+
+        # Create order with real product ID
         order_data = {
             "customer_id": "test-customer",
             "items": [
                 {
-                    "product_id": "prod-1",
+                    "product_id": prod_id,
                     "product_name": "Test Product 1",
                     "quantity": 1,
                     "unit_price": 99.99,
@@ -268,7 +317,13 @@ class TestOrderAPI:
         # Try to ship without paying
         ship_data = {"tracking_number": "TRACK456"}
         ship_response = test_app.post(f"/api/v1/orders/{order_id}/ship", json=ship_data)
-        assert ship_response.status_code == 400  # Should fail request
+        # Should fail with 400 Bad Request (business rule violation)
+        assert ship_response.status_code == 400, (
+            f"Expected 400, got {ship_response.status_code}: {ship_response.json()}"
+        )
+        # Verify error message
+        error_data = ship_response.json()
+        assert "error" in error_data or "message" in error_data or "detail" in error_data
 
 
 class TestHealthEndpoints:

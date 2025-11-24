@@ -9,12 +9,12 @@ from __future__ import annotations
 from typing import Protocol
 
 from bento.core.ids import ID
-from bento.domain.ports.repository import Repository
+from bento.domain.ports.repository import IRepository
 
 from contexts.catalog.domain.product import Product
 
 
-class IProductRepository(Repository[Product, ID], Protocol):
+class IProductRepository(IRepository[Product, ID], Protocol):
     """Product repository interface (Secondary Port).
 
     继承 Bento 的 Repository[Product, ID] 协议自动获得标准方法：

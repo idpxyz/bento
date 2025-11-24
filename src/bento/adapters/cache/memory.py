@@ -11,14 +11,13 @@ Features:
 """
 
 import asyncio
-import json
-import pickle
 import time
 from collections import OrderedDict
 from collections.abc import Callable
 from typing import Any
 
-from bento.adapters.cache.config import CacheConfig, SerializerType
+from bento.adapters.cache.config import CacheConfig
+from bento.adapters.cache.serializer import CacheSerializer
 from bento.adapters.cache.stats import CacheStats
 
 
@@ -428,44 +427,26 @@ class MemoryCache:
     # ==================== Internal Methods ====================
 
     def _serialize(self, value: Any) -> bytes:
-        """Serialize value to bytes.
+        """Serialize value to bytes using unified serializer.
 
         Args:
             value: Value to serialize
 
         Returns:
             Serialized bytes
-
-        Raises:
-            ValueError: If serialization fails
         """
-        try:
-            if self.config.serializer == SerializerType.JSON:
-                return json.dumps(value).encode("utf-8")
-            else:  # PICKLE
-                return pickle.dumps(value)
-        except Exception as e:
-            raise ValueError(f"Failed to serialize value: {e}") from e
+        return CacheSerializer.serialize(value, self.config.serializer)
 
     def _deserialize(self, data: bytes) -> Any:
-        """Deserialize bytes to value.
+        """Deserialize bytes to value using unified serializer.
 
         Args:
             data: Serialized bytes
 
         Returns:
             Deserialized value
-
-        Raises:
-            ValueError: If deserialization fails
         """
-        try:
-            if self.config.serializer == SerializerType.JSON:
-                return json.loads(data.decode("utf-8"))
-            else:  # PICKLE
-                return pickle.loads(data)
-        except Exception as e:
-            raise ValueError(f"Failed to deserialize value: {e}") from e
+        return CacheSerializer.deserialize(data, self.config.serializer)
 
     async def _cleanup_loop(self) -> None:
         """Background task to remove expired entries.

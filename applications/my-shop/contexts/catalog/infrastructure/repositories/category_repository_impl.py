@@ -55,7 +55,9 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
 
         self._uow = _current_uow.get()
 
-    # ==================== Inherited from RepositoryAdapter ====================
+    # ==========================================================================
+    # Inherited from RepositoryAdapter
+    # ==========================================================================
     # The following methods are inherited from RepositoryAdapter
     # and match ICategoryRepository Protocol:
     # - async def get(self, id: ID) -> Category | None
@@ -65,7 +67,9 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
     # - async def exists(id: ID) -> bool
     # - async def count() -> int
 
-    # ==================== Domain-Specific Query Methods (from ICategoryRepository Protocol) ====================
+    # ==========================================================================
+    # Domain-Specific Query Methods (from ICategoryRepository Protocol)
+    # ==========================================================================
 
     async def find_by_name(self, name: str) -> Category | None:
         """Find category by exact name."""

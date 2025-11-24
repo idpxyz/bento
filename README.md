@@ -4,12 +4,33 @@ A minimal, production-friendly scaffold for a Domain-Driven Design framework wit
 
 ## Quick start
 
+### 1. Install dependencies
+
 ```bash
-# with uv (recommended) or pip
+# with uv (recommended)
 uv venv && . .venv/bin/activate
 uv pip install -e .[dev]
+```
+
+### 2. Run a demo application
+
+#### Minimal demo
+
+```bash
 uv run examples/minimal_app/main.py
-# or python -m examples.minimal_app.main
+# or: python -m examples.minimal_app.main
+```
+
+#### my-shop (full DDD e-commerce example)
+
+```bash
+cd applications/my-shop
+
+# run API server
+uv run uvicorn main:app --reload
+
+# run tests
+uv run pytest -v
 ```
 
 ## What you get
@@ -46,7 +67,14 @@ Automatic cascade save/delete for aggregate relationships with declarative confi
 - **Event-Driven Architecture** - Domain events + outbox pattern
 - **Auto Mapping** - DTO ↔ Domain ↔ PO transformation
 
-See `docs/` for detailed conventions and guides.
+See `docs/` for detailed conventions and guides, including:
+
+- Architecture & evaluation: `docs/architecture/Bento 评估 - 1124.md`
+- Order flow (end-to-end): `docs/architecture/ORDER_FLOW.md`
+- Pagination guide: `docs/architecture/PAGINATION_GUIDE.md`
+- Cache serialization: `docs/architecture/CACHE_SERIALIZATION.md`
+- Cache configuration & interceptor: `docs/infrastructure/cache/CACHE_CONFIGURATION_GUIDE.md`
+- Stable APIs for 1.0: `docs/architecture/STABLE_API_1_0.md`
 
 
 ## Added in this pack

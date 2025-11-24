@@ -80,6 +80,7 @@ async def test_query_by_spec_short_circuits_on_cache_hit():
 @pytest.mark.asyncio
 async def test_delete_po_triggers_invalidation_via_repo():
     session = Mock(spec_set=["get", "execute", "add", "merge", "delete", "flush"])
+    session.merge = AsyncMock()
     session.delete = AsyncMock()
     session.flush = AsyncMock()
 
@@ -104,6 +105,7 @@ async def test_delete_po_triggers_invalidation_via_repo():
 @pytest.mark.asyncio
 async def test_batch_po_delete_triggers_invalidation_via_repo():
     session = Mock(spec_set=["get", "execute", "add", "merge", "delete", "flush"])
+    session.merge = AsyncMock()
     session.delete = AsyncMock()
     session.flush = AsyncMock()
 

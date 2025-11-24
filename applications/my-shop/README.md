@@ -7,50 +7,110 @@
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-teal.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> 由 [Bento Framework](https://github.com/bentoml/bento) 生成 - Domain-Driven Design + Modular Monolith 架构
+> 基于 Bento Framework 构建的 DDD + Hexagonal / Modular Monolith 示例应用
 
 ---
 
-## 🚀 快速开始
+## 🚀 快速开始（在 Bento 仓库中运行 my-shop）
 
-### 1. 安装依赖
+### 1. 在仓库根目录安装依赖
 
 ```bash
-# 复制环境配置
-cp .env.example .env
-
-# 安装依赖（包含开发工具）
-uv pip install -e ".[dev]"
+cd /workspace/bento
+uv venv && . .venv/bin/activate
+uv pip install -e .[dev]
 ```
 
-### 2. 生成第一个模块
+### 2. 准备 my-shop 环境配置
+
+仓库中已经提供了一个默认的 `applications/my-shop/.env`，可以根据需要修改：
+
+- 应用配置：`APP_NAME`, `APP_ENV`, `DEBUG`
+- 数据库：`DATABASE_URL`（默认使用 SQLite，本地即可运行）
+- API：`API_HOST`, `API_PORT`, `API_RELOAD`
+- 安全：`SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
+- CORS：`CORS_ORIGINS`
+- 日志：`LOG_LEVEL`
+- 缓存（可选覆盖）：`CACHE_BACKEND`, `CACHE_PREFIX`, `CACHE_TTL`, `CACHE_MAX_SIZE`, `CACHE_SERIALIZER`, `CACHE_ENABLE_STATS`, `CACHE_ENABLE_BREAKDOWN_PROTECTION`
+
+另外，`applications/my-shop/config/.env.example` 提供了邮件、支付宝、短信、Redis 等适配器的扩展配置模板（可选）。
+
+### 3. 启动 my-shop API
 
 ```bash
-# 在指定上下文中生成模块
-bento gen module Product \
-  --context catalog \
-  --fields "name:str,price:float,stock:int"
+cd applications/my-shop
+
+# 使用 uv 运行 FastAPI 应用（开发模式自动重载）
+uv run uvicorn main:app --reload
+
+# 访问 API 文档
+# http://localhost:8000/docs
 ```
 
-### 3. 运行测试
+### 4. 运行测试
 
 ```bash
-# 运行所有测试
+cd applications/my-shop
+
+# 运行 my-shop 相关测试
 uv run pytest -v
 
 # 带覆盖率
 uv run pytest --cov
 ```
 
-### 4. 启动应用
+---
 
-```bash
-# 开发模式（自动重载）
-uvicorn main:app --reload
+> 下文为最初模板生成的通用说明，仍然对理解项目结构和开发流程有参考价值。
 
-# 访问 API 文档
-open http://localhost:8000/docs
-```
+---
+
+## 🧱 关键架构点（基于 Bento Framework）
+
+### 1. 分层与依赖方向
+
+- 每个上下文内部遵循 DDD 分层：`domain` → `application` → `infrastructure`。
+- 依赖方向：
+  - `infrastructure` 依赖 `application` + `domain`
+  - `application` 依赖 `domain`
+  - `domain` 不依赖任何技术栈（仅依赖端口/抽象）。
+
+### 2. UnitOfWork（工作单元）
+
+- Application 层用例通过 `UnitOfWork` 获取仓储并控制事务：
+  - `uow.repository(AggregateRootType)` 返回对应聚合根的仓储（`IRepository[AR, ID]`）。
+  - my-shop 中 `shared/infrastructure/dependencies.py` 负责注入 `SQLAlchemyUnitOfWork`。
+- 所有写操作（下单、修改商品等）都在 UoW 控制下完成，保证**一次用例 = 一次事务**。
+
+### 3. RepositoryAdapter（仓储适配器）
+
+- 领域层只依赖 `IRepository[AR, ID]` 端口，不依赖具体 ORM。
+- 基础设施层通过 `RepositoryAdapter[AR, PO, ID]` 将：
+  - 聚合根（AR） ↔ 持久化对象（PO）
+  - 应用层查询条件（Specification） ↔ SQLAlchemy 查询
+- 具体仓储实现（例如 `CategoryRepository`, `OrderRepository`）继承 `RepositoryAdapter`，实现领域特定扩展方法。
+
+### 4. Cache & Warmup（缓存与预热）
+
+- Cache 使用统一的配置与实现：
+  - `CacheConfig`（含 `from_env`、`get_prefixed_key`）
+  - `MemoryCache` / `RedisCache`（通过 `CacheFactory` 创建）
+  - `CacheSerializer` + `AggregateRoot.to_cache_dict()` 负责 AR → JSON 友好结构的转换。
+- 应用层的 Warmup 策略（如 catalog 中的 Product/Category 预热）：
+  - 直接返回聚合根或聚合根列表；
+  - Framework 自动调用 `to_cache_dict()` 进行序列化，应用层无需手写重复转换。
+
+### 5. Outbox 模式（事务性事件）
+
+- my-shop 通过 Bento 的 Outbox 子系统，将领域事件以事务方式写入 Outbox 表：
+  - 领域层产生 `DomainEvent`；
+  - UoW 提交事务时，Outbox Listener 负责把事件持久化到 Outbox 表；
+  - 独立的 Projector 从 Outbox 读取事件，推送到下游（消息总线 / 其他上下文）。
+- 这保证了：
+  - **数据写入与事件发布在同一事务中**；
+  - 可以安全地做异步集成，而不会出现“数据成功写库但事件丢失”的情况。
+
+这一节是 my-shop 作为 Bento 参考实现的核心精华：在阅读具体代码（UseCase、Repository、Warmup 等）时，可以对照这些关键点理解它们在整体架构中的角色。
 
 ---
 

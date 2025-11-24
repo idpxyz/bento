@@ -14,12 +14,12 @@ from __future__ import annotations
 from typing import Protocol
 
 from bento.core.ids import ID
-from bento.domain.ports.repository import Repository
+from bento.domain.ports.repository import IRepository
 
 from contexts.identity.domain.models.user import User
 
 
-class IUserRepository(Repository[User, ID], Protocol):
+class IUserRepository(IRepository[User, ID], Protocol):
     """User repository interface (Secondary Port).
 
     继承 Bento 的 Repository[User, ID] 协议自动获得标准方法：

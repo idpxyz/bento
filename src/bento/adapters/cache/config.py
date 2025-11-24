@@ -101,23 +101,75 @@ class CacheConfig:
             config = CacheConfig.from_env(prefix="myapp:")
             ```
         """
-        backend_str = os.getenv("CACHE_BACKEND", "memory").lower()
-        backend = CacheBackend.MEMORY if backend_str == "memory" else CacheBackend.REDIS
 
-        ttl_str = os.getenv("CACHE_TTL")
-        ttl = int(ttl_str) if ttl_str else None
+        def _parse_int(name: str, default: int | None = None) -> int | None:
+            """Parse integer environment variable with helpful error message.
 
-        max_size_str = os.getenv("CACHE_MAX_SIZE")
-        max_size = int(max_size_str) if max_size_str else 10000
+            Args:
+                name: Environment variable name
+                default: Default value if env is not set
 
-        serializer_str = os.getenv("CACHE_SERIALIZER", "json").lower()
-        serializer = SerializerType.JSON if serializer_str == "json" else SerializerType.PICKLE
+            Returns:
+                Parsed integer or default
 
-        enable_stats_str = os.getenv("CACHE_ENABLE_STATS", "true").lower()
-        enable_stats = enable_stats_str in ("true", "1", "yes")
+            Raises:
+                ValueError: If value is set but not a valid integer
+            """
 
-        enable_breakdown_str = os.getenv("CACHE_ENABLE_BREAKDOWN_PROTECTION", "true").lower()
-        enable_breakdown_protection = enable_breakdown_str in ("true", "1", "yes")
+            raw = os.getenv(name)
+            if raw is None or raw == "":
+                return default
+            try:
+                return int(raw)
+            except ValueError as e:
+                raise ValueError(f"Invalid integer for {name}={raw!r}") from e
+
+        def _parse_bool(name: str, default: bool = True) -> bool:
+            """Parse boolean environment variable (true/false/1/0/yes/no)."""
+
+            raw = os.getenv(name)
+            if raw is None or raw == "":
+                return default
+            value = raw.lower()
+            if value in ("true", "1", "yes"):
+                return True
+            if value in ("false", "0", "no"):
+                return False
+            msg = (
+                "Invalid boolean for "
+                f"{name}={raw!r}, expected one of 'true', 'false', '1', '0', 'yes', 'no'"
+            )
+            raise ValueError(msg)
+
+        # Backend: strict validation to avoid silent fallbacks
+        backend_raw = os.getenv("CACHE_BACKEND", "memory")
+        backend_str = backend_raw.lower()
+        if backend_str == "memory":
+            backend = CacheBackend.MEMORY
+        elif backend_str == "redis":
+            backend = CacheBackend.REDIS
+        else:
+            raise ValueError(f"Invalid CACHE_BACKEND={backend_raw!r}, expected 'memory' or 'redis'")
+
+        # TTL / max_size with contextual errors
+        ttl = _parse_int("CACHE_TTL", default=None)
+        max_size = _parse_int("CACHE_MAX_SIZE", default=10000)
+
+        # Serializer: strict validation
+        serializer_raw = os.getenv("CACHE_SERIALIZER", "json")
+        serializer_str = serializer_raw.lower()
+        if serializer_str == "json":
+            serializer = SerializerType.JSON
+        elif serializer_str == "pickle":
+            serializer = SerializerType.PICKLE
+        else:
+            raise ValueError(
+                f"Invalid CACHE_SERIALIZER={serializer_raw!r}, expected 'json' or 'pickle'"
+            )
+
+        # Booleans: accept common truthy/falsey representations
+        enable_stats = _parse_bool("CACHE_ENABLE_STATS", default=True)
+        enable_breakdown_protection = _parse_bool("CACHE_ENABLE_BREAKDOWN_PROTECTION", default=True)
 
         return cls(
             backend=backend,

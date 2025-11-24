@@ -14,12 +14,12 @@ from __future__ import annotations
 from typing import Protocol
 
 from bento.core.ids import ID
-from bento.domain.ports.repository import Repository
+from bento.domain.ports.repository import IRepository
 
 from contexts.ordering.domain.order import Order
 
 
-class IOrderRepository(Repository[Order, ID], Protocol):
+class IOrderRepository(IRepository[Order, ID], Protocol):
     """Order repository interface (Secondary Port).
 
     Inherits from Bento's Repository[Order, ID] protocol to get standard methods:

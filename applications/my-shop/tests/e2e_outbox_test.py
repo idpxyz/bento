@@ -19,6 +19,7 @@ from contexts.ordering.application.commands.create_order import (
     CreateOrderUseCase,
     OrderItemInput,
 )
+from contexts.ordering.domain.order import Order
 
 
 @pytest.mark.asyncio
@@ -36,16 +37,35 @@ async def test_order_creation_persists_outbox_events(db_session):
         id=ID(product_id), name="Test Product", description="A test product", price=100.0
     )
 
-    # Persist product using UoW
+    # Persist product using UoW (with repository registration)
+    from contexts.catalog.infrastructure.repositories.product_repository_impl import (
+        ProductRepository,
+    )
+
     uow = UnitOfWork(db_session, outbox)
+    uow.register_repository(Product, lambda s: ProductRepository(s))
     async with uow:
         product_repo = uow.repository(Product)
         await product_repo.save(product)
         await uow.commit()
 
     # Create order via use case
+    from contexts.ordering.infrastructure.repositories.order_repository_impl import (
+        OrderRepository,
+    )
+
+    # Create a mock product catalog service
+    class MockProductCatalog:
+        async def check_products_available(self, product_ids: list[str]):
+            # Return all products as available
+            return product_ids, []
+
     uow = UnitOfWork(db_session, outbox)
-    use_case = CreateOrderUseCase(uow)
+    uow.register_repository(Product, lambda s: ProductRepository(s))
+    uow.register_repository(Order, lambda s: OrderRepository(s))
+
+    product_catalog = MockProductCatalog()
+    use_case = CreateOrderUseCase(uow, product_catalog)
 
     command = CreateOrderCommand(
         customer_id="test-customer-123",
@@ -69,13 +89,13 @@ async def test_order_creation_persists_outbox_events(db_session):
     result = await db_session.execute(
         text(
             """
-            SELECT id, aggregate_id, event_type, status, payload
+            SELECT id, aggregate_id, type, status, payload
             FROM outbox
             WHERE aggregate_id = :order_id
             ORDER BY created_at DESC
             """
         ),
-        {"order_id": order_id},
+        {"order_id": str(order_id)},
     )
     outbox_events = result.fetchall()
 
@@ -83,13 +103,13 @@ async def test_order_creation_persists_outbox_events(db_session):
     assert len(outbox_events) > 0, "No events found in Outbox"
 
     event = outbox_events[0]
-    assert event.aggregate_id == order_id
-    assert event.event_type == "OrderCreatedEvent"
+    assert event.aggregate_id == str(order_id)
+    assert event.type == "OrderCreatedEvent"
     assert event.status == "NEW"
     assert "customer_id" in event.payload
     assert "items" in event.payload
 
-    print(f"✅ Outbox event verified: {event.event_type} (status={event.status})")
+    print(f"✅ Outbox event verified: {event.type} (status={event.status})")
 
 
 if __name__ == "__main__":

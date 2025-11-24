@@ -254,12 +254,20 @@ async def ship_order(
     use_case: Annotated[ShipOrderUseCase, Depends(get_ship_order_use_case)],
 ) -> dict[str, Any]:
     """Ship an order."""
-    command = ShipOrderCommand(
-        order_id=order_id,
-        tracking_number=request.tracking_number,
-    )
-    order = await use_case.execute(command)
-    return order_to_dict(order)
+    from bento.core.errors import ApplicationException
+    from fastapi import HTTPException
+
+    try:
+        command = ShipOrderCommand(
+            order_id=order_id,
+            tracking_number=request.tracking_number,
+        )
+        order = await use_case.execute(command)
+        return order_to_dict(order)
+    except ApplicationException as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="Order not found") from None
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 
 @router.post(

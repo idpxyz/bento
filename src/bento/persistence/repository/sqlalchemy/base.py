@@ -299,7 +299,9 @@ class BaseRepository[PO, ID](
             )
             await self._interceptor_chain.execute_before(context)
 
-        await self._session.delete(po)
+        # Ensure the object is in the session before deleting
+        merged_po = await self._session.merge(po)
+        await self._session.delete(merged_po)
         await self._session.flush()
 
         # Trigger invalidation if needed
@@ -390,7 +392,8 @@ class BaseRepository[PO, ID](
             await self._interceptor_chain.execute_before(context)
 
         for po in pos:
-            await self._session.delete(po)
+            merged_po = await self._session.merge(po)
+            await self._session.delete(merged_po)
 
         await self._session.flush()
         if self._interceptor_chain:

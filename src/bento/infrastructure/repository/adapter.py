@@ -14,7 +14,7 @@ from typing import Protocol, cast, runtime_checkable
 from bento.application.ports.mapper import Mapper
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
-from bento.domain.ports.repository import Repository as IRepository
+from bento.domain.ports.repository import IRepository
 from bento.infrastructure.repository.mixins import (
     AggregateQueryMixin,
     BatchOperationsMixin,
@@ -220,14 +220,15 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
         # Return the saved aggregate for fluent API and to match Repository protocol
         return aggregate
 
-    async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
-        """List aggregate roots matching specification.
+    async def find_all(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
+        """Find all aggregate roots, optionally filtered by specification.
 
-        Flow: Database �?PO (batch) �?AR (batch)
+        This is the primary query method implementing Repository Protocol.
+        Flow: Database → PO (batch) → AR (batch)
 
         Args:
             specification: Optional specification to filter results.
-                         If None, returns all entities.
+                         If None, returns all aggregate roots.
 
         Returns:
             List of matching aggregate roots
@@ -235,23 +236,34 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
         Example:
             ```python
             # All users
-            all_users = await repo.list()
+            all_users = await repo.find_all()
 
             # With specification
-            spec = EntitySpecificationBuilder().is_active().build()
-            active_users = await repo.list(spec)
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            active_users = await repo.find_all(spec)
             ```
         """
         if specification is None:
             # Query all
             pos = await self._repository.query_po_by_spec(None)  # type: ignore[arg-type]
         else:
-            # Convert specification AR �?PO
+            # Convert specification AR → PO
             po_spec = self._convert_spec_to_po(specification)
             pos = await self._repository.query_po_by_spec(po_spec)
 
-        # Batch convert PO �?AR
+        # Batch convert PO → AR
         return self._mapper.map_reverse_list(pos)
+
+    async def list(self, specification: CompositeSpecification[AR] | None = None) -> list[AR]:
+        """Alias for find_all() for backward compatibility.
+
+        Args:
+            specification: Optional specification to filter results
+
+        Returns:
+            List of matching aggregate roots
+        """
+        return await self.find_all(specification)
 
     # ==================== Extended Query Methods ====================
 
@@ -280,19 +292,6 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             return None
 
         return self._mapper.map_reverse(pos[0])
-
-    async def find_all(self, specification: CompositeSpecification[AR]) -> list[AR]:
-        """Find all aggregate roots matching specification.
-
-        Alias for list() with specification.
-
-        Args:
-            specification: Specification to match
-
-        Returns:
-            List of matching aggregate roots
-        """
-        return await self.list(specification)
 
     async def find_page(
         self,
@@ -377,6 +376,52 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
         """
         count = await self.count(specification)
         return count > 0
+
+    async def paginate(
+        self,
+        specification: CompositeSpecification[AR] | None = None,
+        page: int = 1,
+        size: int = 20,
+    ) -> Page[AR]:
+        """Convenient pagination method without creating PageParams.
+
+        This is a simplified version of find_page() that doesn't require
+        creating a PageParams object. Ideal for simple pagination scenarios.
+
+        Args:
+            specification: Optional specification to filter results
+            page: Page number, starting from 1 (default: 1)
+            size: Page size (items per page) (default: 20)
+
+        Returns:
+            Page object with paginated data and metadata
+
+        Example:
+            ```python
+            # Simple pagination
+            page = await repo.paginate(page=1, size=20)
+            print(f"Total: {page.total}, Items: {len(page.items)}")
+
+            # With specification
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            page = await repo.paginate(spec, page=2, size=10)
+
+            # Access results
+            for item in page.items:
+                print(item.name)
+            if page.has_next:
+                print("More pages available")
+            ```
+        """
+        page_params = PageParams(page=page, size=size)
+
+        # If no specification provided, create an empty one
+        if specification is None:
+            from bento.persistence.specification import CompositeSpecification
+
+            specification = CompositeSpecification()
+
+        return await self.find_page(specification, page_params)
 
     async def delete(self, aggregate: AR) -> None:
         """Delete aggregate root.

@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
-from bento.domain.ports.repository import Repository
+from bento.domain.ports.repository import IRepository
 
 
-class InMemoryRepository[AR: AggregateRoot](Repository[AR, EntityId]):
+class InMemoryRepository[AR: AggregateRoot](IRepository[AR, EntityId]):
     """In-memory repository implementation.
 
     Stores aggregate roots in a dictionary keyed by ID.

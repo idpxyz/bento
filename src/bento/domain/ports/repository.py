@@ -7,16 +7,23 @@ The repository pattern provides an abstraction over data access, allowing the
 domain layer to remain independent of persistence implementation details.
 
 In DDD, repositories provide access to Aggregate Roots only, not arbitrary entities.
+
+Naming Convention:
+    IRepository - The 'I' prefix indicates this is an interface/protocol.
+    This follows industry standards (similar to IUserService, IOrderRepository)
+    and clearly distinguishes the protocol from concrete implementations.
 """
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
 
 
-class Repository[AR: AggregateRoot, ID: EntityId](Protocol):
+class IRepository[AR: AggregateRoot, ID: EntityId](Protocol):
     """Repository protocol - defines the contract for aggregate root persistence.
+
+    The 'I' prefix indicates this is an interface/protocol, not a concrete implementation.
 
     This is a Protocol (not an abstract base class), which means:
     1. No inheritance required - structural subtyping
@@ -111,14 +118,28 @@ class Repository[AR: AggregateRoot, ID: EntityId](Protocol):
         """
         ...
 
-    async def find_all(self) -> list[AR]:
-        """Find all aggregate roots.
+    async def find_all(self, specification: Any | None = None) -> list[AR]:
+        """Find all aggregate roots, optionally filtered by specification.
+
+        This is the primary query method for retrieving multiple aggregate roots.
+        It supports both filtered and unfiltered queries through an optional
+        specification parameter.
+
+        Args:
+            specification: Optional specification to filter results.
+                          Can be a CompositeSpecification or domain-specific query object.
+                          If None, returns all aggregate roots.
 
         Returns:
-            List of all aggregate roots (may be empty)
+            List of aggregate roots matching the specification (may be empty)
+
+        Note:
+            The specification parameter is typed as Any to avoid circular dependencies
+            with the specification module. Implementations should accept
+            CompositeSpecification[AR] or similar query objects.
 
         Warning:
-            This method may be inefficient for large datasets.
+            Without specification, this may return large datasets.
             Consider using pagination or specifications for production use.
 
             In DDD, this returns aggregate roots, not all entities.
@@ -126,7 +147,14 @@ class Repository[AR: AggregateRoot, ID: EntityId](Protocol):
 
         Example:
             ```python
+            # Get all users
             all_users = await repo.find_all()
+
+            # Get users matching a specification
+            from bento.persistence.specification import EntitySpecificationBuilder
+
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            active_users = await repo.find_all(spec)
             ```
         """
         ...

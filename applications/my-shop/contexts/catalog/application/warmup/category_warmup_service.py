@@ -75,12 +75,17 @@ class CategoryWarmupStrategy:
 
         Returns:
             分类聚合根、分类列表或None
+
+        Note:
+            Framework 会自动调用 category.to_cache_dict() 进行序列化，
+            应用层无需手动转换。
         """
         try:
             # 特殊处理：分类列表
             if key == "Category:list:all":
                 categories = await self._category_repo.find_all()
                 logger.debug(f"成功加载分类列表: {len(categories)} 个")
+                # 直接返回列表，Framework 会自动序列化
                 return categories
 
             # 单个分类（使用ID类型）
@@ -92,6 +97,7 @@ class CategoryWarmupStrategy:
             else:
                 logger.warning(f"分类不存在: {category_id_str}")
 
+            # 直接返回聚合根，Framework 会自动序列化
             return category
 
         except Exception as e:

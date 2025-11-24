@@ -166,12 +166,17 @@ class Order(AggregateRoot):
 
         from contexts.ordering.domain.events.ordercancelled_event import OrderCancelledEvent
 
+        # Handle both enum and string status
+        previous_status_value = (
+            old_status.value if isinstance(old_status, OrderStatus) else old_status
+        )
+
         self.add_event(
             OrderCancelledEvent(
                 aggregate_id=self.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",
                 order_id=self.id,  # ✅ 直接传递 ID 对象
                 reason=reason,
-                previous_status=old_status.value,
+                previous_status=previous_status_value,
             )
         )

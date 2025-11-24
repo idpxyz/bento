@@ -73,6 +73,10 @@ class HotProductsWarmupStrategy:
 
         Returns:
             商品聚合根或None
+
+        Note:
+            Framework 会自动调用 product.to_cache_dict() 进行序列化，
+            应用层无需手动转换。
         """
         try:
             # 从键中提取商品ID
@@ -86,6 +90,7 @@ class HotProductsWarmupStrategy:
             else:
                 logger.warning(f"商品不存在: {product_id_str}")
 
+            # 直接返回聚合根，Framework 会自动序列化
             return product
 
         except Exception as e:

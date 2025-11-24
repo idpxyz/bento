@@ -49,14 +49,18 @@ class ListCategoriesUseCase(BaseUseCase[ListCategoriesQuery, ListCategoriesResul
 
     async def handle(self, query: ListCategoriesQuery) -> ListCategoriesResult:
         """Handle query execution."""
+        from bento.persistence.specification import EntitySpecificationBuilder
+
         category_repo = self.uow.repository(Category)
 
-        # Get all categories (can add filtering later)
-        categories = await category_repo.find_all()
-
-        # Filter by parent_id if specified
+        # Query with specification (database-level filtering)
         if query.parent_id is not None:
-            categories = [c for c in categories if c.parent_id == query.parent_id]
+            # Use fluent builder for clean, readable specification
+            spec = EntitySpecificationBuilder().where("parent_id", query.parent_id).build()
+            categories = await category_repo.find_all(spec)
+        else:
+            # Get all categories
+            categories = await category_repo.find_all()
 
         return ListCategoriesResult(
             categories=categories,
@@ -64,7 +68,7 @@ class ListCategoriesUseCase(BaseUseCase[ListCategoriesQuery, ListCategoriesResul
         )
 
 
-class GetCategoryTreeQuery(BaseUseCase[CategoryTreeQuery, CategoryTreeResult]):
+class GetCategoryTreeUseCase(BaseUseCase[CategoryTreeQuery, CategoryTreeResult]):
     """Get category tree query."""
 
     def __init__(self, uow: IUnitOfWork) -> None:
@@ -76,14 +80,18 @@ class GetCategoryTreeQuery(BaseUseCase[CategoryTreeQuery, CategoryTreeResult]):
 
     async def handle(self, query: CategoryTreeQuery) -> CategoryTreeResult:
         """Handle query execution."""
+        from bento.persistence.specification import EntitySpecificationBuilder
+
         category_repo = self.uow.repository(Category)
 
-        # Get all categories (can add filtering later)
-        categories = await category_repo.find_all()
-
-        # Filter by parent_id if specified
+        # Query with specification (database-level filtering)
         if query.parent_id is not None:
-            categories = [c for c in categories if c.parent_id == query.parent_id]
+            # Use fluent builder for clean, readable specification
+            spec = EntitySpecificationBuilder().where("parent_id", query.parent_id).build()
+            categories = await category_repo.find_all(spec)
+        else:
+            # Get all categories
+            categories = await category_repo.find_all()
 
         return CategoryTreeResult(
             categories=categories,

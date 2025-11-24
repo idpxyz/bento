@@ -8,14 +8,14 @@ or perform operations that span multiple entities.
 from typing import TypeVar
 
 from bento.core.ids import EntityId
-from bento.domain.entity import Entity
-from bento.domain.ports.repository import Repository
+from bento.domain.aggregate import AggregateRoot
+from bento.domain.ports.repository import IRepository
 
-E = TypeVar("E", bound=Entity)
+AR = TypeVar("AR", bound=AggregateRoot)
 ID = TypeVar("ID", bound=EntityId)
 
 
-class DomainService[E: Entity, ID: EntityId]:
+class DomainService[AR: AggregateRoot, ID: EntityId]:
     """Base class for domain services.
 
     Domain services contain business logic that:
@@ -54,7 +54,7 @@ class DomainService[E: Entity, ID: EntityId]:
         ```
     """
 
-    def __init__(self, repository: Repository[E, ID]) -> None:
+    def __init__(self, repository: IRepository[AR, ID]) -> None:
         """Initialize domain service with repository.
 
         Args:
@@ -62,7 +62,7 @@ class DomainService[E: Entity, ID: EntityId]:
         """
         self._repository = repository
 
-    async def get(self, entity_id: ID) -> E | None:
+    async def get(self, entity_id: ID) -> AR | None:
         """Get entity by ID.
 
         Args:
@@ -73,7 +73,7 @@ class DomainService[E: Entity, ID: EntityId]:
         """
         return await self._repository.get(entity_id)
 
-    async def save(self, entity: E) -> E:
+    async def save(self, entity: AR) -> AR:
         """Save entity.
 
         Args:
@@ -95,7 +95,7 @@ class DomainService[E: Entity, ID: EntityId]:
         """
         return await self._repository.exists(entity_id)
 
-    async def delete(self, entity: E) -> None:
+    async def delete(self, entity: AR) -> None:
         """Delete entity.
 
         Args:
