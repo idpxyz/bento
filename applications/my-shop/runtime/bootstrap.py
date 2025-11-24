@@ -16,6 +16,7 @@ import contextlib
 import logging
 from contextlib import asynccontextmanager
 
+from bento.adapters.cache import CacheBackend, CacheConfig, CacheFactory
 from bento.adapters.messaging.inprocess import InProcessMessageBus
 from bento.infrastructure.projection.projector import OutboxProjector
 from fastapi import FastAPI
@@ -23,6 +24,13 @@ from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
+from config.warmup_config import setup_cache_warmup
+from contexts.catalog.infrastructure.repositories.category_repository_impl import (
+    CategoryRepository,
+)
+from contexts.catalog.infrastructure.repositories.product_repository_impl import (
+    ProductRepository,
+)
 from contexts.ordering.domain.events.ordercancelled_event import (  # noqa: F401
     OrderCancelledEvent,
 )
@@ -84,6 +92,32 @@ async def lifespan(app: FastAPI):  # pragma: no cover - thin wiring layer
     # Start bus and projector loop
     await bus.start()
     projector_task = asyncio.create_task(projector.run_forever())
+
+    # Setup cache and warmup (production-ready)
+    cache = await CacheFactory.create(
+        CacheConfig(
+            backend=CacheBackend.MEMORY,  # 生产环境改为 REDIS
+            ttl=300,
+        )
+    )
+
+    # Create repositories for warmup (use dependency injection in production)
+    async with session_factory() as session:
+        product_repo = ProductRepository(session, actor="system")
+        category_repo = CategoryRepository(session, actor="system")
+
+        # Setup and execute cache warmup
+        warmup_coordinator = await setup_cache_warmup(
+            cache,
+            product_repository=product_repo,
+            category_repository=category_repo,
+            warmup_on_startup=True,  # 启动时立即预热
+            max_concurrency=20,
+        )
+
+    # Store in app state for later use (e.g., manual warmup endpoints)
+    app.state.cache = cache
+    app.state.warmup_coordinator = warmup_coordinator
 
     try:
         # Startup logic hook (keep light here; heavy work should be offloaded)

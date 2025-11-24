@@ -10,7 +10,9 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from contexts.catalog.infrastructure.repositories import ICategoryRepository
+    from contexts.catalog.infrastructure.repositories.category_repository import (
+        ICategoryRepository,
+    )
 
 logger = logging.getLogger(__name__)
 
