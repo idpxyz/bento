@@ -56,11 +56,13 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
         self._uow = _current_uow.get()
 
     # ==================== Inherited from RepositoryAdapter ====================
-    # The following methods are inherited from RepositoryAdapter and match ICategoryRepository Protocol:
+    # The following methods are inherited from RepositoryAdapter
+    # and match ICategoryRepository Protocol:
     # - async def get(self, id: ID) -> Category | None
     # - async def save(self, aggregate: Category) -> None
     # - async def delete(self, aggregate: Category) -> None
-    # - async def list(specification: CompositeSpecification[Category] | None = None) -> list[Category]
+    # - async def list(specification: CompositeSpecification[Category] | None = None)
+    # -> list[Category]
     # - async def paginate(...) -> Page[Category]
     # - async def count(specification) -> int
     # ... and many more from Mixins

@@ -20,10 +20,10 @@ from contexts.catalog.application.warmup import (
 if TYPE_CHECKING:
     from bento.application.ports.cache import Cache
 
-    from contexts.catalog.infrastructure.repositories.category_repository import (
+    from contexts.catalog.domain.ports.repositories.i_category_repository import (
         ICategoryRepository,
     )
-    from contexts.catalog.infrastructure.repositories.product_repository import (
+    from contexts.catalog.domain.ports.repositories.i_product_repository import (
         IProductRepository,
     )
 

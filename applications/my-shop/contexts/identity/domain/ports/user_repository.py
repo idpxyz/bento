@@ -3,87 +3,36 @@
 Defines the contract for User repository implementations.
 Domain layer defines the interface; infrastructure layer implements it.
 
-Following Hexagonal Architecture:
-- This interface is in domain/ports (Port)
-- Implementation is in infrastructure/repositories (Adapter)
+Following Hexagonal Architecture and Domain-Driven Design principles:
+- This interface is defined in the domain layer (port)
+- Infrastructure layer provides the concrete implementation (adapter)
 - Application layer depends on this interface, not implementation
 """
 
+from __future__ import annotations
+
 from typing import Protocol
+
+from bento.core.ids import ID
+from bento.domain.ports.repository import Repository
 
 from contexts.identity.domain.models.user import User
 
 
-class IUserRepository(Protocol):
-    """User repository interface (port).
+class IUserRepository(Repository[User, ID], Protocol):
+    """User repository interface (Secondary Port).
 
-    This is the contract that infrastructure adapters must implement.
-    The domain layer depends on this interface, not the concrete implementation.
+    继承 Bento 的 Repository[User, ID] 协议自动获得标准方法：
+    - async def get(id: ID) -> User | None
+    - async def save(entity: User) -> User
+    - async def delete(entity: User) -> None
+    - async def find_all() -> list[User]
+    - async def exists(id: ID) -> bool
+    - async def count() -> int
 
-    Standard repository operations:
-    - get(id) - Find aggregate by ID
-    - save(aggregate) - Save aggregate (create or update)
-    - delete(aggregate) - Delete aggregate (soft delete)
-    - exists(id) - Check if aggregate exists
-    - list(...) - Query list of aggregates
-
-    Following Dependency Inversion Principle:
-    - Domain layer defines the interface
-    - Infrastructure layer implements it
-    - Application layer depends on interface
+    Domain-specific query methods:
     """
 
-    async def get(self, id: str) -> User | None:
-        """Get user by ID.
-
-        Args:
-            id: User identifier
-
-        Returns:
-            User if found, None otherwise
-        """
-        ...
-
-    async def save(self, user: User) -> None:
-        """Save user (create or update).
-
-        Args:
-            user: User aggregate to save
-        """
-        ...
-
-    async def delete(self, user: User) -> None:
-        """Delete user (soft delete).
-
-        Args:
-            user: User aggregate to delete
-        """
-        ...
-
-    async def exists(self, id: str) -> bool:
-        """Check if user exists.
-
-        Args:
-            id: User identifier
-
-        Returns:
-            True if user exists, False otherwise
-        """
-        ...
-
-    async def list(self, limit: int = 100, offset: int = 0) -> list[User]:
-        """List users with pagination.
-
-        Args:
-            limit: Maximum number of users to return
-            offset: Number of users to skip
-
-        Returns:
-            List of matching users
-        """
-        ...
-
-    # Custom query methods specific to User domain
     async def find_by_email(self, email: str) -> User | None:
         """Find user by email address.
 

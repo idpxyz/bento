@@ -61,11 +61,13 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
         # ❌ 不需要手动追踪实体
 
     # ==================== Inherited from RepositoryAdapter ====================
-    # The following methods are inherited from RepositoryAdapter and match IProductRepository Protocol:
+    # The following methods are inherited from RepositoryAdapter
+    # and match IProductRepository Protocol:
     # - async def get(self, id: ID) -> Product | None
     # - async def save(self, aggregate: Product) -> None
     # - async def delete(self, aggregate: Product) -> None
-    # - async def list(self, specification: CompositeSpecification[Product] | None = None) -> list[Product]
+    # - async def list(self, specification: CompositeSpecification[Product] | None = None)
+    # -> list[Product]
     # - async def paginate(...) -> Page[Product]
     # - async def count(specification) -> int
     # ... and many more from Mixins

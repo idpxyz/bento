@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from bento.core.ids import ID
 
 if TYPE_CHECKING:
-    from contexts.catalog.infrastructure.repositories.product_repository import (
+    from contexts.catalog.domain.ports.repositories.i_product_repository import (
         IProductRepository,
     )
 
@@ -51,9 +51,9 @@ class HotProductsWarmupStrategy:
             # 3. 从推荐系统获取热门商品
             # 4. 使用Specification查询特定条件的商品
 
-            # 调用框架的 list() 方法，不传参数表示查询全部
-            # 在生产环境中应该使用Specification来过滤和排序
-            products = await self._product_repo.list()
+            # 调用 Repository 的 find_all() 方法查询全部
+            # 在生产环境中应该使用自定义查询方法（如 find_hot_products(limit)）
+            products = await self._product_repo.find_all()
 
             # 生成缓存键
             cache_keys = [f"Product:id:{product.id}" for product in products]

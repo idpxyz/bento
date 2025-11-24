@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from bento.core.ids import ID
 
 if TYPE_CHECKING:
-    from contexts.catalog.infrastructure.repositories.category_repository import (
+    from contexts.catalog.domain.ports.repositories.i_category_repository import (
         ICategoryRepository,
     )
 
@@ -51,8 +51,8 @@ class CategoryWarmupStrategy:
             # 3. 按热度排序
             # 4. 使用Specification查询特定条件的分类
 
-            # 调用框架的 list() 方法，不传参数表示查询全部
-            categories = await self._category_repo.list()
+            # 调用 Repository 的 find_all() 方法查询全部
+            categories = await self._category_repo.find_all()
 
             # 生成缓存键
             cache_keys = [f"Category:id:{category.id}" for category in categories]
@@ -79,7 +79,7 @@ class CategoryWarmupStrategy:
         try:
             # 特殊处理：分类列表
             if key == "Category:list:all":
-                categories = await self._category_repo.list()
+                categories = await self._category_repo.find_all()
                 logger.debug(f"成功加载分类列表: {len(categories)} 个")
                 return categories
 
