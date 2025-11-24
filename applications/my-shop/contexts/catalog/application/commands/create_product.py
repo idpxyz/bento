@@ -18,6 +18,10 @@ class CreateProductCommand:
     name: str
     description: str
     price: float
+    stock: int = 0
+    sku: str | None = None
+    brand: str | None = None
+    is_active: bool = True
     category_id: str | None = None  # 可选的分类ID
 
 
@@ -49,6 +53,10 @@ class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",
             price=command.price,
+            stock=command.stock,
+            sku=command.sku,
+            brand=command.brand,
+            is_active=command.is_active,
             category_id=ID(command.category_id) if command.category_id else None,  # 关联分类
         )
 

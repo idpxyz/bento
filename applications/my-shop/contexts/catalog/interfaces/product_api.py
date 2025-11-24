@@ -35,6 +35,10 @@ class CreateProductRequest(BaseModel):
     name: str
     description: str
     price: float
+    stock: int = 0
+    sku: str | None = None
+    brand: str | None = None
+    is_active: bool = True
     category_id: str | None = None  # 可选的分类ID
 
 
@@ -53,6 +57,13 @@ class ProductResponse(BaseModel):
     name: str
     description: str
     price: float
+    stock: int
+    sku: str | None = None
+    brand: str | None = None
+    is_active: bool
+    sales_count: int
+    category_id: str | None = None
+    is_categorized: bool
 
 
 class ListProductsResponse(BaseModel):
@@ -120,6 +131,10 @@ async def create_product(
         name=request.name,
         description=request.description,
         price=request.price,
+        stock=request.stock,
+        sku=request.sku,
+        brand=request.brand,
+        is_active=request.is_active,
         category_id=request.category_id,
     )
 
@@ -190,6 +205,16 @@ async def update_product(
 
     product = await use_case.execute(command)
     return product_to_dict(product)
+
+
+@router.get(
+    "/ping",
+    summary="Ping endpoint",
+    status_code=200,
+)
+async def ping() -> dict[str, str]:
+    """Ping endpoint for health check."""
+    return {"status": "ok", "message": "pong"}
 
 
 @router.delete(

@@ -24,7 +24,11 @@ from contexts.ordering.application.commands.create_order import (
 @pytest.mark.asyncio
 async def test_order_creation_persists_outbox_events(db_session):
     """Test that creating an order persists events to Outbox table."""
+    from bento.persistence.outbox.record import SqlAlchemyOutbox
     from bento.persistence.uow import SQLAlchemyUnitOfWork as UnitOfWork
+
+    # Create outbox for UoW
+    outbox = SqlAlchemyOutbox(db_session)
 
     # Create a test product first
     product_id = str(ID.generate())
@@ -33,62 +37,59 @@ async def test_order_creation_persists_outbox_events(db_session):
     )
 
     # Persist product using UoW
-    async with db_session() as session:
-        uow = UnitOfWork(session)
-        async with uow:
-            product_repo = uow.repository(Product)
-            await product_repo.save(product)
-            await uow.commit()
+    uow = UnitOfWork(db_session, outbox)
+    async with uow:
+        product_repo = uow.repository(Product)
+        await product_repo.save(product)
+        await uow.commit()
 
     # Create order via use case
-    async with db_session() as session:
-        uow = UnitOfWork(session)
-        use_case = CreateOrderUseCase(uow)
+    uow = UnitOfWork(db_session, outbox)
+    use_case = CreateOrderUseCase(uow)
 
-        command = CreateOrderCommand(
-            customer_id="test-customer-123",
-            items=[
-                OrderItemInput(
-                    product_id=product_id,
-                    product_name="Test Product",
-                    quantity=2,
-                    unit_price=100.0,
-                )
-            ],
-        )
+    command = CreateOrderCommand(
+        customer_id="test-customer-123",
+        items=[
+            OrderItemInput(
+                product_id=product_id,
+                product_name="Test Product",
+                quantity=2,
+                unit_price=100.0,
+            )
+        ],
+    )
 
-        async with uow:
-            order = await use_case.handle(command)
-            await uow.commit()
+    async with uow:
+        order = await use_case.handle(command)
+        await uow.commit()
 
-        order_id = order.id
+    order_id = order.id
 
     # Verify Outbox contains the event
-    async with db_session() as session:
-        result = await session.execute(
-            text(
-                """
-                SELECT id, aggregate_id, event_type, status, payload
-                FROM outbox
-                WHERE aggregate_id = :order_id
-                ORDER BY created_at DESC
-                """
-            ),
-            {"order_id": order_id},
-        )
-        outbox_events = result.fetchall()
+    result = await db_session.execute(
+        text(
+            """
+            SELECT id, aggregate_id, event_type, status, payload
+            FROM outbox
+            WHERE aggregate_id = :order_id
+            ORDER BY created_at DESC
+            """
+        ),
+        {"order_id": order_id},
+    )
+    outbox_events = result.fetchall()
 
-        # Should have at least 1 event (OrderCreatedEvent)
-        assert len(outbox_events) > 0, "No events found in Outbox"
+    # Should have at least 1 event (OrderCreatedEvent)
+    assert len(outbox_events) > 0, "No events found in Outbox"
 
-        event = outbox_events[0]
-        assert event.aggregate_id == order_id
-        assert event.event_type == "OrderCreatedEvent"
-        assert event.status == "NEW"
-        assert "customer_id" in event.payload
-        assert "items" in event.payload
+    event = outbox_events[0]
+    assert event.aggregate_id == order_id
+    assert event.event_type == "OrderCreatedEvent"
+    assert event.status == "NEW"
+    assert "customer_id" in event.payload
+    assert "items" in event.payload
 
-        print(f"✅ Outbox event verified: {event.event_type} (status={event.status})")
+    print(f"✅ Outbox event verified: {event.event_type} (status={event.status})")
 
 
 if __name__ == "__main__":

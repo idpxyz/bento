@@ -19,12 +19,31 @@ uv run python tests/ordering/test_redis_inventory_adapter.py
 import asyncio
 import os
 
+import pytest
+
 try:
     from dotenv import load_dotenv
 
     load_dotenv()
 except ImportError:
     pass
+
+# Skip all tests in this module if Redis is not available
+try:
+    import redis
+
+    # Try to connect to Redis to check if it's available
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    r = redis.from_url(redis_url, socket_connect_timeout=1)
+    r.ping()
+    r.close()
+    REDIS_AVAILABLE = True
+except (ImportError, redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
+    REDIS_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not REDIS_AVAILABLE, reason="Redis service not available (install redis and start redis-server)"
+)
 
 from contexts.ordering.infrastructure.adapters.services.redis_inventory_adapter import (
     RedisInventoryAdapter,

@@ -6,10 +6,15 @@ from contexts.catalog.domain.product import Product
 def product_to_dict(product: Product) -> dict:
     """Convert Product aggregate to dictionary for API response."""
     return {
-        "id": product.id,
+        "id": str(product.id),
         "name": product.name,
         "description": product.description,
         "price": product.price,
-        "category_id": product.category_id,
+        "stock": product.stock,
+        "sku": product.sku,
+        "brand": product.brand,
+        "is_active": product.is_active,
+        "sales_count": product.sales_count,
+        "category_id": str(product.category_id) if product.category_id else None,
         "is_categorized": product.is_categorized(),
     }
