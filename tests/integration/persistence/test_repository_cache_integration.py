@@ -60,8 +60,8 @@ async def engine():
 @pytest_asyncio.fixture
 async def session(engine):
     """创建数据库会话"""
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with async_session() as session:
+    AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with AsyncSessionLocal() as session:  # type: ignore[misc]
         yield session
 
 
