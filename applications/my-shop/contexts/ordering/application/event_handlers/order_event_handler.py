@@ -43,7 +43,7 @@ class OrderEventHandler:
         Args:
             event: 领域事件
         """
-        event_name = event.name or event.__class__.__name__
+        event_name = event.topic or event.__class__.__name__
         handler = self._handlers.get(event_name)
 
         if handler:

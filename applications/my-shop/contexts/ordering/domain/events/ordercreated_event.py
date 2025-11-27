@@ -25,7 +25,7 @@ class OrderCreatedEvent(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    name: str = "order_created"
+    topic: str = "order_created"
 
     # 订单基本信息
     order_id: ID  # ✅ 支持 ID 类型

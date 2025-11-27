@@ -24,7 +24,7 @@ class OrderShippedEvent(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    name: str = "order_shipped"
+    topic: str = "order_shipped"
 
     order_id: ID  # ✅ 支持 ID 类型
     tracking_number: str | None

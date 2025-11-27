@@ -24,7 +24,7 @@ class OrderDeliveredEvent(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    name: str = "order_delivered"
+    topic: str = "order_delivered"
 
     order_id: ID  # ✅ 支持 ID 类型
     delivered_at: datetime

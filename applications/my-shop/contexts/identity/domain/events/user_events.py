@@ -98,7 +98,7 @@ class UserUpdated(DomainEvent):
         updated_fields: dict[str, str],
         *,
         event_id: UUID | None = None,
-        name: str = "UserUpdated",
+        topic: str = "UserUpdated",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -110,7 +110,7 @@ class UserUpdated(DomainEvent):
         uid = user_id if isinstance(user_id, ID) else ID(user_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(uid),
             "schema_version": schema_version,
         }
@@ -155,7 +155,7 @@ class UserDeleted(DomainEvent):
         email: str,
         *,
         event_id: UUID | None = None,
-        name: str = "UserDeleted",
+        topic: str = "UserDeleted",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -167,7 +167,7 @@ class UserDeleted(DomainEvent):
         uid = user_id if isinstance(user_id, ID) else ID(user_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(uid),
             "schema_version": schema_version,
         }
@@ -215,7 +215,7 @@ class UserEmailChanged(DomainEvent):
         new_email: str,
         *,
         event_id: UUID | None = None,
-        name: str = "UserEmailChanged",
+        topic: str = "UserEmailChanged",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -227,7 +227,7 @@ class UserEmailChanged(DomainEvent):
         uid = user_id if isinstance(user_id, ID) else ID(user_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(uid),
             "schema_version": schema_version,
         }
