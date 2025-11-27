@@ -186,14 +186,22 @@ build_package() {
 # 函数：检查包
 check_package() {
     info "检查包..."
-    twine check dist/* || error "包检查失败"
+    if command -v uv >/dev/null 2>&1; then
+        uv run python -m twine check dist/* || error "包检查失败"
+    else
+        twine check dist/* || error "包检查失败"
+    fi
     success "包检查通过"
 }
 
 # 函数：发布到 Test PyPI
 publish_test() {
     info "发布到 Test PyPI..."
-    twine upload --repository testpypi dist/*
+    if command -v uv >/dev/null 2>&1; then
+        uv run python -m twine upload --repository testpypi dist/*
+    else
+        twine upload --repository testpypi dist/*
+    fi
     success "发布到 Test PyPI 完成"
     echo ""
     info "测试安装命令:"
@@ -208,7 +216,11 @@ publish_pypi() {
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         error "已取消发布"
     fi
-    twine upload dist/*
+    if command -v uv >/dev/null 2>&1; then
+        uv run python -m twine upload dist/*
+    else
+        twine upload dist/*
+    fi
     success "发布到 PyPI 完成"
     echo ""
     info "安装命令:"
