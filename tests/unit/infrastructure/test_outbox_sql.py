@@ -34,7 +34,7 @@ async def test_outbox_add_pull_mark_publish_and_fail():
             batch = list(await outbox.pull_batch(limit=10, tenant_id="default"))
             assert len(batch) == 1
             evt = batch[0]
-            assert evt["type"] == "TestEvent"
+            assert evt["topic"] == "TestEvent"
             evt_id = evt["id"]
             # status should be set to PUBLISHING in-memory; flush to persist
             await session.flush()
@@ -64,7 +64,7 @@ async def test_outbox_add_pull_mark_publish_and_fail():
                 )
             ).first()
             assert rec2 is not None
-            assert rec2._mapping["retry_cnt"] >= 5
-            assert rec2._mapping["status"] == "ERR"
+            assert rec2._mapping["retry_count"] >= 5
+            assert rec2._mapping["status"] == "DEAD"
     finally:
         await engine.dispose()

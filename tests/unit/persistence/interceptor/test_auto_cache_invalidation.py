@@ -32,7 +32,7 @@ from bento.persistence.interceptor.auto_cache_invalidation import (
 class OrderCreatedEvent(DomainEvent):
     """订单创建事件"""
 
-    name: str = "OrderCreated"
+    topic: str = "OrderCreated"
     order_id: ID
     customer_id: str
     product_id: str
@@ -43,7 +43,7 @@ class OrderCreatedEvent(DomainEvent):
 class OrderUpdatedEvent(DomainEvent):
     """订单更新事件"""
 
-    name: str = "OrderUpdated"
+    topic: str = "OrderUpdated"
     order_id: ID
     customer_id: str
 
@@ -52,7 +52,7 @@ class OrderUpdatedEvent(DomainEvent):
 class OrderDeletedEvent(DomainEvent):
     """订单删除事件"""
 
-    name: str = "OrderDeleted"
+    topic: str = "OrderDeleted"
     order_id: ID
     customer_id: str
 
@@ -61,7 +61,7 @@ class OrderDeletedEvent(DomainEvent):
 class ReviewCreatedEvent(DomainEvent):
     """评论创建事件"""
 
-    name: str = "ReviewCreated"
+    topic: str = "ReviewCreated"
     review_id: ID
     product_id: str
     rating: float

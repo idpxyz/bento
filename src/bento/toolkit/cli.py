@@ -388,6 +388,46 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
     print(f"\n✅ Module '{name}' generated in context '{context}' successfully!\n")
 
 
+def run_validation(args):
+    """执行架构验证"""
+    try:
+        from bento.toolkit.validators import ArchitectureValidator
+
+        print("🔍 Running Bento Framework Architecture Validation")
+        print("=" * 50)
+
+        validator = ArchitectureValidator(args.project_path)
+        report = validator.validate_all()
+
+        # 输出报告到文件
+        if args.output:
+            import json
+
+            with open(args.output, "w") as f:
+                json.dump(report, f, indent=2)
+            print(f"\n📄 Validation report saved to: {args.output}")
+
+        # 如果设置了失败标志且有违规，返回错误代码
+        if args.fail_on_violations and report["total_violations"] > 0:
+            print(f"\n❌ Validation failed with {report['total_violations']} violations")
+            return 1
+
+        if report["total_violations"] == 0:
+            print("\n🎉 All validations passed! Architecture is compliant.")
+            return 0
+        else:
+            print(f"\n⚠️ Found {report['total_violations']} violations, but continuing...")
+            return 0
+
+    except ImportError as e:
+        print(f"❌ Error: Cannot import validator: {e}")
+        print("💡 Make sure bento.toolkit.validators is properly installed")
+        return 1
+    except Exception as e:
+        print(f"❌ Validation error: {e}")
+        return 1
+
+
 def main():
     """CLI 入口点函数"""
 
@@ -515,6 +555,38 @@ Examples:
         help="Output directory (default: current directory)",
     )
 
+    # validate 命令 - 架构验证
+    validate_help = """
+Validate Bento Framework architecture compliance.
+
+This command checks:
+  - Layer dependency violations (Domain/Application/Infrastructure)
+  - ApplicationService pattern compliance
+  - UnitOfWork usage patterns
+  - Domain layer purity
+
+Example:
+  bento validate --project-path . --output report.json
+  bento validate --context catalog
+"""
+
+    validate = sub.add_parser(
+        "validate",
+        help="Validate architecture compliance",
+        description=validate_help,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    validate.add_argument(
+        "--project-path",
+        default=".",
+        help="Project root path to validate (default: current directory)",
+    )
+    validate.add_argument("--output", help="Output validation report to JSON file")
+    validate.add_argument("--context", help="Validate specific bounded context only")
+    validate.add_argument(
+        "--fail-on-violations", action="store_true", help="Exit with error code if violations found"
+    )
+
     args = parser.parse_args()
 
     try:
@@ -523,6 +595,10 @@ Examples:
             output_dir = args.output.absolute()
             generate_project_scaffold(args.project_name, output_dir, args.description)
             return 0
+
+        elif args.cmd == "validate":
+            # 架构验证
+            return run_validation(args)
 
         # gen 命令处理
         name = args.name[0].upper() + args.name[1:]

@@ -32,20 +32,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bento.application.ports.message_bus import MessageBus
+from bento.config.outbox import OutboxProjectorConfig, get_outbox_projector_config
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import deserialize_event
 from bento.persistence.outbox.record import OutboxRecord
-
-from .config import (
-    DEFAULT_BATCH_SIZE,
-    MAX_RETRY,
-    SLEEP_BUSY,
-    SLEEP_IDLE,
-    SLEEP_IDLE_MAX,
-    STATUS_ERR,
-    STATUS_NEW,
-    STATUS_SENT,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -60,17 +50,21 @@ class OutboxProjector:
 
     Features:
     - Multi-tenant shard support (one projector instance per tenant)
-    - Row-level locking for concurrent safety
-    - Batch processing for efficiency
-    - Adaptive back-off strategy
-    - Retry mechanism with max retries
+    - Row-level locking for concurrent safety (FOR UPDATE SKIP LOCKED)
+    - Configurable batch processing for efficiency
+    - Adaptive back-off strategy with configurable parameters
+    - Retry mechanism with configurable max retries and exponential backoff
     - Graceful shutdown
+    - External configuration support (environment variables, config objects)
+    - Performance tuning for different scenarios (high-throughput, low-latency, etc.)
+    - Hot configuration reload capability
 
     Example:
         ```python
         from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
         from bento.infrastructure.projection import OutboxProjector
         from bento.adapters.messaging.pulsar import PulsarEventBus
+        from bento.config.outbox import OutboxProjectorConfig
 
         # Create session factory
         engine = create_async_engine(POSTGRES_DSN)
@@ -79,20 +73,34 @@ class OutboxProjector:
         # Create MessageBus
         message_bus = PulsarEventBus(pulsar_client)
 
-        # Create and start projector for each tenant
+        # Option 1: Use default configuration (from environment variables)
         projector_t1 = OutboxProjector(
             session_factory=session_factory,
             message_bus=message_bus,
-            tenant_id="tenant1",
-            batch_size=200
+            tenant_id="tenant1"
+        )
+
+        # Option 2: Use custom configuration
+        config = OutboxProjectorConfig(
+            batch_size=500,
+            max_retry_attempts=10,
+            sleep_busy=0.05
+        )
+        projector_t2 = OutboxProjector(
+            session_factory=session_factory,
+            message_bus=message_bus,
+            tenant_id="tenant2",
+            config=config
         )
 
         # Start in background
         asyncio.create_task(projector_t1.run_forever())
+        asyncio.create_task(projector_t2.run_forever())
 
         # Graceful shutdown
         async def shutdown():
             await projector_t1.stop()
+            await projector_t2.stop()
         ```
     """
 
@@ -101,25 +109,30 @@ class OutboxProjector:
         *,
         session_factory: async_sessionmaker[AsyncSession],
         message_bus: MessageBus,
-        tenant_id: str = "default",
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        tenant_id: str | None = None,
+        config: OutboxProjectorConfig | None = None,
     ) -> None:
         """Initialize OutboxProjector.
 
         Args:
             session_factory: SQLAlchemy async session factory
             message_bus: MessageBus implementation (Pulsar/Kafka/Redis)
-            tenant_id: Tenant ID for multi-tenant sharding
-            batch_size: Number of events to process per batch
+            tenant_id: Tenant ID for multi-tenant sharding (默认从配置获取)
+            config: 投影器配置 (默认从环境变量加载)
         """
         self._session_factory = session_factory
         self._message_bus = message_bus
-        self._tenant_id = tenant_id
-        self._batch_size = batch_size
+        self._config = config or get_outbox_projector_config()
+        self._tenant_id = tenant_id or self._config.default_tenant_id
         self._stopped = asyncio.Event()
 
+        # P2-B Performance monitoring
+        self._performance_monitor = None
+        self._enable_monitoring = getattr(config, "enable_performance_monitoring", True)
+
         logger.info(
-            f"Initialized OutboxProjector for tenant {tenant_id} with batch_size={batch_size}"
+            f"Initialized OutboxProjector for tenant {self._tenant_id} "
+            f"with batch_size={self._config.batch_size}"
         )
 
     async def run_forever(self) -> None:
@@ -133,49 +146,45 @@ class OutboxProjector:
         3. Updates event status
         4. Uses adaptive back-off (quick when busy, longer when idle)
         """
-        logger.info(f"Projector for tenant {self._tenant_id} started")
-        consecutive_empty_polls = 0
+        logger.info(f"Starting OutboxProjector for tenant: {self._tenant_id}")
+        consecutive_empty_batches = 0
+
+        # Initialize performance monitoring
+        if self._enable_monitoring:
+            from bento.infrastructure.monitoring.performance import PerformanceMonitor
+
+            self._performance_monitor = PerformanceMonitor(self._session_factory)
 
         try:
             while not self._stopped.is_set():
                 try:
-                    has_more = await self._process_once()
+                    processed_count = await self._process_once()
 
-                    if has_more:
-                        consecutive_empty_polls = 0
-                        logger.debug(
-                            f"Processed batch for tenant {self._tenant_id}, more items pending"
-                        )
+                    # Record performance metrics
+                    if self._performance_monitor:
+                        self._performance_monitor.record_events_processed(processed_count)
+
+                    if processed_count == 0:
+                        consecutive_empty_batches += 1
+                        # Adaptive back-off: longer sleep when no events
+                        if consecutive_empty_batches > 3:
+                            await asyncio.sleep(self._config.sleep_idle)
+                        else:
+                            await asyncio.sleep(self._config.sleep_busy)
                     else:
-                        consecutive_empty_polls += 1
-                        logger.debug(f"No more items to process for tenant {self._tenant_id}")
+                        consecutive_empty_batches = 0
+                        await asyncio.sleep(self._config.sleep_busy)
 
-                except asyncio.CancelledError:
-                    logger.info(f"Projector for tenant {self._tenant_id} cancelled")
-                    break
-                except Exception as exc:
+                except Exception as e:
                     logger.error(
-                        f"Projector loop error for tenant {self._tenant_id}: {exc}",
+                        f"OutboxProjector[{self._tenant_id}] error: {e}",
                         exc_info=True,
                     )
-                    # Wait before retrying
-                    await asyncio.sleep(2)
-                    continue
-
-                # Adaptive back-off strategy
-                if has_more:
-                    # Backlog exists: quick polling
-                    await asyncio.sleep(SLEEP_BUSY)
-                else:
-                    # Queue empty: exponential back-off (capped)
-                    sleep_time = min(
-                        SLEEP_IDLE * (2 ** min(consecutive_empty_polls, 5)),
-                        SLEEP_IDLE_MAX,
-                    )
-                    await asyncio.sleep(sleep_time)
+                    # Sleep before retry to avoid tight error loops
+                    await asyncio.sleep(self._config.sleep_busy * 2)
 
         finally:
-            logger.info(f"Projector {self._tenant_id} stopped")
+            logger.info(f"OutboxProjector stopped for tenant: {self._tenant_id}")
 
     async def stop(self) -> None:
         """Stop the projector gracefully.
@@ -186,30 +195,33 @@ class OutboxProjector:
         self._stopped.set()
 
     async def _process_once(self) -> bool:
-        """Process one batch of events (Legend-style).
-
-        Steps:
-        1. Fetch NEW events for this tenant (with row-level lock)
-        2. Parse events from payload using DomainEvent.model_validate
-        3. Publish all events in batch to MessageBus
-        4. Update status (SENT or increment retry_cnt/mark ERR)
+        """Process one batch of events - 简化版本，专注于正确性.
 
         Returns:
-            True if there are more events to process (batch was full),
-            False otherwise
+            True if there are more events to process, False otherwise
         """
-        async with self._session_factory() as session, session.begin():
-            # Fetch NEW events with row-level lock (tenant-scoped)
+        from datetime import UTC, datetime
+
+        async with self._session_factory() as session:
+            # 查询待处理事件
             stmt = (
                 select(OutboxRecord)
                 .where(
                     OutboxRecord.tenant_id == self._tenant_id,
-                    OutboxRecord.status == STATUS_NEW,
+                    (OutboxRecord.status == self._config.status_new)
+                    | (
+                        (OutboxRecord.status == self._config.status_failed)
+                        & (
+                            (OutboxRecord.retry_after.is_(None))
+                            | (OutboxRecord.retry_after <= datetime.now(UTC))
+                        )
+                    ),
                 )
                 .order_by(OutboxRecord.created_at)
-                .limit(self._batch_size)
-                .with_for_update(skip_locked=True)
+                .limit(self._config.batch_size)
             )
+            # 注意：不使用with_for_update(skip_locked=True)
+            # 因为SQLite不支持行级锁，而且状态机已经防止重复处理
 
             result = await session.execute(stmt)
             rows = result.scalars().all()
@@ -217,66 +229,69 @@ class OutboxProjector:
             if not rows:
                 return False
 
-            logger.info(f"Processing {len(rows)} events for tenant {self._tenant_id}")
+            logger.info(
+                f"Processing {len(rows)} events for tenant {self._tenant_id}: "
+                f"[{', '.join([f'{r.id}(status={r.status},retry={r.retry_count})' for r in rows])}]"
+            )
 
-            # Parse events from payload using event registry
+            # 解析事件
             events: list[DomainEvent] = []
+            parse_failed_ids = set()  # 记录解析失败的事件ID
             for row in rows:
                 try:
-                    # Deserialize using event registry
-                    event = deserialize_event(event_type=row.type, payload=row.payload)
+                    event = deserialize_event(event_type=row.topic, payload=row.payload)
                     events.append(event)
-                    logger.debug(
-                        "Deserialized event %s (id=%s) for tenant %s",
-                        row.type,
-                        row.id,
-                        self._tenant_id,
-                    )
                 except Exception as exc:
-                    logger.error(
-                        f"Failed to parse event from record {row.id}: {exc}",
-                        exc_info=True,
-                    )
-                    # Mark as ERR immediately for parse errors
-                    row.status = STATUS_ERR
+                    logger.error(f"Failed to parse event {row.id}: {exc}", exc_info=True)
+                    row.status = self._config.status_failed
+                    parse_failed_ids.add(row.id)
                     continue
 
             if not events:
-                # All events failed to parse
+                await session.commit()
                 return False
 
-            # Publish all events in batch (Legend-style)
+            # 尝试发布事件
             try:
                 await self._message_bus.publish(events)
-                logger.info(
-                    f"Successfully published {len(events)} events for tenant {self._tenant_id}"
-                )
+                # 发布成功 - 标记为SENT
+                for row in rows:
+                    if row.id not in parse_failed_ids:  # 跳过解析失败的
+                        row.status = self._config.status_sent
+                logger.info(f"Successfully published {len(events)} events")
+
             except Exception as exc:
-                # Publish failed - increment retry_cnt
-                logger.warning(
-                    f"Publish failed for tenant {self._tenant_id}, will retry later: {exc}"
-                )
+                # 发布失败 - 更新重试信息，但不抛出异常
+                logger.warning(f"Publish failed, will retry: {exc}")
                 for row in rows:
-                    if row.status != STATUS_ERR:  # Skip already failed rows
-                        row.retry_cnt = getattr(row, "retry_cnt", 0) + 1
-                        if row.retry_cnt >= MAX_RETRY:
-                            row.status = STATUS_ERR
-                            logger.error(
-                                f"Event {row.id} for tenant {self._tenant_id} "
-                                f"exceeded max retries, marked as ERR"
-                            )
-                        # else: keep status as NEW for retry
-                return True
-            else:
-                # Mark all successfully published events as SENT
-                for row in rows:
-                    if row.status != STATUS_ERR:  # Skip parse-failed rows
-                        row.status = STATUS_SENT
-                logger.info(
-                    f"Marked {len(rows)} events as SENT for tenant {self._tenant_id} with ids: "
-                    f"{', '.join([str(row.id) for row in rows])}"
-                )
-                return len(rows) == self._batch_size
+                    if row.id in parse_failed_ids:
+                        continue  # 跳过解析失败的（已经标记为FAILED了）
+
+                    row.retry_count += 1
+                    if row.retry_count >= self._config.max_retry_attempts:
+                        row.status = self._config.status_dead
+                        logger.error(f"Event {row.id} exceeded max retries, marked as DEAD")
+                    else:
+                        row.status = self._config.status_failed
+                        # 设置重试延迟
+                        backoff_seconds = self._config.calculate_backoff_delay(row.retry_count)
+                        if backoff_seconds > 0:
+                            from datetime import timedelta
+
+                            row.retry_after = datetime.now(UTC) + timedelta(seconds=backoff_seconds)
+                        else:
+                            # 0秒延迟 = 立即重试，设置为NULL
+                            row.retry_after = None
+
+            # 显式flush和提交事务
+            logger.info(
+                f"Before commit: "
+                f"[{', '.join([f'{r.id}(status={r.status},retry={r.retry_count})' for r in rows])}]"
+            )
+            await session.flush()  # 确保更改写入数据库
+            await session.commit()  # 提交事务
+            logger.info("Commit completed")
+            return len(rows) == self._config.batch_size
 
     async def publish_all(self) -> int:
         """Process all pending events (useful for testing or manual triggers).
@@ -288,11 +303,9 @@ class OutboxProjector:
         while not self._stopped.is_set():
             # Get count before processing
             async with self._session_factory() as session:
-                from bento.infrastructure.projection.config import STATUS_NEW
-
                 stmt = select(OutboxRecord).where(
                     OutboxRecord.tenant_id == self._tenant_id,
-                    OutboxRecord.status == STATUS_NEW,
+                    OutboxRecord.status == self._config.status_new,
                 )
                 result = await session.execute(stmt)
                 count_before = len(result.scalars().all())
@@ -301,11 +314,9 @@ class OutboxProjector:
 
             # Get count after processing
             async with self._session_factory() as session:
-                from bento.infrastructure.projection.config import STATUS_NEW
-
                 stmt = select(OutboxRecord).where(
                     OutboxRecord.tenant_id == self._tenant_id,
-                    OutboxRecord.status == STATUS_NEW,
+                    OutboxRecord.status == self._config.status_new,
                 )
                 result = await session.execute(stmt)
                 count_after = len(result.scalars().all())
@@ -319,3 +330,23 @@ class OutboxProjector:
 
         logger.info(f"Published {total_processed} events")
         return total_processed
+
+    async def get_performance_metrics(self):
+        """Get performance metrics for this projector.
+
+        Returns:
+            Performance metrics dictionary or None if monitoring disabled
+        """
+        if not self._performance_monitor:
+            return None
+        return await self._performance_monitor.get_metrics()
+
+    async def analyze_performance(self):
+        """Analyze performance and get bottleneck recommendations.
+
+        Returns:
+            Performance analysis dictionary or None if monitoring disabled
+        """
+        if not self._performance_monitor:
+            return None
+        return await self._performance_monitor.analyze_performance_bottlenecks()

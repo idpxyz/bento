@@ -15,6 +15,7 @@ from sqlalchemy import String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from bento.application.ports.message_bus import MessageBus
+from bento.config.outbox import OutboxProjectorConfig
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import register_event
 from bento.infrastructure.projection.projector import OutboxProjector
@@ -131,7 +132,7 @@ async def test_event_registration_via_context_var(session_factory):
     # Create event
     event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         aggregate_id="order-123",
         order_id="order-123",
@@ -164,7 +165,7 @@ async def test_event_registration_via_context_var(session_factory):
         outbox_record = result.scalar_one_or_none()
 
         assert outbox_record is not None, f"Event {event_id_str} not found in Outbox"
-        assert outbox_record.type == "OrderCreatedEvent"
+        assert outbox_record.topic == "OrderCreatedEvent"
         assert outbox_record.tenant_id == "test-tenant"
         assert outbox_record.aggregate_id == "order-123"
         assert outbox_record.status == "NEW"
@@ -182,7 +183,7 @@ async def test_outbox_listener_automatic_persistence(session_factory):
     events = [
         OrderCreatedEvent(
             event_id=uuid4(),
-            name="OrderCreatedEvent",
+            topic="OrderCreatedEvent",
             tenant_id="test-tenant",
             order_id=f"order-{i}",
             customer_id=f"cust-{i}",
@@ -210,7 +211,7 @@ async def test_outbox_listener_automatic_persistence(session_factory):
 
         assert len(records) == 3
         for record in records:
-            assert record.type == "OrderCreatedEvent"
+            assert record.topic == "OrderCreatedEvent"
             assert record.status == "NEW"
 
 
@@ -224,7 +225,7 @@ async def test_outbox_idempotency(session_factory):
     event_id = uuid4()
     event = OrderCreatedEvent(
         event_id=event_id,
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         order_id="order-123",
         customer_id="cust-456",
@@ -259,7 +260,7 @@ async def test_event_deserialization(session_factory):
     # Create and persist event
     original_event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         aggregate_id="order-123",
         order_id="order-123",
@@ -281,7 +282,7 @@ async def test_event_deserialization(session_factory):
 
         # Deserialize
         deserialized_event = deserialize_event(
-            event_type=saved_record.type,
+            event_type=saved_record.topic,
             payload=saved_record.payload,
         )
 
@@ -298,7 +299,7 @@ async def test_rollback_clears_events(session_factory):
     """Test that rollback clears pending events."""
     event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         order_id="order-123",
         customer_id="cust-456",
         total_amount=99.99,
@@ -336,7 +337,7 @@ async def test_projector_publishes_events(session_factory):
     events = [
         OrderCreatedEvent(
             event_id=uuid4(),
-            name="OrderCreatedEvent",
+            topic="OrderCreatedEvent",
             tenant_id="test-tenant",
             aggregate_id=f"order-{i}",  # Add aggregate_id
             order_id=f"order-{i}",
@@ -358,7 +359,7 @@ async def test_projector_publishes_events(session_factory):
         session_factory=session_factory,
         message_bus=mock_bus,
         tenant_id="test-tenant",
-        batch_size=10,
+        config=OutboxProjectorConfig(batch_size=10),
     )
 
     # Process all events
@@ -390,7 +391,7 @@ async def test_projector_handles_publish_failure(session_factory):
     # Create event
     event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         order_id="order-123",
         customer_id="cust-456",
@@ -410,29 +411,29 @@ async def test_projector_handles_publish_failure(session_factory):
         session_factory=session_factory,
         message_bus=mock_bus,
         tenant_id="test-tenant",
-        batch_size=10,
+        config=OutboxProjectorConfig(batch_size=10),
     )
 
     # Try to process - should fail
     await projector._process_once()
 
-    # Verify event is still in NEW status (will retry)
+    # Verify event is in FAILED status (will retry)
     async with session_factory() as session:
         stmt = select(OutboxRecord).where(OutboxRecord.tenant_id == "test-tenant")
         result = await session.execute(stmt)
         record = result.scalar_one()
 
-        assert record.status == "NEW"
-        assert record.retry_cnt == 1  # Incremented
+        assert record.status == "FAILED"
+        assert record.retry_count == 1  # Incremented
 
 
 @pytest.mark.asyncio
 async def test_projector_max_retry_marks_error(session_factory):
     """Test that Projector marks event as ERR after max retries."""
-    # Create event with retry_cnt close to max
+    # Create event with retry_count close to max
     event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         order_id="order-123",
         customer_id="cust-456",
@@ -441,7 +442,7 @@ async def test_projector_max_retry_marks_error(session_factory):
 
     async with session_factory() as session:
         record = OutboxRecord.from_domain_event(event)
-        record.retry_cnt = 4  # One away from MAX_RETRY (5)
+        record.retry_count = 4  # One away from MAX_RETRY (5)
         session.add(record)
         await session.commit()
 
@@ -453,7 +454,7 @@ async def test_projector_max_retry_marks_error(session_factory):
         session_factory=session_factory,
         message_bus=mock_bus,
         tenant_id="test-tenant",
-        batch_size=10,
+        config=OutboxProjectorConfig(batch_size=10),
     )
 
     # Process - should mark as ERR after hitting max retries
@@ -465,8 +466,8 @@ async def test_projector_max_retry_marks_error(session_factory):
         result = await session.execute(stmt)
         record = result.scalar_one()
 
-        assert record.status == "ERR"
-        assert record.retry_cnt == 5
+        assert record.status == "DEAD"
+        assert record.retry_count == 5
 
 
 @pytest.mark.asyncio
@@ -475,7 +476,7 @@ async def test_projector_multi_tenant_isolation(session_factory):
     # Create events for different tenants
     tenant1_event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="tenant1",
         order_id="order-t1",
         customer_id="cust-1",
@@ -484,7 +485,7 @@ async def test_projector_multi_tenant_isolation(session_factory):
 
     tenant2_event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="tenant2",
         order_id="order-t2",
         customer_id="cust-2",
@@ -502,7 +503,7 @@ async def test_projector_multi_tenant_isolation(session_factory):
         session_factory=session_factory,
         message_bus=mock_bus,
         tenant_id="tenant1",
-        batch_size=10,
+        config=OutboxProjectorConfig(batch_size=10),
     )
 
     # Process all events
@@ -531,7 +532,7 @@ async def test_end_to_end_outbox_pattern(session_factory):
     # Step 1: Create event via UoW (simulating aggregate operation)
     event = OrderCreatedEvent(
         event_id=uuid4(),
-        name="OrderCreatedEvent",
+        topic="OrderCreatedEvent",
         tenant_id="test-tenant",
         aggregate_id="order-999",
         order_id="order-999",
@@ -555,7 +556,7 @@ async def test_end_to_end_outbox_pattern(session_factory):
         result = await session.execute(stmt)
         records = result.scalars().all()
         assert len(records) == 1
-        assert records[0].type == "OrderCreatedEvent"
+        assert records[0].topic == "OrderCreatedEvent"
 
     # Step 3: Projector picks up and publishes event
     mock_bus = MockMessageBus()
@@ -563,7 +564,7 @@ async def test_end_to_end_outbox_pattern(session_factory):
         session_factory=session_factory,
         message_bus=mock_bus,
         tenant_id="test-tenant",
-        batch_size=10,
+        config=OutboxProjectorConfig(batch_size=10),
     )
 
     await projector.publish_all()

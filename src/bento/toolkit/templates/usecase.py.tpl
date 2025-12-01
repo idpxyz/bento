@@ -1,5 +1,8 @@
-"""{{Action}}{{Name}} 用例"""
+"""{{Action}}{{Name}} 用例 - 遵循 Bento Framework 标准"""
 from dataclasses import dataclass
+
+from bento.application import ApplicationService, ApplicationServiceResult
+from bento.persistence.uow import UnitOfWork
 
 
 @dataclass
@@ -17,7 +20,19 @@ class {{Action}}{{Name}}Command:
     pass
 
 
-class {{Action}}{{Name}}UseCase:
+@dataclass
+class {{Name}}Result:
+    """{{Name}} 操作结果"""
+    {{name_lower}}_id: str
+    # TODO: 添加其他结果字段
+
+    @classmethod
+    def from_aggregate(cls, {{name_lower}}):
+        """从聚合根创建结果"""
+        return cls({{name_lower}}_id=str({{name_lower}}.id))
+
+
+class {{Action}}{{Name}}UseCase(ApplicationService[{{Action}}{{Name}}Command, {{Name}}Result]):
     """{{Action}}{{Name}} 用例
 
     应用层用例编排业务流程，协调领域对象完成业务逻辑。
@@ -29,75 +44,68 @@ class {{Action}}{{Name}}UseCase:
     4. 持久化结果
     5. 发布领域事件
 
-    依赖注入：
-    - 仓储接口（从 domain 层获取协议）
-    - 工作单元（事务管理）
+    遵循 Bento Framework 标准：
+    - 使用 UnitOfWork 进行事务管理
+    - 返回 ApplicationServiceResult 统一结果格式
+    - 自动事件发布和错误处理
     """
 
-    def __init__(self, repository, unit_of_work):
-        """
+    def __init__(self, uow: UnitOfWork):
+        """初始化用例
+
         参数：
-            repository: I{{Name}}Repository - 仓储协议实例
-            unit_of_work: IUnitOfWork - 工作单元协议实例
+            uow: UnitOfWork - Bento Framework 统一工作单元
         """
-        self._repository = repository
-        self._uow = unit_of_work
+        super().__init__(uow)
 
-    async def validate(self, command: {{Action}}{{Name}}Command) -> None:
-        """验证命令（可选）
-
-        在执行前验证业务规则，例如：
-        - 必填字段检查
-        - 格式验证（邮箱、手机号等）
-        - 业务约束检查（唯一性、范围等）
-        """
-        # TODO: 添加验证逻辑
-        pass
-
-    async def execute(self, command: {{Action}}{{Name}}Command) -> str:
-        """执行用例
+    async def handle(self, command: {{Action}}{{Name}}Command) -> {{Name}}Result:
+        """处理业务逻辑 - 纯业务逻辑，框架自动处理事务和错误
 
         返回：
-            聚合根ID（字符串类型）
+            {{Name}}Result - 业务结果（框架会自动包装为ApplicationServiceResult）
         """
-        await self.validate(command)
+        # 纯业务逻辑 - 框架自动处理UoW、验证、错误包装
+        {{name_lower}}_repo = self.uow.repository({{Name}})
 
-        async with self._uow:
-            # TODO: 实现业务逻辑
-            # 示例（Create 操作）:
-            # from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
-            # {{name_lower}} = {{Name}}(
-            #     id=generate_id(),
-            #     name=command.name,
-            #     email=command.email
-            # )
-            # await self._repository.save({{name_lower}})
-            # await self._uow.commit()
-            # return {{name_lower}}.id
+        # TODO: 实现业务逻辑
+        # 示例（Create 操作）:
+        # from contexts.{{context}}.domain.{{name_lower}} import {{Name}}
+        # {{name_lower}} = {{Name}}.create_new(
+        #     name=command.name,
+        #     email=command.email
+        # )
+        #
+        # # 应用业务规则（如果需要）
+        # # {{Name}}DomainService.validate_creation({{name_lower}})
+        #
+        # # 保存聚合根
+        # saved_{{name_lower}} = await {{name_lower}}_repo.save({{name_lower}})
+        #
+        # # 返回业务结果（框架自动commit和包装）
+        # return {{Name}}Result.from_aggregate(saved_{{name_lower}})
 
-            raise NotImplementedError("Please implement business logic")
+        raise NotImplementedError("Please implement business logic")
 
 
 # ============================================================================
-# 使用框架 BaseUseCase 的实现示例（可选）
+# 使用说明
 # ============================================================================
 #
-# from bento.application.usecase import BaseUseCase
-# from bento.core.ids import ID
+# 这个服务使用了 Bento Framework 的 ApplicationService 模式：
 #
-# class {{Action}}{{Name}}UseCase(BaseUseCase[{{Action}}{{Name}}Command, ID]):
-#     """使用 Bento 框架 BaseUseCase
+# ✅ 优势:
+# - 只需实现 handle() 方法，专注业务逻辑
+# - 框架自动处理事务管理（UoW）
+# - 框架自动处理错误包装
+# - 框架自动发布领域事件
+# - 统一的 ApplicationServiceResult 返回格式
 #
-#     框架自动提供：
-#     - 事务管理（通过 self.uow）
-#     - 事件收集和发布（通过 Outbox）
-#     - 错误处理和回滚
-#     - 幂等性支持（可选）
-#     """
+# 📝 使用方式:
+# service = {{Action}}{{Name}}UseCase(uow)
+# result = await service.execute(command)
 #
-#     async def handle(self, command: {{Action}}{{Name}}Command) -> ID:
-#         repo = self.uow.repository({{Name}})
-#         {{name_lower}} = {{Name}}(...)
-#         await repo.save({{name_lower}})
-#         return {{name_lower}}.id
+# if result.is_success:
+#     data = result.data  # {{Name}}Result
+# else:
+#     error = result.error  # 错误信息
 #
