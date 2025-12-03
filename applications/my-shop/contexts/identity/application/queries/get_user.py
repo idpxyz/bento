@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import QueryHandler
+from bento.application import QueryHandler, query_handler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -21,6 +21,7 @@ class GetUserQuery:
     user_id: str
 
 
+@query_handler
 class GetUserHandler(QueryHandler[GetUserQuery, User]):
     """Get user use case.
 

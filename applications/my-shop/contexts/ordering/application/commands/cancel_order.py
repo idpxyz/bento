@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
+from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -18,6 +18,7 @@ class CancelOrderCommand:
     reason: str
 
 
+@command_handler
 class CancelOrderHandler(CommandHandler[CancelOrderCommand, Order]):
     """Cancel order use case.
 

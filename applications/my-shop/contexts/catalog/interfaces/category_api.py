@@ -14,10 +14,10 @@ from contexts.catalog.application.commands import (
     UpdateCategoryHandler,
 )
 from contexts.catalog.application.queries import (
-    GetCategoryQuery,
     GetCategoryHandler,
-    ListCategoriesQuery,
+    GetCategoryQuery,
     ListCategoriesHandler,
+    ListCategoriesQuery,
 )
 from contexts.catalog.interfaces.category_presenters import category_to_dict
 from shared.infrastructure.dependencies import get_handler

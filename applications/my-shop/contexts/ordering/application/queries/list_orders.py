@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import QueryHandler
+from bento.application import QueryHandler, query_handler
 
 from contexts.ordering.domain.order import Order
 
@@ -23,6 +23,7 @@ class ListOrdersQuery:
     customer_id: str | None = None  # 可选：按客户过滤
 
 
+@query_handler
 class ListOrdersHandler(QueryHandler[ListOrdersQuery, ListOrdersResult]):
     """List orders use case."""
     
