@@ -95,6 +95,9 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             repository_factories or {}
         )
         self._repositories: dict[type, Any] = {}
+        # Port container: manages outbound port implementations (adapters)
+        self._port_factories: dict[type, Callable[[AsyncSession], Any]] = {}
+        self._ports: dict[type, Any] = {}
         self.pending_events: list[DomainEvent] = []
         self._tracked_aggregates: list[Any] = []  # Track aggregates for event collection
         self._ctx_token: contextvars.Token | None = None
@@ -145,6 +148,74 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
                 self._session
             )
         return self._repositories[aggregate_type]
+
+    def register_port(self, port_type: type, factory: Callable[[AsyncSession], Any]) -> None:
+        """Register an outbound port implementation (adapter) factory.
+
+        Ports are interfaces defined in the domain layer that the application layer
+        depends on. This method registers the infrastructure implementation (adapter)
+        that will be provided when the application requests the port.
+
+        This follows the Hexagonal Architecture pattern:
+        - Port: Interface defined by the domain/application (what we need)
+        - Adapter: Infrastructure implementation (how we implement it)
+
+        Args:
+            port_type: The port interface type (e.g., IProductCatalogService)
+            factory: Function that creates the adapter instance from session
+
+        Example:
+            ```python
+            # Register adapter for cross-BC service
+            uow.register_port(
+                IProductCatalogService,
+                lambda s: ProductCatalogAdapter(s)
+            )
+            ```
+
+        Note:
+            - Only register ports that are relevant to the current BC's transaction context
+            - Don't use this for global infrastructure services (logging, caching, etc.)
+            - The port interface should be defined in the domain/application layer
+        """
+        self._port_factories[port_type] = factory
+
+    def port(self, port_type: type[T]) -> T:
+        """Get the implementation (adapter) for an outbound port.
+
+        This method provides lazy-loaded adapter instances for ports defined by
+        the application layer. The adapter is created only on first access and
+        then cached for the lifetime of the UoW.
+
+        Args:
+            port_type: The port interface type
+
+        Returns:
+            Adapter instance implementing the port interface
+
+        Raises:
+            ValueError: If no adapter registered for the port type
+
+        Example:
+            ```python
+            # In application handler
+            product_catalog = self.uow.port(IProductCatalogService)
+            available, unavailable = await product_catalog.check_products_available([...])
+            ```
+
+        Architecture:
+            Application Layer → depends on → Port Interface (IProductCatalogService)
+                                                ↑
+            Infrastructure Layer → implements → Adapter (ProductCatalogAdapter)
+        """
+        if port_type not in self._ports:
+            if port_type not in self._port_factories:
+                raise ValueError(
+                    f"No adapter registered for port {port_type.__name__}. "
+                    f"Register it using uow.register_port({port_type.__name__}, factory)"
+                )
+            self._ports[port_type] = self._port_factories[port_type](self._session)
+        return self._ports[port_type]
 
     @property
     def session(self) -> AsyncSession:

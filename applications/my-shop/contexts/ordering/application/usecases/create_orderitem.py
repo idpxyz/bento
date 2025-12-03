@@ -65,7 +65,7 @@ class CreateOrderItemUseCase:
         async with self._uow:
             # TODO: 实现业务逻辑
             # 示例（Create 操作）:
-            # from contexts.ordering.domain.orderitem import OrderItem
+            # from contexts.ordering.domain.models.orderitem import OrderItem
             # orderitem = OrderItem(
             #     id=generate_id(),
             #     name=command.name,

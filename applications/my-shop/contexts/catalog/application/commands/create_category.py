@@ -8,7 +8,7 @@ from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 @dataclass

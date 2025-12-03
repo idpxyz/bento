@@ -13,13 +13,13 @@ import pytest
 from bento.core.ids import ID
 from sqlalchemy import text
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
     CreateOrderUseCase,
     OrderItemInput,
 )
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 
 
 @pytest.mark.asyncio

@@ -7,7 +7,7 @@ from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
 from contexts.catalog.infrastructure.models.product_po import ProductPO
 

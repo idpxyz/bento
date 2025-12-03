@@ -7,10 +7,10 @@
 - 无需手动编写任何转换逻辑
 """
 
-from bento.application.mapper import AutoMapper
+from bento.application.mappers.auto import AutoMapper
 
-from contexts.ordering.domain.order import Order
-from contexts.ordering.domain.orderitem import OrderItem
+from contexts.ordering.domain.models.order import Order
+from contexts.ordering.domain.models.orderitem import OrderItem
 from contexts.ordering.infrastructure.models.order_po import OrderPO
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 

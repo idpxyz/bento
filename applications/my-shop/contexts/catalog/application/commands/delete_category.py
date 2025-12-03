@@ -7,7 +7,7 @@ from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 @dataclass

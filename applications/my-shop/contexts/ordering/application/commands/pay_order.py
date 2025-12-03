@@ -7,7 +7,7 @@ from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 
 
 @dataclass

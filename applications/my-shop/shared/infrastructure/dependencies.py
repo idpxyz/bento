@@ -4,10 +4,11 @@ This module provides FastAPI dependencies using Bento's infrastructure:
 - Database session management
 - Unit of Work pattern
 - Repository access
+- Port access
 """
 
 from collections.abc import AsyncGenerator
-from typing import Annotated, TypeVar
+from typing import Annotated, Protocol, TypeVar
 
 from bento.application.ports.uow import UnitOfWork
 from bento.infrastructure.database import create_async_engine_from_config
@@ -18,8 +19,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from config import settings
 
+
+# Protocol for Handler classes that accept UoW in constructor
+class HandlerProtocol(Protocol):
+    """Protocol for Handler classes with UoW constructor."""
+
+    def __init__(self, uow: UnitOfWork) -> None: ...
+
+
 # Type variable for Handler factory
-THandler = TypeVar("THandler")
+THandler = TypeVar("THandler", bound=HandlerProtocol)
 
 # Create database engine using Bento's configuration
 db_config = settings.get_database_config()
@@ -81,9 +90,11 @@ async def get_uow(
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
-    # Register all domain repositories upfront
-    from contexts.catalog.domain.category import Category
-    from contexts.catalog.domain.product import Product
+    # Register repositories
+    from contexts.ordering.domain.models.order import Order
+
+    from contexts.catalog.domain.models.category import Category
+    from contexts.catalog.domain.models.product import Product
     from contexts.catalog.infrastructure.repositories.category_repository_impl import (
         CategoryRepository,
     )
@@ -94,15 +105,27 @@ async def get_uow(
     from contexts.identity.infrastructure.repositories.user_repository_impl import (
         UserRepository,
     )
-    from contexts.ordering.domain.order import Order
     from contexts.ordering.infrastructure.repositories.order_repository_impl import (
         OrderRepository,
     )
 
-    uow.register_repository(User, lambda s: UserRepository(s))
     uow.register_repository(Product, lambda s: ProductRepository(s))
     uow.register_repository(Category, lambda s: CategoryRepository(s))
     uow.register_repository(Order, lambda s: OrderRepository(s))
+    uow.register_repository(User, lambda s: UserRepository(s))
+
+    # Register outbound ports (adapters for cross-BC services)
+    from contexts.ordering.domain.ports.services.i_product_catalog_service import (
+        IProductCatalogService,
+    )
+    from contexts.ordering.infrastructure.adapters.adapter_factory import (
+        get_product_catalog_adapter,
+    )
+
+    uow.register_port(
+        IProductCatalogService,
+        lambda s: get_product_catalog_adapter(s),
+    )
 
     try:
         yield uow
@@ -111,51 +134,77 @@ async def get_uow(
         pass
 
 
-def get_handler(
-    handler_cls: type[THandler],
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
-) -> THandler:
-    """Universal Handler factory for CQRS Handlers.
+def handler_dependency(handler_cls: type[THandler]):
+    """Create a FastAPI dependency for a specific handler class.
 
-    Automatically injects UnitOfWork into any CommandHandler or QueryHandler.
-    Works with @command_handler and @query_handler decorated classes.
+    This is the elegant way to inject handlers without exposing
+    handler_cls as an API parameter.
 
     Usage:
         ```python
-        # In API route
-        @router.post("/products")
-        async def create_product(
-            request: CreateProductRequest,
-            handler: Annotated[CreateProductHandler, Depends(get_handler)],
+        @router.post("/orders")
+        async def create_order(
+            request: CreateOrderRequest,
+            handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
         ):
-            command = CreateProductCommand(...)
-            result = await handler.execute(command)
-            return result
+            return await handler.execute(command)
         ```
 
-    Args:
-        handler_cls: The Handler class (CommandHandler or QueryHandler)
-        uow: Unit of Work (automatically injected by FastAPI)
-
     Returns:
-        Instantiated Handler with UoW injected
+        A Depends instance that can be used in FastAPI route parameters
     """
-    return handler_cls(uow)
+
+    def factory(uow: Annotated[UnitOfWork, Depends(get_uow)]) -> THandler:
+        return handler_cls(uow)
+
+    return Depends(factory)
 
 
-# ==================== DEPRECATED ====================
-# The following pattern has been removed due to Session lifecycle issues.
-# Use get_handler() with Depends() instead for all Handlers.
+# Legacy get_handler() function has been removed.
+# All APIs now use handler_dependency() for clean OpenAPI schemas.
+
+
+# ==================== Usage Examples ====================
 #
-# Old pattern (INCORRECT - Session closes before use):
-#     async def get_create_order_use_case() -> CreateOrderUseCase:
-#         uow = await get_unit_of_work()  # ❌ Session already closed
-#         return CreateOrderUseCase(uow)
+# Elegant way (recommended):
+# @router.post("/orders")
+# async def create_order(
+#     request: CreateOrderRequest,
+#     handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
+# ):
+#     return await handler.execute(command)
+#
+# ❌ Old way (DEPRECATED - exposes handler_cls parameter):
+# handler: Annotated[CreateOrderHandler, Depends(get_handler)]  # DON'T USE
+
+
+# ==================== ARCHITECTURAL NOTES ====================
+# UnitOfWork Port Container Pattern:
+#
+# UoW is NOT a Service Locator anti-pattern. It's a Transaction Context
+# that provides resources relevant to the current request/transaction:
+#
+# 1. Repositories: uow.repository(AggregateType)
+#    - Data access for aggregate roots
+#
+# 2. Outbound Ports: uow.port(PortType)
+#    - Cross-BC communication interfaces
+#    - External service adapters
+#
+# Scope:
+# Register: Resources tied to current BC and transaction
+# Don't register: Global services (logging, caching, etc.)
+#
+# Benefits:
+# - Handlers have unified dependency (only UoW)
+# - Clean architecture boundaries (Port/Adapter pattern)
+# - Easy testing (mock UoW)
+# - Lazy loading of resources
 #
 # New pattern (CORRECT - using universal handler factory):
 #     @router.post("/orders")
 #     async def create_order(
 #         handler: Annotated[CreateOrderHandler, Depends(get_handler)],
 #     ):
-#         return await handler.execute(command)  # ✅ Session managed by FastAPI
+#         return await handler.execute(command)  # Session managed by FastAPI
 # ===================================================

@@ -4,7 +4,7 @@ from typing import Protocol
 
 from bento.application.mappers import AutoMapper
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 
 
@@ -56,7 +56,7 @@ class CategoryMapper(AutoMapper[Category, CategoryPO]):
 # ============================================================================
 #
 # from bento.application.mapper import AutoMapper
-# from contexts.catalog.domain.category import Category
+# from contexts.catalog.domain.models.category import Category
 # from contexts.catalog.infrastructure.models.category_po import CategoryPO
 #
 # class CategoryMapper(AutoMapper[Category, CategoryPO]):

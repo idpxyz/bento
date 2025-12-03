@@ -15,7 +15,7 @@ from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.mappers.order_mapper_impl import (
     OrderItemMapper,
     OrderMapper,

@@ -1,6 +1,6 @@
 """Presenters for converting domain objects to API responses."""
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 
 
 def product_to_dict(product: Product) -> dict:

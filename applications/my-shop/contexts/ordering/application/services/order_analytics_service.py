@@ -7,7 +7,7 @@ from datetime import datetime
 
 from bento.core.ids import ID
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.repositories.order_repository_impl import OrderRepository
 from contexts.ordering.infrastructure.specifications import OrderQuerySpec
 

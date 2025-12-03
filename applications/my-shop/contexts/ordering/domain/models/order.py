@@ -9,7 +9,7 @@ from enum import Enum
 from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
 
-from contexts.ordering.domain.orderitem import OrderItem
+from contexts.ordering.domain.models.orderitem import OrderItem
 
 
 class OrderStatus(str, Enum):

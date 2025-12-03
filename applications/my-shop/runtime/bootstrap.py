@@ -103,8 +103,15 @@ async def lifespan(app: FastAPI):  # pragma: no cover - thin wiring layer
 
     # Create repositories for warmup (use dependency injection in production)
     async with session_factory() as session:
-        product_repo = ProductRepository(session, actor="system")
-        category_repo = CategoryRepository(session, actor="system")
+        from contexts.catalog.domain.ports.repositories.i_category_repository import (
+            ICategoryRepository,
+        )
+        from contexts.catalog.domain.ports.repositories.i_product_repository import (
+            IProductRepository,
+        )
+
+        product_repo: IProductRepository = ProductRepository(session, actor="system")
+        category_repo: ICategoryRepository = CategoryRepository(session, actor="system")
 
         # Setup and execute cache warmup
         warmup_coordinator = await setup_cache_warmup(

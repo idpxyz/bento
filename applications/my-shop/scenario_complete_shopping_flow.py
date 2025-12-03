@@ -35,7 +35,7 @@ from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.repositories.product_repository_impl import (
     ProductRepository,
 )
@@ -48,7 +48,7 @@ from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
 from contexts.ordering.domain.events.orderdelivered_event import OrderDeliveredEvent
 from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
 from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
     ProductCatalogAdapter,
 )

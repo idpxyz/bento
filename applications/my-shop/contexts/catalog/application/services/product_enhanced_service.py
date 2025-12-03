@@ -5,7 +5,7 @@
 
 from bento.core.ids import ID
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
 
 

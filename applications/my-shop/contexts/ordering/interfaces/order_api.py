@@ -1,9 +1,9 @@
 """Order API routes (FastAPI) - Thin Interface Layer"""
 
+from datetime import datetime
 from typing import Annotated, Any
 
-from bento.persistence.uow import SQLAlchemyUnitOfWork
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from contexts.ordering.application.commands.cancel_order import (
@@ -24,15 +24,15 @@ from contexts.ordering.application.commands.ship_order import (
     ShipOrderHandler,
 )
 from contexts.ordering.application.queries.get_order import (
-    GetOrderQuery,
     GetOrderHandler,
+    GetOrderQuery,
 )
 from contexts.ordering.application.queries.list_orders import (
-    ListOrdersQuery,
     ListOrdersHandler,
+    ListOrdersQuery,
 )
 from contexts.ordering.interfaces.order_presenters import order_to_dict
-from shared.infrastructure.dependencies import get_handler, get_uow
+from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
@@ -93,9 +93,9 @@ class OrderResponse(BaseModel):
     items: list[OrderItemResponse]
     total: float
     status: str
-    created_at: str | None
-    paid_at: str | None
-    shipped_at: str | None
+    created_at: datetime | None  # ✅ 与 OrderDTO 保持一致
+    paid_at: datetime | None
+    shipped_at: datetime | None
 
 
 class ListOrdersResponse(BaseModel):
@@ -107,24 +107,6 @@ class ListOrdersResponse(BaseModel):
 
 # ==================== Dependency Injection ====================
 #
-# Note: Most Handlers use the universal get_handler() factory.
-# CreateOrderHandler is special because it needs ProductCatalogAdapter.
-#
-
-
-async def get_create_order_handler(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateOrderHandler:
-    """Factory for CreateOrderHandler (needs ProductCatalogAdapter)."""
-    from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
-        ProductCatalogAdapter,
-    )
-
-    # 创建反腐败层适配器
-    product_catalog = ProductCatalogAdapter(uow.session)
-    return CreateOrderHandler(uow, product_catalog)
-
-
 # ==================== API Routes ====================
 
 
@@ -136,7 +118,7 @@ async def get_create_order_handler(
 )
 async def create_order(
     request: CreateOrderRequest,
-    handler: Annotated[CreateOrderHandler, Depends(get_create_order_handler)],
+    handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
 ) -> dict[str, Any]:
     """Create a new order with items."""
     # Request → Command
@@ -168,7 +150,7 @@ async def create_order(
     summary="List orders",
 )
 async def list_orders(
-    handler: Annotated[ListOrdersHandler, Depends(get_handler)],
+    handler: Annotated[ListOrdersHandler, handler_dependency(ListOrdersHandler)],
     customer_id: str | None = None,
 ) -> dict[str, Any]:
     """List orders with optional customer filter."""
@@ -177,7 +159,7 @@ async def list_orders(
     result = await handler.execute(query)
 
     return {
-        "items": [order_to_dict(order) for order in result.orders],
+        "items": [order.model_dump() for order in result.orders],  # ✅ 使用 DTO 内置序列化
         "total": result.total,
     }
 
@@ -189,12 +171,12 @@ async def list_orders(
 )
 async def get_order(
     order_id: str,
-    handler: Annotated[GetOrderHandler, Depends(get_handler)],
+    handler: Annotated[GetOrderHandler, handler_dependency(GetOrderHandler)],
 ) -> dict[str, Any]:
     """Get an order by ID."""
     query = GetOrderQuery(order_id=order_id)
-    order = await handler.execute(query)
-    return order_to_dict(order)
+    order = await handler.execute(query)  # 返回 OrderDTO
+    return order.model_dump()  # ✅ 使用 DTO 内置序列化
 
 
 @router.post(
@@ -204,7 +186,7 @@ async def get_order(
 )
 async def pay_order(
     order_id: str,
-    handler: Annotated[PayOrderHandler, Depends(get_handler)],
+    handler: Annotated[PayOrderHandler, handler_dependency(PayOrderHandler)],
 ) -> dict[str, Any]:
     """Confirm payment for an order."""
     command = PayOrderCommand(order_id=order_id)
@@ -220,7 +202,7 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    handler: Annotated[ShipOrderHandler, Depends(get_handler)],
+    handler: Annotated[ShipOrderHandler, handler_dependency(ShipOrderHandler)],
 ) -> dict[str, Any]:
     """Ship an order."""
     from bento.core.errors import ApplicationException
@@ -235,8 +217,8 @@ async def ship_order(
         return order_to_dict(order)
     except ApplicationException as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail="Order not found") from None
-        raise HTTPException(status_code=400, detail=str(e)) from None
+            raise HTTPException(status_code=404, detail="Order not found") from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post(
@@ -247,7 +229,7 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    handler: Annotated[CancelOrderHandler, Depends(get_handler)],
+    handler: Annotated[CancelOrderHandler, handler_dependency(CancelOrderHandler)],
 ) -> dict[str, Any]:
     """Cancel an order."""
     command = CancelOrderCommand(

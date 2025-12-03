@@ -7,7 +7,7 @@ import pytest
 from bento.core.ids import ID
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.models.product_po import ProductPO
 from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
 

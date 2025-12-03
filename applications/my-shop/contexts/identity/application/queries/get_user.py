@@ -1,12 +1,14 @@
-"""Get user query and use case."""
+"""Get user query and handler."""
 
 from dataclasses import dataclass
 
-from bento.application.ports.uow import UnitOfWork
 from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
+from contexts.identity.application.dto.user_dto import UserDTO
+from contexts.identity.application.mappers.user_dto_mapper import UserDTOMapper
 from contexts.identity.domain.models.user import User
 
 
@@ -22,14 +24,15 @@ class GetUserQuery:
 
 
 @query_handler
-class GetUserHandler(QueryHandler[GetUserQuery, User]):
-    """Get user use case.
+class GetUserHandler(QueryHandler[GetUserQuery, UserDTO]):
+    """Get user handler.
 
-    Retrieves a single user by ID.
+    Retrieves a single user by ID and returns DTO.
     """
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = UserDTOMapper()
 
     async def validate(self, query: GetUserQuery) -> None:
         """Validate query."""
@@ -39,8 +42,8 @@ class GetUserHandler(QueryHandler[GetUserQuery, User]):
                 details={"field": "user_id", "reason": "cannot be empty"},
             )
 
-    async def handle(self, query: GetUserQuery) -> User:
-        """Handle query execution."""
+    async def handle(self, query: GetUserQuery) -> UserDTO:
+        """Handle query execution and return DTO."""
         user_repo = self.uow.repository(User)
 
         user = await user_repo.get(query.user_id)  # type: ignore[arg-type]
@@ -50,4 +53,5 @@ class GetUserHandler(QueryHandler[GetUserQuery, User]):
                 details={"resource": "user", "id": query.user_id},
             )
 
-        return user
+        # Use mapper for conversion (SOLID compliant)
+        return self.mapper.to_dto(user)

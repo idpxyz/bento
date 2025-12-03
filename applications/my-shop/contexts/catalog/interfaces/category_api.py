@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from contexts.catalog.application.commands import (
@@ -20,7 +20,7 @@ from contexts.catalog.application.queries import (
     ListCategoriesQuery,
 )
 from contexts.catalog.interfaces.category_presenters import category_to_dict
-from shared.infrastructure.dependencies import get_handler
+from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
@@ -63,8 +63,8 @@ class ListCategoriesResponse(BaseModel):
 
 # ==================== API Routes ====================
 #
-# Note: All Handlers are now injected using the universal get_handler() factory
-# from shared.infrastructure.dependencies. No need for individual DI functions!
+# Note: All Handlers use handler_dependency() for clean OpenAPI schemas.
+# No need for individual DI functions - universal factory pattern!
 #
 
 
@@ -76,7 +76,7 @@ class ListCategoriesResponse(BaseModel):
 )
 async def create_category(
     request: CreateCategoryRequest,
-    handler: Annotated[CreateCategoryHandler, Depends(get_handler)],
+    handler: Annotated[CreateCategoryHandler, handler_dependency(CreateCategoryHandler)],
 ) -> dict[str, Any]:
     """Create a new category."""
     command = CreateCategoryCommand(
@@ -95,7 +95,7 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    handler: Annotated[ListCategoriesHandler, Depends(get_handler)],
+    handler: Annotated[ListCategoriesHandler, handler_dependency(ListCategoriesHandler)],
     parent_id: str | None = Query(None, description="Filter by parent category"),
 ) -> dict[str, Any]:
     """List categories with optional parent filter."""
@@ -104,7 +104,7 @@ async def list_categories(
     result = await handler.execute(query)
 
     return {
-        "items": [category_to_dict(c) for c in result.categories],
+        "items": [c.model_dump() for c in result.categories],  # ✅ 使用 DTO 内置序列化
         "total": result.total,
     }
 
@@ -116,12 +116,12 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    handler: Annotated[GetCategoryHandler, Depends(get_handler)],
+    handler: Annotated[GetCategoryHandler, handler_dependency(GetCategoryHandler)],
 ) -> dict[str, Any]:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
-    category = await handler.execute(query)
-    return category_to_dict(category)
+    category = await handler.execute(query)  # 返回 CategoryDTO
+    return category.model_dump()  # ✅ 使用 DTO 内置序列化
 
 
 @router.put(
@@ -132,7 +132,7 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    handler: Annotated[UpdateCategoryHandler, Depends(get_handler)],
+    handler: Annotated[UpdateCategoryHandler, handler_dependency(UpdateCategoryHandler)],
 ) -> dict[str, Any]:
     """Update a category."""
     command = UpdateCategoryCommand(
@@ -153,7 +153,7 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    handler: Annotated[DeleteCategoryHandler, Depends(get_handler)],
+    handler: Annotated[DeleteCategoryHandler, handler_dependency(DeleteCategoryHandler)],
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)

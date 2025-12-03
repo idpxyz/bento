@@ -27,7 +27,7 @@ from bento.adapters.messaging.inprocess import InProcessMessageBus
 from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.repositories.product_repository_impl import (
     ProductRepository,
 )
@@ -37,7 +37,7 @@ from contexts.ordering.application.commands.create_order import (
     OrderItemInput,
 )
 from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.repositories.order_repository_impl import (
     OrderRepository,
 )

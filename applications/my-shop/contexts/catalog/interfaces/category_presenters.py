@@ -1,6 +1,6 @@
 """Presenters for converting category domain objects to API responses."""
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 def category_to_dict(category: Category) -> dict:

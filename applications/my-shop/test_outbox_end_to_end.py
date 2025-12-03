@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 # Add application to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.repositories.product_repository_impl import (
     ProductRepository,
 )
@@ -35,7 +35,7 @@ from contexts.ordering.application.commands.create_order import (
     CreateOrderUseCase,
     OrderItemInput,
 )
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.repositories.order_repository_impl import (
     OrderRepository,
 )

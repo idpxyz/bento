@@ -1,6 +1,6 @@
 """OrderItem 仓储集成测试"""
 import pytest
-from contexts.ordering.domain.orderitem import OrderItem
+from contexts.ordering.domain.models.orderitem import OrderItem
 
 
 @pytest.mark.integration

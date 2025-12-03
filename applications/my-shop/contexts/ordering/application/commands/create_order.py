@@ -9,10 +9,7 @@ from bento.core.errors import ApplicationException
 from bento.core.ids import ID
 
 from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent as OrderCreated
-from contexts.ordering.domain.order import Order
-from contexts.ordering.domain.ports.services.i_product_catalog_service import (
-    IProductCatalogService,
-)
+from contexts.ordering.domain.models.order import Order
 
 
 @dataclass
@@ -39,11 +36,15 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
 
     创建订单并包含订单项。
     验证产品存在性（通过反腐败层与 Catalog BC 交互）。
+
+    Architecture:
+        - Application层协调跨BC业务流程
+        - 通过 uow.port() 获取跨BC服务（Port/Adapter模式）
+        - 依赖抽象接口（IProductCatalogService），不依赖具体实现
     """
 
-    def __init__(self, uow: UnitOfWork, product_catalog: IProductCatalogService) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
-        self._product_catalog = product_catalog
 
     async def validate(self, command: CreateOrderCommand) -> None:
         """Validate command."""
@@ -79,9 +80,16 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
 
     async def handle(self, command: CreateOrderCommand) -> Order:
         """Handle command execution."""
+        # ✅ 通过 UoW Port 容器获取跨BC服务（运行时解析）
+        from contexts.ordering.domain.ports.services.i_product_catalog_service import (
+            IProductCatalogService,
+        )
+
+        product_catalog = self.uow.port(IProductCatalogService)
+
         # ✅ 通过反腐败层验证产品存在性（不直接依赖 Catalog BC）
         product_ids = [item.product_id for item in command.items]
-        _, unavailable_ids = await self._product_catalog.check_products_available(product_ids)
+        _, unavailable_ids = await product_catalog.check_products_available(product_ids)
 
         if unavailable_ids:
             raise ApplicationException(

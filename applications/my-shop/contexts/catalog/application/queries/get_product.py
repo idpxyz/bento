@@ -2,12 +2,14 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports.uow import UnitOfWork
 from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.application.dto import ProductDTO
+from contexts.catalog.application.mappers import ProductDTOMapper
+from contexts.catalog.domain.models.product import Product
 
 
 @dataclass
@@ -18,14 +20,16 @@ class GetProductQuery:
 
 
 @query_handler
-class GetProductHandler(QueryHandler[GetProductQuery, Product]):
-    """Get product use case.
+class GetProductHandler(QueryHandler[GetProductQuery, ProductDTO]):
+    """Get product query handler.
 
-    Retrieves a single product by ID.
+    Retrieves a single product by ID and returns as DTO.
+    Uses DTOMapper for clean architecture compliance.
     """
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = ProductDTOMapper()
 
     async def validate(self, query: GetProductQuery) -> None:
         """Validate query."""
@@ -35,8 +39,8 @@ class GetProductHandler(QueryHandler[GetProductQuery, Product]):
                 details={"field": "product_id", "reason": "cannot be empty"},
             )
 
-    async def handle(self, query: GetProductQuery) -> Product:
-        """Handle query execution."""
+    async def handle(self, query: GetProductQuery) -> ProductDTO:
+        """Handle query execution and return DTO."""
         product_repo = self.uow.repository(Product)
 
         product = await product_repo.get(query.product_id)  # type: ignore[arg-type]
@@ -46,4 +50,5 @@ class GetProductHandler(QueryHandler[GetProductQuery, Product]):
                 details={"resource": "product", "id": query.product_id},
             )
 
-        return product
+        # Use mapper for conversion (SOLID compliant)
+        return self.mapper.to_dto(product)

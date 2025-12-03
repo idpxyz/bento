@@ -2,17 +2,19 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports.uow import UnitOfWork
 from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.application.dto import CategoryDTO
+from contexts.catalog.application.mappers import CategoryDTOMapper
+from contexts.catalog.domain.models.category import Category
 
 
 @dataclass
 class ListCategoriesResult:
-    """List categories result."""
+    """List categories result with DTOs."""
 
-    categories: list[Category]
+    categories: list[CategoryDTO]
     total: int
 
 
@@ -32,9 +34,9 @@ class CategoryTreeQuery:
 
 @dataclass
 class CategoryTreeResult:
-    """Get category tree result."""
+    """Get category tree result with DTOs."""
 
-    categories: list[Category]
+    categories: list[CategoryDTO]
 
 
 @query_handler
@@ -43,13 +45,14 @@ class ListCategoriesHandler(QueryHandler[ListCategoriesQuery, ListCategoriesResu
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = CategoryDTOMapper()
 
     async def validate(self, query: ListCategoriesQuery) -> None:
         """Validate query."""
         pass
 
     async def handle(self, query: ListCategoriesQuery) -> ListCategoriesResult:
-        """Handle query execution."""
+        """Handle query execution and return DTOs."""
         from bento.persistence.specification import EntitySpecificationBuilder
 
         category_repo = self.uow.repository(Category)
@@ -63,9 +66,12 @@ class ListCategoriesHandler(QueryHandler[ListCategoriesQuery, ListCategoriesResu
             # Get all categories
             categories = await category_repo.find_all()
 
+        # Convert to DTOs using mapper (SOLID compliant)
+        category_dtos = self.mapper.to_dto_list(categories)
+
         return ListCategoriesResult(
-            categories=categories,
-            total=len(categories),
+            categories=category_dtos,
+            total=len(category_dtos),
         )
 
 
@@ -74,13 +80,14 @@ class GetCategoryTreeHandler(QueryHandler[CategoryTreeQuery, CategoryTreeResult]
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = CategoryDTOMapper()
 
     async def validate(self, query: CategoryTreeQuery) -> None:
         """Validate query."""
         pass
 
     async def handle(self, query: CategoryTreeQuery) -> CategoryTreeResult:
-        """Handle query execution."""
+        """Handle query execution and return DTOs."""
         from bento.persistence.specification import EntitySpecificationBuilder
 
         category_repo = self.uow.repository(Category)
@@ -94,6 +101,9 @@ class GetCategoryTreeHandler(QueryHandler[CategoryTreeQuery, CategoryTreeResult]
             # Get all categories
             categories = await category_repo.find_all()
 
+        # Convert to DTOs using mapper (SOLID compliant)
+        category_dtos = self.mapper.to_dto_list(categories)
+
         return CategoryTreeResult(
-            categories=categories,
+            categories=category_dtos,
         )

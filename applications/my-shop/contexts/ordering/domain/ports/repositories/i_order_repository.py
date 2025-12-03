@@ -16,7 +16,7 @@ from typing import Protocol
 from bento.core.ids import ID
 from bento.domain.ports.repository import IRepository
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 
 
 class IOrderRepository(IRepository[Order, ID], Protocol):

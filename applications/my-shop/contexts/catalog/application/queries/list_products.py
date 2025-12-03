@@ -2,17 +2,19 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports.uow import UnitOfWork
 from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.application.dto import ProductDTO
+from contexts.catalog.application.mappers import ProductDTOMapper
+from contexts.catalog.domain.models.product import Product
 
 
 @dataclass
 class ListProductsResult:
-    """List products result."""
+    """List products result with DTOs."""
 
-    products: list[Product]
+    products: list[ProductDTO]
     total: int
     page: int
     page_size: int
@@ -33,13 +35,14 @@ class ListProductsHandler(QueryHandler[ListProductsQuery, ListProductsResult]):
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = ProductDTOMapper()
 
     async def validate(self, query: ListProductsQuery) -> None:
         """Validate query."""
         pass
 
     async def handle(self, query: ListProductsQuery) -> ListProductsResult:
-        """Handle query execution."""
+        """Handle query execution and return DTOs."""
         product_repo = self.uow.repository(Product)
 
         offset = (query.page - 1) * query.page_size
@@ -52,8 +55,11 @@ class ListProductsHandler(QueryHandler[ListProductsQuery, ListProductsResult]):
 
         total = await product_repo.count(category_id=query.category_id)
 
+        # Convert to DTOs using mapper (SOLID compliant)
+        product_dtos = self.mapper.to_dto_list(products)
+
         return ListProductsResult(
-            products=products,
+            products=product_dtos,
             total=total,
             page=query.page,
             page_size=query.page_size,

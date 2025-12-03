@@ -6,7 +6,7 @@ from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapper
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 

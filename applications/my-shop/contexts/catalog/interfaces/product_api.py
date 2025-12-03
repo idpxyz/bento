@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from contexts.catalog.application.commands import (
@@ -20,7 +20,7 @@ from contexts.catalog.application.queries import (
     ListProductsQuery,
 )
 from contexts.catalog.interfaces.presenters import product_to_dict
-from shared.infrastructure.dependencies import get_handler
+from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
@@ -80,8 +80,8 @@ class ListProductsResponse(BaseModel):
 
 # ==================== API Routes ====================
 #
-# Note: All Handlers are now injected using the universal get_handler() factory
-# from shared.infrastructure.dependencies. No need for individual DI functions!
+# Note: All Handlers use handler_dependency() for clean OpenAPI schemas.
+# No need for individual DI functions - universal factory pattern!
 #
 
 
@@ -93,7 +93,7 @@ class ListProductsResponse(BaseModel):
 )
 async def create_product(
     request: CreateProductRequest,
-    handler: Annotated[CreateProductHandler, Depends(get_handler)],
+    handler: Annotated[CreateProductHandler, handler_dependency(CreateProductHandler)],
 ) -> dict[str, Any]:
     """Create a new product."""
     command = CreateProductCommand(
@@ -117,7 +117,7 @@ async def create_product(
     summary="List products",
 )
 async def list_products(
-    handler: Annotated[ListProductsHandler, Depends(get_handler)],
+    handler: Annotated[ListProductsHandler, handler_dependency(ListProductsHandler)],
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     category_id: str | None = Query(None),
@@ -132,7 +132,7 @@ async def list_products(
     result = await handler.execute(query)
 
     return {
-        "items": [product_to_dict(p) for p in result.products],
+        "items": [p.model_dump() for p in result.products],  # ✅ 使用 DTO 内置序列化
         "total": result.total,
         "page": result.page,
         "page_size": result.page_size,
@@ -146,7 +146,7 @@ async def list_products(
 )
 async def get_product(
     product_id: str,
-    handler: Annotated[GetProductHandler, Depends(get_handler)],
+    handler: Annotated[GetProductHandler, handler_dependency(GetProductHandler)],
 ) -> dict[str, Any]:
     """Get a product by ID."""
     from bento.core.errors import ApplicationException
@@ -154,12 +154,12 @@ async def get_product(
 
     try:
         query = GetProductQuery(product_id=product_id)
-        product = await handler.execute(query)
-        return product_to_dict(product)
+        product = await handler.execute(query)  # 返回 ProductDTO
+        return product.model_dump()  # ✅ 使用 DTO 内置序列化
     except ApplicationException as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail="Product not found")
-        raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=404, detail="Product not found") from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.put(
@@ -170,7 +170,7 @@ async def get_product(
 async def update_product(
     product_id: str,
     request: UpdateProductRequest,
-    handler: Annotated[UpdateProductHandler, Depends(get_handler)],
+    handler: Annotated[UpdateProductHandler, handler_dependency(UpdateProductHandler)],
 ) -> dict[str, Any]:
     """Update a product."""
     command = UpdateProductCommand(
@@ -205,7 +205,7 @@ async def ping() -> dict[str, str]:
 )
 async def delete_product(
     product_id: str,
-    handler: Annotated[DeleteProductHandler, Depends(get_handler)],
+    handler: Annotated[DeleteProductHandler, handler_dependency(DeleteProductHandler)],
 ) -> None:
     """Delete a product (soft delete)."""
     from bento.core.errors import ApplicationException

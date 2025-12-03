@@ -1,6 +1,6 @@
 """Presenters for converting order domain objects to API responses."""
 
-from contexts.ordering.domain.order import Order, OrderItem
+from contexts.ordering.domain.models.order import Order, OrderItem
 
 
 def order_item_to_dict(item: OrderItem) -> dict:

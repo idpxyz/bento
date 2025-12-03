@@ -6,13 +6,11 @@ This layer only handles HTTP concerns:
 3. Request → Command/Query conversion
 4. Domain → Response conversion
 
-All business logic is in the Application layer (Use Cases).
-"""
+All business logic is in the Application layer (Handlers)."""
 
 from typing import Annotated, Any
 
-from bento.persistence.uow import SQLAlchemyUnitOfWork
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 
 from contexts.identity.application.commands import (
@@ -24,13 +22,13 @@ from contexts.identity.application.commands import (
     UpdateUserHandler,
 )
 from contexts.identity.application.queries import (
-    GetUserQuery,
     GetUserHandler,
-    ListUsersQuery,
+    GetUserQuery,
     ListUsersHandler,
+    ListUsersQuery,
 )
 from contexts.identity.interfaces.presenters import user_to_dict
-from shared.infrastructure.dependencies import get_uow
+from shared.infrastructure.dependencies import handler_dependency
 
 # Create router
 router = APIRouter()
@@ -71,41 +69,9 @@ class ListUsersResponse(BaseModel):
 
 
 # ==================== Dependency Injection ====================
-
-
-async def get_create_user_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateUserHandler:
-    """Get create user use case (dependency)."""
-    return CreateUserHandler(uow)
-
-
-async def get_update_user_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateUserHandler:
-    """get_update_user_use_case (dependency)."""
-    return UpdateUserHandler(uow)
-
-
-async def get_delete_user_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteUserHandler:
-    """get_delete_user_use_case (dependency)."""
-    return DeleteUserHandler(uow)
-
-
-async def get_get_user_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetUserHandler:
-    """get_get_user_use_case (dependency)."""
-    return GetUserHandler(uow)
-
-
-async def get_list_users_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListUsersHandler:
-    """get_list_users_use_case (dependency)."""
-    return ListUsersHandler(uow)
+#
+# Note: All Handlers use handler_dependency() for clean OpenAPI schemas.
+# No need for individual DI functions - universal factory pattern!
 
 
 # ==================== API Routes ====================
@@ -116,29 +82,20 @@ async def get_list_users_use_case(
     response_model=UserResponse,
     status_code=201,
     summary="Create a new user",
-    description="Create a new user with name and email",
 )
 async def create_user(
     request: CreateUserRequest,
-    use_case: Annotated[CreateUserHandler, Depends(get_create_user_use_case)],
+    handler: Annotated[CreateUserHandler, handler_dependency(CreateUserHandler)],
 ) -> dict[str, Any]:
-    """Create a new user.
-
-    Args:
-        request: Create user request
-        use_case: Create user use case (injected)
-
-    Returns:
-        Created user data
-    """
+    """Create a new user."""
     # 1. Convert Request → Command
     command = CreateUserCommand(
         name=request.name,
         email=request.email,
     )
 
-    # 2. Execute Use Case
-    user = await use_case.execute(command)
+    # 2. Execute Handler
+    user = await handler.execute(command)
 
     # 3. Convert Domain → Response
     return user_to_dict(user)
@@ -151,32 +108,23 @@ async def create_user(
     description="List users with pagination",
 )
 async def list_users(
-    use_case: Annotated[ListUsersHandler, Depends(get_list_users_use_case)],
+    handler: Annotated[ListUsersHandler, handler_dependency(ListUsersHandler)],
     page: int = 1,
     page_size: int = 10,
 ) -> dict[str, Any]:
-    """List users with pagination.
-
-    Args:
-        use_case: List users use case (injected)
-        page: Page number (1-indexed)
-        page_size: Items per page
-
-    Returns:
-        Paginated user list
-    """
+    """List users with pagination."""
     # 1. Convert Request → Query
     query = ListUsersQuery(
         page=page,
         page_size=page_size,
     )
 
-    # 2. Execute Use Case
-    result = await use_case.execute(query)
+    # 2. Execute Handler
+    result = await handler.execute(query)
 
-    # 3. Convert Domain → Response
+    # 3. Convert DTO → Response (使用 model_dump)
     return {
-        "items": [user_to_dict(user) for user in result.users],
+        "items": [user.model_dump() for user in result.users],
         "total": result.total,
         "page": result.page,
         "page_size": result.page_size,
@@ -191,25 +139,17 @@ async def list_users(
 )
 async def get_user(
     user_id: str,
-    use_case: Annotated[GetUserHandler, Depends(get_get_user_use_case)],
+    handler: Annotated[GetUserHandler, handler_dependency(GetUserHandler)],
 ) -> dict[str, Any]:
-    """Get a user by ID.
-
-    Args:
-        user_id: User identifier
-        use_case: Get user use case (injected)
-
-    Returns:
-        User data
-    """
+    """Get a user by ID."""
     # 1. Convert Request → Query
     query = GetUserQuery(user_id=user_id)
 
-    # 2. Execute Use Case
-    user = await use_case.execute(query)
+    # 2. Execute Handler
+    user = await handler.execute(query)
 
-    # 3. Convert Domain → Response
-    return user_to_dict(user)
+    # 3. Convert DTO → Response (使用 model_dump)
+    return user.model_dump()
 
 
 @router.put(
@@ -221,18 +161,9 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    use_case: Annotated[UpdateUserHandler, Depends(get_update_user_use_case)],
+    handler: Annotated[UpdateUserHandler, handler_dependency(UpdateUserHandler)],
 ) -> dict[str, Any]:
-    """Update a user.
-
-    Args:
-        user_id: User identifier
-        request: Update user request
-        use_case: Update user use case (injected)
-
-    Returns:
-        Updated user data
-    """
+    """Update a user."""
     # 1. Convert Request → Command
     command = UpdateUserCommand(
         user_id=user_id,
@@ -240,8 +171,8 @@ async def update_user(
         email=request.email,
     )
 
-    # 2. Execute Use Case
-    user = await use_case.execute(command)
+    # 2. Execute Handler
+    user = await handler.execute(command)
 
     # 3. Convert Domain → Response
     return user_to_dict(user)
@@ -255,18 +186,13 @@ async def update_user(
 )
 async def delete_user(
     user_id: str,
-    use_case: Annotated[DeleteUserHandler, Depends(get_delete_user_use_case)],
+    handler: Annotated[DeleteUserHandler, handler_dependency(DeleteUserHandler)],
 ) -> None:
-    """Delete a user (soft delete).
-
-    Args:
-        user_id: User identifier
-        use_case: Delete user use case (injected)
-    """
+    """Delete a user (soft delete)."""
     # 1. Convert Request → Command
     command = DeleteUserCommand(user_id=user_id)
 
-    # 2. Execute Use Case
-    await use_case.execute(command)
+    # 2. Execute Handler
+    await handler.execute(command)
 
     # 3. No response for 204
