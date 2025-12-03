@@ -1,9 +1,9 @@
-"""Create category command and use case."""
+"""Create category command and handler."""
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -20,10 +20,14 @@ class CreateCategoryCommand:
     parent_id: str | None = None
 
 
-class CreateCategoryUseCase(BaseUseCase[CreateCategoryCommand, Category]):
-    """Create category use case."""
+@command_handler
+class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
+    """Create category command handler.
+    
+    使用 @command_handler 装饰器自动注册到全局 Handler 注册表。
+    """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: CreateCategoryCommand) -> None:

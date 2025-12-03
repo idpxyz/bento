@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from bento.application.mapper import AutoMapper
+from bento.application.mappers import AutoMapper
 
 from contexts.catalog.domain.product import Product
 from contexts.catalog.infrastructure.models.product_po import ProductPO

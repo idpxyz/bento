@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -25,10 +25,11 @@ class CreateProductCommand:
     category_id: str | None = None  # 可选的分类ID
 
 
-class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
-    """Create product use case."""
+@command_handler
+class CreateProductHandler(CommandHandler[CreateProductCommand, Product]):
+    """Create product command handler."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: CreateProductCommand) -> None:

@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import QueryHandler
 
 from contexts.identity.domain.models.user import User
 
@@ -38,13 +38,13 @@ class ListUsersQuery:
     page_size: int = 10
 
 
-class ListUsersUseCase(BaseUseCase[ListUsersQuery, ListUsersResult]):
+class ListUsersHandler(QueryHandler[ListUsersQuery, ListUsersResult]):
     """List users use case.
 
     Retrieves a paginated list of users.
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: ListUsersQuery) -> None:

@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -24,7 +24,7 @@ class CreateUserCommand:
     email: str
 
 
-class CreateUserUseCase(BaseUseCase[CreateUserCommand, User]):
+class CreateUserHandler(CommandHandler[CreateUserCommand, User]):
     """Create user use case.
 
     Handles user creation with validation and persistence.
@@ -42,7 +42,7 @@ class CreateUserUseCase(BaseUseCase[CreateUserCommand, User]):
         ```
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: CreateUserCommand) -> None:

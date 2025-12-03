@@ -17,17 +17,17 @@ from pydantic import BaseModel, EmailStr
 
 from contexts.identity.application.commands import (
     CreateUserCommand,
-    CreateUserUseCase,
+    CreateUserHandler,
     DeleteUserCommand,
-    DeleteUserUseCase,
+    DeleteUserHandler,
     UpdateUserCommand,
-    UpdateUserUseCase,
+    UpdateUserHandler,
 )
 from contexts.identity.application.queries import (
     GetUserQuery,
-    GetUserUseCase,
+    GetUserHandler,
     ListUsersQuery,
-    ListUsersUseCase,
+    ListUsersHandler,
 )
 from contexts.identity.interfaces.presenters import user_to_dict
 from shared.infrastructure.dependencies import get_uow
@@ -75,37 +75,37 @@ class ListUsersResponse(BaseModel):
 
 async def get_create_user_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateUserUseCase:
+) -> CreateUserHandler:
     """Get create user use case (dependency)."""
-    return CreateUserUseCase(uow)
+    return CreateUserHandler(uow)
 
 
 async def get_update_user_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateUserUseCase:
+) -> UpdateUserHandler:
     """get_update_user_use_case (dependency)."""
-    return UpdateUserUseCase(uow)
+    return UpdateUserHandler(uow)
 
 
 async def get_delete_user_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteUserUseCase:
+) -> DeleteUserHandler:
     """get_delete_user_use_case (dependency)."""
-    return DeleteUserUseCase(uow)
+    return DeleteUserHandler(uow)
 
 
 async def get_get_user_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetUserUseCase:
+) -> GetUserHandler:
     """get_get_user_use_case (dependency)."""
-    return GetUserUseCase(uow)
+    return GetUserHandler(uow)
 
 
 async def get_list_users_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListUsersUseCase:
+) -> ListUsersHandler:
     """get_list_users_use_case (dependency)."""
-    return ListUsersUseCase(uow)
+    return ListUsersHandler(uow)
 
 
 # ==================== API Routes ====================
@@ -120,7 +120,7 @@ async def get_list_users_use_case(
 )
 async def create_user(
     request: CreateUserRequest,
-    use_case: Annotated[CreateUserUseCase, Depends(get_create_user_use_case)],
+    use_case: Annotated[CreateUserHandler, Depends(get_create_user_use_case)],
 ) -> dict[str, Any]:
     """Create a new user.
 
@@ -151,7 +151,7 @@ async def create_user(
     description="List users with pagination",
 )
 async def list_users(
-    use_case: Annotated[ListUsersUseCase, Depends(get_list_users_use_case)],
+    use_case: Annotated[ListUsersHandler, Depends(get_list_users_use_case)],
     page: int = 1,
     page_size: int = 10,
 ) -> dict[str, Any]:
@@ -191,7 +191,7 @@ async def list_users(
 )
 async def get_user(
     user_id: str,
-    use_case: Annotated[GetUserUseCase, Depends(get_get_user_use_case)],
+    use_case: Annotated[GetUserHandler, Depends(get_get_user_use_case)],
 ) -> dict[str, Any]:
     """Get a user by ID.
 
@@ -221,7 +221,7 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    use_case: Annotated[UpdateUserUseCase, Depends(get_update_user_use_case)],
+    use_case: Annotated[UpdateUserHandler, Depends(get_update_user_use_case)],
 ) -> dict[str, Any]:
     """Update a user.
 
@@ -255,7 +255,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: str,
-    use_case: Annotated[DeleteUserUseCase, Depends(get_delete_user_use_case)],
+    use_case: Annotated[DeleteUserHandler, Depends(get_delete_user_use_case)],
 ) -> None:
     """Delete a user (soft delete).
 

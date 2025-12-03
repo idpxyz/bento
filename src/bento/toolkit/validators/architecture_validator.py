@@ -68,7 +68,8 @@ class ArchitectureValidator:
             self.violations.extend(violations)
 
         print(
-            f"   Found {len([v for v in self.violations if 'dependency' in v.lower()])} dependency violations"
+            f"   Found {len([v for v in self.violations if 'dependency' in v.lower()])} \
+            dependency violations"
         )
 
     def _validate_application_services(self):

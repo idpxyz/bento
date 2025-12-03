@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import QueryHandler
 
 from contexts.ordering.domain.order import Order
 
@@ -23,10 +23,10 @@ class ListOrdersQuery:
     customer_id: str | None = None  # 可选：按客户过滤
 
 
-class ListOrdersUseCase(BaseUseCase[ListOrdersQuery, ListOrdersResult]):
+class ListOrdersHandler(QueryHandler[ListOrdersQuery, ListOrdersResult]):
     """List orders use case."""
     
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
     
     async def validate(self, query: ListOrdersQuery) -> None:

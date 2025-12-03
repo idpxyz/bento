@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from bento.core.ids import ID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from contexts.catalog.application.services.product_enhanced_service import ProductEnhancedService
+# from contexts.catalog.application.services.product_enhanced_service import ProductRepository
 from contexts.catalog.infrastructure.models.product_po import ProductPO
 from contexts.catalog.infrastructure.repositories.product_repository_impl import ProductRepository
 
@@ -52,7 +52,7 @@ async def setup_demo_data_direct(session: AsyncSession):
     print(f"✅ 创建了 {len(products)} 个演示产品")
 
 
-async def demo_basic_operations(service: ProductEnhancedService):
+async def demo_basic_operations(service: ProductRepository):
     """演示基础操作 (P0)"""
     print("\n" + "=" * 60)
     print("🔷 P0: 基础增强功能演示")
@@ -86,7 +86,7 @@ async def demo_basic_operations(service: ProductEnhancedService):
     print(f"   ✅ 类别 cat-1 有 {len(products)} 个产品")
 
 
-async def demo_aggregations(service: ProductEnhancedService):
+async def demo_aggregations(service: ProductRepository):
     """演示聚合查询 (P1)"""
     print("\n" + "=" * 60)
     print("📊 P1: 聚合查询演示")
@@ -114,7 +114,7 @@ async def demo_aggregations(service: ProductEnhancedService):
     print(f"   ✅ 不同类别数: {unique_categories}")
 
 
-async def demo_sorting_limiting(service: ProductEnhancedService):
+async def demo_sorting_limiting(service: ProductRepository):
     """演示排序和限制 (P1)"""
     print("\n" + "=" * 60)
     print("🎯 P1: 排序和限制演示")
@@ -146,7 +146,7 @@ async def demo_sorting_limiting(service: ProductEnhancedService):
         print(f"      - {p.name}")
 
 
-async def demo_groupby(service: ProductEnhancedService):
+async def demo_groupby(service: ProductRepository):
     """演示分组查询 (P2)"""
     print("\n" + "=" * 60)
     print("📈 P2: 分组统计演示")
@@ -167,7 +167,7 @@ async def demo_groupby(service: ProductEnhancedService):
             print(f"   {date}: {count} 个产品")
 
 
-async def demo_random_sampling(service: ProductEnhancedService):
+async def demo_random_sampling(service: ProductRepository):
     """演示随机采样 (P3)"""
     print("\n" + "=" * 60)
     print("🎲 P3: 随机采样演示")
@@ -191,7 +191,7 @@ async def demo_random_sampling(service: ProductEnhancedService):
     print(f"   ✅ 抽样了 {len(sample)} 个产品")
 
 
-async def demo_dashboard(service: ProductEnhancedService):
+async def demo_dashboard(service: ProductRepository):
     """演示综合面板"""
     print("\n" + "=" * 60)
     print("📊 综合统计面板")
@@ -240,7 +240,7 @@ async def main():
 
             # 创建 repository 和 service
             product_repo = ProductRepository(session, actor="demo-user")
-            service = ProductEnhancedService(product_repo)
+            service = ProductRepository(product_repo)
 
             # 运行各个演示
             await demo_basic_operations(service)

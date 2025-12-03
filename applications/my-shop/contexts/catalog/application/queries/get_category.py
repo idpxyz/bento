@@ -1,9 +1,9 @@
-"""Get category query and use case."""
+"""Get category query and handler."""
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -17,13 +17,14 @@ class GetCategoryQuery:
     category_id: str
 
 
-class GetCategoryUseCase(BaseUseCase[GetCategoryQuery, Category]):
-    """Get category use case.
+@query_handler
+class GetCategoryHandler(QueryHandler[GetCategoryQuery, Category]):
+    """Get category query handler.
 
-    Retrieves a single category by ID.
+    使用 @query_handler 装饰器自动注册到全局 Handler 注册表。
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: GetCategoryQuery) -> None:

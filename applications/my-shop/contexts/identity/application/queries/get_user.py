@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import QueryHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -21,13 +21,13 @@ class GetUserQuery:
     user_id: str
 
 
-class GetUserUseCase(BaseUseCase[GetUserQuery, User]):
+class GetUserHandler(QueryHandler[GetUserQuery, User]):
     """Get user use case.
 
     Retrieves a single user by ID.
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: GetUserQuery) -> None:

@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -33,14 +33,14 @@ class CreateOrderCommand:
     items: list[OrderItemInput]
 
 
-class CreateOrderUseCase(BaseUseCase[CreateOrderCommand, Order]):
+class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
     """Create order use case.
 
     创建订单并包含订单项。
     验证产品存在性（通过反腐败层与 Catalog BC 交互）。
     """
 
-    def __init__(self, uow: IUnitOfWork, product_catalog: IProductCatalogService) -> None:
+    def __init__(self, uow: UnitOfWork, product_catalog: IProductCatalogService) -> None:
         super().__init__(uow)
         self._product_catalog = product_catalog
 

@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import QueryHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -17,13 +17,13 @@ class GetProductQuery:
     product_id: str
 
 
-class GetProductUseCase(BaseUseCase[GetProductQuery, Product]):
+class GetProductHandler(QueryHandler[GetProductQuery, Product]):
     """Get product use case.
 
     Retrieves a single product by ID.
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: GetProductQuery) -> None:

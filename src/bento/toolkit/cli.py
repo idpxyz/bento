@@ -137,10 +137,11 @@ def generate_repository(name: str, output_dir: pathlib.Path, context: str = "sha
     )
 
 
-def generate_usecase(name: str, action: str, output_dir: pathlib.Path, context: str = "shared"):
+def generate_command(name: str, action: str, output_dir: pathlib.Path, context: str = "shared"):
+    """生成 Command Handler（CQRS 写操作）"""
     return generate_file(
-        "usecase.py.tpl",
-        output_dir / "application" / "usecases" / f"{action.lower()}_{name.lower()}.py",
+        "command.py.tpl",
+        output_dir / "application" / "commands" / f"{action.lower()}_{name.lower()}.py",
         Name=name,
         Action=action,
         name_lower=name.lower(),
@@ -149,12 +150,46 @@ def generate_usecase(name: str, action: str, output_dir: pathlib.Path, context: 
     )
 
 
-def generate_event(name: str, output_dir: pathlib.Path):
+def generate_query(name: str, action: str, output_dir: pathlib.Path, context: str = "shared"):
+    """生成 Query Handler（CQRS 读操作）"""
+    return generate_file(
+        "query.py.tpl",
+        output_dir / "application" / "queries" / f"{action.lower()}_{name.lower()}.py",
+        Name=name,
+        Action=action,
+        name_lower=name.lower(),
+        action_lower=action.lower(),
+        context=context.lower(),
+    )
+
+
+
+
+def generate_event(name: str, output_dir: pathlib.Path, context: str = "shared"):
+    """生成领域事件
+    
+    Args:
+        name: 事件名称（如 ProductCreated）
+        output_dir: 输出目录
+        context: 上下文名称（用于生成 topic）
+    """
+    # 提取实体名称（去除事件后缀）
+    entity_name = name
+    event_name = name.lower()
+    
+    # 尝试提取实体名称（例如：ProductCreated -> Product）
+    for suffix in ["Created", "Updated", "Deleted", "Changed"]:
+        if name.endswith(suffix):
+            entity_name = name[:-len(suffix)]
+            break
+    
     return generate_file(
         "event.py.tpl",
-        output_dir / "domain" / "events" / f"{name.lower()}_event.py",
+        output_dir / "domain" / "events" / f"{event_name}_event.py",
         Name=name,
-        EventName=name.lower(),
+        EventName=event_name,
+        name_lower=entity_name.lower(),
+        context=context.lower(),
     )
 
 
@@ -189,6 +224,234 @@ def generate_repository_test(name: str, output_dir: pathlib.Path):
         Name=name,
         name_lower=name.lower(),
     )
+
+
+def generate_bounded_context(context_name: str, output_dir: pathlib.Path, description: str = ""):
+    """生成 Bounded Context 初始结构
+
+    Args:
+        context_name: Context 名称（如 catalog, order）
+        output_dir: 输出目录
+        description: Context 业务说明
+    """
+    print(f"\n🎯 Creating Bounded Context: {context_name}")
+    print(f"📁 Location: {output_dir / 'contexts' / context_name.lower()}\n")
+
+    context_dir = output_dir / "contexts" / context_name.lower()
+
+    if context_dir.exists():
+        response = input(f"{context_dir} already exists. Continue? (y/n): ")
+        if response.lower() != "y":
+            print("Aborted.")
+            return False
+
+    # 创建标准目录结构
+    print("📁 Creating directory structure...\n")
+
+    directories = [
+        # Domain Layer
+        context_dir / "domain" / "model",
+        context_dir / "domain" / "events",
+        context_dir / "domain" / "services",
+        context_dir / "domain" / "ports",
+        # Application Layer (CQRS Style)
+        context_dir / "application" / "commands",
+        context_dir / "application" / "queries",
+        context_dir / "application" / "dto" / "requests",
+        context_dir / "application" / "dto" / "responses",
+        context_dir / "application" / "services",
+        context_dir / "application" / "mappers",
+        # Infrastructure Layer
+        context_dir / "infrastructure" / "persistence" / "models",
+        context_dir / "infrastructure" / "persistence" / "mappers",
+        context_dir / "infrastructure" / "persistence" / "repositories",
+        context_dir / "infrastructure" / "messaging",
+        context_dir / "infrastructure" / "external",
+        # Interfaces Layer
+        context_dir / "interfaces" / "api",
+        context_dir / "interfaces" / "cli",
+        context_dir / "interfaces" / "events",
+    ]
+
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
+        init_file = directory / "__init__.py"
+
+        # 生成带文档字符串的 __init__.py
+        layer_name = _get_layer_doc(directory, context_name)
+        init_file.write_text(f'"""{layer_name}"""\n', encoding="utf-8")
+        print(f"✓ Created: {directory.relative_to(output_dir)}")
+
+    # 创建 README.md
+    readme_content = f"""# {context_name.capitalize()} Context
+
+## 业务说明
+
+{description or f"{context_name.capitalize()} 限界上下文"}
+
+## 目录结构
+
+```
+{context_name.lower()}/
+├── domain/              # 领域层（核心业务逻辑）
+│   ├── model/          # 聚合根、实体、值对象
+│   ├── events/         # 领域事件
+│   ├── services/       # 领域服务
+│   └── ports/          # 端口（Repository 接口等）
+│
+├── application/         # 应用层（CQRS风格）
+│   ├── commands/       # Command handlers (写操作)
+│   ├── queries/        # Query handlers (读操作)
+│   ├── dto/            # 数据传输对象
+│   │   ├── requests/   # Request DTOs
+│   │   └── responses/  # Response DTOs
+│   ├── services/       # Application services (复杂编排)
+│   └── mappers/        # DTO <-> Domain 映射
+│
+├── infrastructure/      # 基础设施层（技术实现）
+│   ├── persistence/    # 持久化（ORM、Repository 实现）
+│   ├── messaging/      # 消息传递
+│   └── external/       # 外部服务适配器
+│
+└── interfaces/          # 接口层（驱动适配器）
+    ├── api/            # REST API
+    ├── cli/            # CLI 命令
+    └── events/         # 事件订阅
+```
+
+## 使用指南
+
+### 生成模块
+
+```bash
+# 在此 Context 中生成完整模块
+bento gen module <Name> --context {context_name.lower()} --fields "field1:type1,field2:type2"
+```
+
+### 依赖规则
+
+- ✅ Domain 层：无外部依赖
+- ✅ Application 层：只依赖 Domain
+- ✅ Infrastructure 层：实现 Domain 的 Ports
+- ✅ Interfaces 层：只依赖 Application
+
+### 测试
+
+```bash
+# 运行此 Context 的测试
+pytest tests/{context_name.lower()}/
+```
+
+## 架构验证
+
+```bash
+# 验证此 Context 的架构合规性
+bento validate --context {context_name.lower()}
+```
+
+---
+
+**创建时间**: {_get_timestamp()}
+**架构**: Modular Monolith
+**参考文档**: `/docs/architecture/BOUNDED_CONTEXT_STRUCTURE.md`
+"""
+
+    (context_dir / "README.md").write_text(readme_content, encoding="utf-8")
+    print(f"\n✓ Created: {(context_dir / 'README.md').relative_to(output_dir)}")
+
+    # 创建 domain/exceptions.py
+    exceptions_content = f'''"""Domain Exceptions for {context_name.capitalize()} Context"""
+
+from bento.domain.aggregate import DomainException
+
+
+class {context_name.capitalize()}Exception(DomainException):
+    """Base exception for {context_name.capitalize()} context"""
+    pass
+
+
+# 添加更多特定异常...
+# class InvalidProductError({context_name.capitalize()}Exception):
+#     """产品验证失败"""
+#     pass
+'''
+
+    (context_dir / "domain" / "exceptions.py").write_text(exceptions_content, encoding="utf-8")
+    print("✓ Created: domain/exceptions.py")
+
+    # 创建测试目录结构
+    test_dir = output_dir / "tests" / context_name.lower()
+    test_directories = [
+        test_dir / "unit" / "domain",
+        test_dir / "unit" / "application",
+        test_dir / "integration",
+    ]
+
+    print("\n📝 Creating test structure...\n")
+    for directory in test_directories:
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "__init__.py").touch()
+        print(f"✓ Created: {directory.relative_to(output_dir)}")
+
+    print(f"\n✅ Bounded Context '{context_name}' created successfully!")
+    print(f"\n📍 Location: {context_dir.relative_to(output_dir)}")
+    print("\n🚀 Next steps:")
+    print("   # Generate your first module in this context")
+    print(
+        f"   bento gen module <Name> --context {context_name.lower()}"
+        "--fields 'field1:type1,field2:type2'"
+    )
+    print("\n   # Example:")
+    print(
+        f"   bento gen module Product --context {context_name.lower()} \
+        --fields 'name:str,sku:str,price:float'"
+    )
+    print()
+
+    return True
+
+
+def _get_layer_doc(directory: pathlib.Path, context_name: str) -> str:
+    """生成分层文档字符串"""
+    layer_map = {
+        "domain": f"{context_name.capitalize()} - Domain Layer",
+        "model": "Domain Models (Aggregates, Entities, Value Objects)",
+        "services": "Domain Services or Application Services",
+        "ports": "Domain Ports (Interfaces)",
+        "application": f"{context_name.capitalize()} - Application Layer (CQRS)",
+        "commands": "Command Handlers (Write Operations)",
+        "queries": "Query Handlers (Read Operations)",
+        "dto": "Data Transfer Objects",
+        "requests": "Request DTOs",
+        "responses": "Response DTOs",
+        "mappers": "Mappers (DTO <-> Domain)",
+        "infrastructure": f"{context_name.capitalize()} - Infrastructure Layer",
+        "persistence": "Persistence Layer",
+        "models": "Persistence Objects (ORM Models)",
+        "repositories": "Repository Implementations",
+        "messaging": "Messaging & Event Handlers",
+        "external": "External Service Adapters",
+        "interfaces": f"{context_name.capitalize()} - Interfaces Layer",
+        "api": "REST API Endpoints",
+        "cli": "CLI Commands",
+    }
+
+    # 特殊处理：events 可能是 domain/events 或 interfaces/events
+    if directory.name == "events":
+        if "domain" in str(directory):
+            return "Domain Events"
+        elif "interfaces" in str(directory):
+            return "Event Subscribers"
+
+    dir_name = directory.name
+    return layer_map.get(dir_name, f"{context_name.capitalize()} - {dir_name.capitalize()}")
+
+
+def _get_timestamp() -> str:
+    """获取当前时间戳"""
+    from datetime import datetime
+
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def generate_project_scaffold(project_name: str, output_dir: pathlib.Path, description: str = ""):
@@ -307,7 +570,10 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
         base_dir / "domain",
         base_dir / "domain" / "events",
         base_dir / "application",
-        base_dir / "application" / "usecases",
+        base_dir / "application" / "commands",
+        base_dir / "application" / "queries",
+        base_dir / "application" / "dto" / "requests",
+        base_dir / "application" / "dto" / "responses",
         base_dir / "infrastructure",
         base_dir / "infrastructure" / "models",
         base_dir / "infrastructure" / "mappers",
@@ -331,7 +597,7 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
     # 生成领域层代码
     print("\n📦 Generating domain layer...\n")
     generate_aggregate(name, fields, base_dir)
-    generate_event(name + "Created", base_dir)
+    generate_event(name + "Created", base_dir, context)
 
     # 生成基础设施层代码
     print("\n🏗️  Generating infrastructure layer...\n")
@@ -339,9 +605,13 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
     generate_mapper(name, base_dir, context)
     generate_repository(name, base_dir, context)
 
-    # 生成应用层代码
-    print("\n⚙️  Generating application layer...\n")
-    generate_usecase(name, "Create", base_dir, context)
+    # 生成应用层代码（CQRS 风格）
+    print("\n⚙️  Generating application layer (CQRS)...\n")
+    generate_command(name, "Create", base_dir, context)
+    generate_command(name, "Update", base_dir, context)
+    generate_command(name, "Delete", base_dir, context)
+    generate_query(name, "Get", base_dir, context)
+    generate_query(name, "List", base_dir, context)
 
     # 生成测试代码（TDD）- 按上下文组织
     print("\n📝 Generating tests...\n")
@@ -360,6 +630,7 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
     (ctx_test_base / "integration" / "__init__.py").touch()
 
     # 生成测试文件
+    # Domain tests
     generate_file(
         "test_aggregate.py.tpl",
         ctx_test_base / "unit" / "domain" / f"test_{name.lower()}.py",
@@ -368,15 +639,32 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
         context=context.lower(),
         fields=fields,
     )
-    generate_file(
-        "test_usecase.py.tpl",
-        ctx_test_base / "unit" / "application" / f"test_create_{name.lower()}.py",
-        Name=name,
-        Action="Create",
-        name_lower=name.lower(),
-        action_lower="create",
-        context=context.lower(),
-    )
+    
+    # Application tests (CQRS - Command tests)
+    for action in ["Create", "Update", "Delete"]:
+        generate_file(
+            "test_command.py.tpl",
+            ctx_test_base / "unit" / "application" / f"test_{action.lower()}_{name.lower()}.py",
+            Name=name,
+            Action=action,
+            name_lower=name.lower(),
+            action_lower=action.lower(),
+            context=context.lower(),
+        )
+    
+    # Application tests (CQRS - Query tests)
+    for action in ["Get", "List"]:
+        generate_file(
+            "test_query.py.tpl",
+            ctx_test_base / "unit" / "application" / f"test_{action.lower()}_{name.lower()}.py",
+            Name=name,
+            Action=action,
+            name_lower=name.lower(),
+            action_lower=action.lower(),
+            context=context.lower(),
+        )
+    
+    # Integration tests
     generate_file(
         "test_repository.py.tpl",
         ctx_test_base / "integration" / f"test_{name.lower()}_repository.py",
@@ -509,24 +797,37 @@ Example:
 
     # gen 命令 - 生成代码骨架
     gen_help = """
-Generate DDD code components.
+Generate DDD code components (CQRS Architecture).
 
 Component types:
-  module      - Complete DDD module (aggregate + repository + use cases + tests)
+  context     - Create a complete Bounded Context structure
+  module      - Complete DDD module (aggregate + repository + commands + queries + tests)
   aggregate   - Domain aggregate root with events
   event       - Domain event
   repository  - Repository interface and implementation
   mapper      - Data mapper (domain <-> persistence)
-  usecase     - Application use case
+  command     - Command handler (write operations: Create/Update/Delete)
+  query       - Query handler (read operations: Get/List/Search)
   po          - Persistence object (SQLAlchemy model)
 
 Examples:
-  # Generate complete module
-  bento gen module Product --context catalog --fields "name:str,price:float"
+  # Create a new Bounded Context
+  bento gen context catalog --description "Product catalog management"
+  bento gen context order --description "Order processing workflow"
 
-  # Generate standalone components
-  bento gen event OrderCreated --output ./my-project
-  bento gen aggregate Order --fields "customer_id:str,total:float"
+  # Generate complete module in a context (CQRS style)
+  bento gen module Product --context catalog --fields "name:str,sku:str,price:float"
+  # Generates: commands/ queries/ domain/ infrastructure/ tests/
+
+  # Generate standalone components (CQRS)
+  bento gen command Product Create --context catalog  # CreateProductHandler
+  bento gen command Product Publish --context catalog # PublishProductHandler
+  bento gen query Product Get --context catalog       # GetProductHandler
+  bento gen query Product Search --context catalog    # SearchProductHandler
+  
+  # Generate domain components
+  bento gen event OrderCreated --context order
+  bento gen aggregate Order --fields "customer_id:str,total:float" --context order
 """
 
     g = sub.add_parser(
@@ -537,12 +838,27 @@ Examples:
     )
     g.add_argument(
         "what",
-        choices=["module", "aggregate", "usecase", "event", "repository", "mapper", "po"],
+        choices=[
+            "context",
+            "module",
+            "aggregate",
+            "command",
+            "query",
+            "event",
+            "repository",
+            "mapper",
+            "po",
+        ],
         help="Type of component to generate",
         metavar="COMPONENT",
     )
-    g.add_argument("name", help="Name of the component (e.g., Product, Order, User)")
+    g.add_argument("name", help="Name of the component (e.g., Product, Order, User, catalog)")
     g.add_argument("--context", default="shared", help="Bounded context name (default: shared)")
+    g.add_argument(
+        "--description",
+        default="",
+        help="Description for context or module",
+    )
     g.add_argument(
         "--fields",
         default="",
@@ -601,30 +917,73 @@ Example:
             return run_validation(args)
 
         # gen 命令处理
-        name = args.name[0].upper() + args.name[1:]
         output_dir = args.output.absolute()
-        fields = parse_fields(args.fields)
-        context = args.context
 
-        if args.what == "module":
-            generate_module(name, fields, output_dir, context)
-        elif args.what == "aggregate":
-            generate_aggregate(name, fields, output_dir)
-        elif args.what == "po":
-            generate_po(name, fields, output_dir)
-        elif args.what == "mapper":
-            generate_mapper(name, output_dir, context)
-        elif args.what == "repository":
-            generate_repository(name, output_dir, context)
-        elif args.what == "usecase":
-            if name.startswith(("Create", "Update", "Delete", "Get", "List")):
-                for action in ["Create", "Update", "Delete", "Get", "List"]:
-                    if name.startswith(action):
-                        entity_name = name[len(action) :]
-                        generate_usecase(entity_name, action, output_dir, context)
-                        break
-        elif args.what == "event":
-            generate_event(name, output_dir)
+        if args.what == "context":
+            # 生成 Bounded Context
+            context_name = args.name.lower()
+            generate_bounded_context(context_name, output_dir, args.description)
+        else:
+            # 其他组件生成
+            name = args.name[0].upper() + args.name[1:]
+            fields = parse_fields(args.fields)
+            context = args.context
+
+            if args.what == "module":
+                generate_module(name, fields, output_dir, context)
+            elif args.what == "aggregate":
+                generate_aggregate(name, fields, output_dir)
+            elif args.what == "po":
+                generate_po(name, fields, output_dir)
+            elif args.what == "mapper":
+                generate_mapper(name, output_dir, context)
+            elif args.what == "repository":
+                generate_repository(name, output_dir, context)
+            elif args.what == "command":
+                # CQRS: Command handlers (write operations)
+                # Support both formats:
+                # 1. bento gen command Product Create  (entity + action)
+                # 2. bento gen command CreateProduct   (combined name)
+                if " " in name:
+                    # Format: "Product Create"
+                    parts = name.split()
+                    entity_name = parts[0]
+                    action = parts[1] if len(parts) > 1 else "Create"
+                elif name.startswith(("Create", "Update", "Delete")):
+                    # Format: "CreateProduct"
+                    for action in ["Create", "Update", "Delete"]:
+                        if name.startswith(action):
+                            entity_name = name[len(action):]
+                            break
+                else:
+                    # Default: treat whole name as entity, action = Create
+                    entity_name = name
+                    action = "Create"
+                generate_command(entity_name, action, output_dir, context)
+                
+            elif args.what == "query":
+                # CQRS: Query handlers (read operations)
+                # Support both formats:
+                # 1. bento gen query Product Get  (entity + action)
+                # 2. bento gen query GetProduct   (combined name)
+                if " " in name:
+                    # Format: "Product Get"
+                    parts = name.split()
+                    entity_name = parts[0]
+                    action = parts[1] if len(parts) > 1 else "Get"
+                elif name.startswith(("Get", "List", "Search", "Find")):
+                    # Format: "GetProduct"
+                    for action in ["Get", "List", "Search", "Find"]:
+                        if name.startswith(action):
+                            entity_name = name[len(action):]
+                            break
+                else:
+                    # Default: treat whole name as entity, action = Get
+                    entity_name = name
+                    action = "Get"
+                generate_query(entity_name, action, output_dir, context)
+            elif args.what == "event":
+                generate_event(name, output_dir, context)
 
         return 0
     except Exception as e:

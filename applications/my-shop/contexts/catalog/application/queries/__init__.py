@@ -2,30 +2,30 @@
 
 from contexts.catalog.application.queries.get_category import (
     GetCategoryQuery,
-    GetCategoryUseCase,
+    GetCategoryHandler,
 )
 from contexts.catalog.application.queries.get_product import (
     GetProductQuery,
-    GetProductUseCase,
+    GetProductHandler,
 )
 from contexts.catalog.application.queries.list_categories import (
     ListCategoriesQuery,
-    ListCategoriesUseCase,
+    ListCategoriesHandler,
 )
 from contexts.catalog.application.queries.list_products import (
     ListProductsQuery,
-    ListProductsUseCase,
+    ListProductsHandler,
 )
 
 __all__ = [
     # Product queries
     "GetProductQuery",
-    "GetProductUseCase",
+    "GetProductHandler",
     "ListProductsQuery",
-    "ListProductsUseCase",
+    "ListProductsHandler",
     # Category queries
     "GetCategoryQuery",
-    "GetCategoryUseCase",
+    "GetCategoryHandler",
     "ListCategoriesQuery",
-    "ListCategoriesUseCase",
+    "ListCategoriesHandler",
 ]

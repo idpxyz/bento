@@ -1,31 +1,22 @@
 """Bento Framework Application Layer.
 
-This layer contains application services, DTOs, ports (interfaces),
-and various patterns used in the application layer.
-
-Organized by functionality:
-- services/: Application services (ApplicationService, QueryService, BatchService)
-- dto/: Data Transfer Objects
-- ports/: Interfaces and protocols (UoW, MessageBus, etc.)
-- mappers/: Data mapping utilities
-- patterns/: Cross-cutting patterns (idempotency, saga, etc.)
+Pure CQRS application layer with Command and Query Handlers.
 """
 
 # Main exports for the application layer
-from .services import (
-    ApplicationService,
-    ApplicationServiceResult,
-    BatchService,
-    QueryService,
-    create_service_factory,
-    validate_service_compliance,
+from bento.application.cqrs import (
+    CommandHandler,
+    QueryHandler,
 )
+from bento.application.decorators import command_handler, query_handler
+from bento.application.dto import BaseDTO
+from bento.application.ports.uow import UnitOfWork
 
 __all__ = [
-    "ApplicationService",
-    "ApplicationServiceResult",
-    "QueryService",
-    "BatchService",
-    "create_service_factory",
-    "validate_service_compliance",
+    "CommandHandler",
+    "QueryHandler",
+    "command_handler",
+    "query_handler",
+    "BaseDTO",
+    "UnitOfWork",
 ]

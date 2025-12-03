@@ -8,17 +8,17 @@ from pydantic import BaseModel
 
 from contexts.catalog.application.commands import (
     CreateCategoryCommand,
-    CreateCategoryUseCase,
+    CreateCategoryHandler,
     DeleteCategoryCommand,
-    DeleteCategoryUseCase,
+    DeleteCategoryHandler,
     UpdateCategoryCommand,
-    UpdateCategoryUseCase,
+    UpdateCategoryHandler,
 )
 from contexts.catalog.application.queries import (
     GetCategoryQuery,
-    GetCategoryUseCase,
+    GetCategoryHandler,
     ListCategoriesQuery,
-    ListCategoriesUseCase,
+    ListCategoriesHandler,
 )
 from contexts.catalog.interfaces.category_presenters import category_to_dict
 from shared.infrastructure.dependencies import get_uow
@@ -67,37 +67,37 @@ class ListCategoriesResponse(BaseModel):
 
 async def get_create_category_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateCategoryUseCase:
+) -> CreateCategoryHandler:
     """Get create category use case (dependency)."""
-    return CreateCategoryUseCase(uow)
+    return CreateCategoryHandler(uow)
 
 
 async def get_list_categories_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListCategoriesUseCase:
+) -> ListCategoriesHandler:
     """get_list_categories_use_case (dependency)."""
-    return ListCategoriesUseCase(uow)
+    return ListCategoriesHandler(uow)
 
 
 async def get_get_category_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetCategoryUseCase:
+) -> GetCategoryHandler:
     """get_get_category_use_case (dependency)."""
-    return GetCategoryUseCase(uow)
+    return GetCategoryHandler(uow)
 
 
 async def get_update_category_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateCategoryUseCase:
+) -> UpdateCategoryHandler:
     """get_update_category_use_case (dependency)."""
-    return UpdateCategoryUseCase(uow)
+    return UpdateCategoryHandler(uow)
 
 
 async def get_delete_category_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteCategoryUseCase:
+) -> DeleteCategoryHandler:
     """get_delete_category_use_case (dependency)."""
-    return DeleteCategoryUseCase(uow)
+    return DeleteCategoryHandler(uow)
 
 
 # ==================== API Routes ====================
@@ -111,7 +111,7 @@ async def get_delete_category_use_case(
 )
 async def create_category(
     request: CreateCategoryRequest,
-    use_case: Annotated[CreateCategoryUseCase, Depends(get_create_category_use_case)],
+    use_case: Annotated[CreateCategoryHandler, Depends(get_create_category_use_case)],
 ) -> dict[str, Any]:
     """Create a new category."""
     command = CreateCategoryCommand(
@@ -130,7 +130,7 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    use_case: Annotated[ListCategoriesUseCase, Depends(get_list_categories_use_case)],
+    use_case: Annotated[ListCategoriesHandler, Depends(get_list_categories_use_case)],
     parent_id: str | None = Query(None, description="Filter by parent category"),
 ) -> dict[str, Any]:
     """List categories with optional parent filter."""
@@ -151,7 +151,7 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    use_case: Annotated[GetCategoryUseCase, Depends(get_get_category_use_case)],
+    use_case: Annotated[GetCategoryHandler, Depends(get_get_category_use_case)],
 ) -> dict[str, Any]:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
@@ -167,7 +167,7 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    use_case: Annotated[UpdateCategoryUseCase, Depends(get_update_category_use_case)],
+    use_case: Annotated[UpdateCategoryHandler, Depends(get_update_category_use_case)],
 ) -> dict[str, Any]:
     """Update a category."""
     command = UpdateCategoryCommand(
@@ -188,7 +188,7 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    use_case: Annotated[DeleteCategoryUseCase, Depends(get_delete_category_use_case)],
+    use_case: Annotated[DeleteCategoryHandler, Depends(get_delete_category_use_case)],
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)

@@ -8,28 +8,28 @@ from pydantic import BaseModel
 
 from contexts.ordering.application.commands.cancel_order import (
     CancelOrderCommand,
-    CancelOrderUseCase,
+    CancelOrderHandler,
 )
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 from contexts.ordering.application.commands.pay_order import (
     PayOrderCommand,
-    PayOrderUseCase,
+    PayOrderHandler,
 )
 from contexts.ordering.application.commands.ship_order import (
     ShipOrderCommand,
-    ShipOrderUseCase,
+    ShipOrderHandler,
 )
 from contexts.ordering.application.queries.get_order import (
     GetOrderQuery,
-    GetOrderUseCase,
+    GetOrderHandler,
 )
 from contexts.ordering.application.queries.list_orders import (
     ListOrdersQuery,
-    ListOrdersUseCase,
+    ListOrdersHandler,
 )
 from contexts.ordering.interfaces.order_presenters import order_to_dict
 from shared.infrastructure.dependencies import get_uow
@@ -110,7 +110,7 @@ class ListOrdersResponse(BaseModel):
 
 async def get_create_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateOrderUseCase:
+) -> CreateOrderHandler:
     """Get create order use case (dependency)."""
     from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
         ProductCatalogAdapter,
@@ -118,42 +118,42 @@ async def get_create_order_use_case(
 
     # 创建反腐败层适配器
     product_catalog = ProductCatalogAdapter(uow.session)
-    return CreateOrderUseCase(uow, product_catalog)
+    return CreateOrderHandler(uow, product_catalog)
 
 
 async def get_list_orders_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListOrdersUseCase:
+) -> ListOrdersHandler:
     """Get list orders use case (dependency)."""
-    return ListOrdersUseCase(uow)
+    return ListOrdersHandler(uow)
 
 
 async def get_get_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetOrderUseCase:
+) -> GetOrderHandler:
     """Get get order use case (dependency)."""
-    return GetOrderUseCase(uow)
+    return GetOrderHandler(uow)
 
 
 async def get_pay_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> PayOrderUseCase:
+) -> PayOrderHandler:
     """Get pay order use case (dependency)."""
-    return PayOrderUseCase(uow)
+    return PayOrderHandler(uow)
 
 
 async def get_ship_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ShipOrderUseCase:
+) -> ShipOrderHandler:
     """Get ship order use case (dependency)."""
-    return ShipOrderUseCase(uow)
+    return ShipOrderHandler(uow)
 
 
 async def get_cancel_order_use_case(
     uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CancelOrderUseCase:
+) -> CancelOrderHandler:
     """Get cancel order use case (dependency)."""
-    return CancelOrderUseCase(uow)
+    return CancelOrderHandler(uow)
 
 
 # ==================== API Routes ====================
@@ -167,7 +167,7 @@ async def get_cancel_order_use_case(
 )
 async def create_order(
     request: CreateOrderRequest,
-    use_case: Annotated[CreateOrderUseCase, Depends(get_create_order_use_case)],
+    use_case: Annotated[CreateOrderHandler, Depends(get_create_order_use_case)],
 ) -> dict[str, Any]:
     """Create a new order with items."""
     # Request → Command
@@ -199,7 +199,7 @@ async def create_order(
     summary="List orders",
 )
 async def list_orders(
-    use_case: Annotated[ListOrdersUseCase, Depends(get_list_orders_use_case)],
+    use_case: Annotated[ListOrdersHandler, Depends(get_list_orders_use_case)],
     customer_id: str | None = None,
 ) -> dict[str, Any]:
     """List orders with optional customer filter."""
@@ -220,7 +220,7 @@ async def list_orders(
 )
 async def get_order(
     order_id: str,
-    use_case: Annotated[GetOrderUseCase, Depends(get_get_order_use_case)],
+    use_case: Annotated[GetOrderHandler, Depends(get_get_order_use_case)],
 ) -> dict[str, Any]:
     """Get an order by ID."""
     query = GetOrderQuery(order_id=order_id)
@@ -235,7 +235,7 @@ async def get_order(
 )
 async def pay_order(
     order_id: str,
-    use_case: Annotated[PayOrderUseCase, Depends(get_pay_order_use_case)],
+    use_case: Annotated[PayOrderHandler, Depends(get_pay_order_use_case)],
 ) -> dict[str, Any]:
     """Confirm payment for an order."""
     command = PayOrderCommand(order_id=order_id)
@@ -251,7 +251,7 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    use_case: Annotated[ShipOrderUseCase, Depends(get_ship_order_use_case)],
+    use_case: Annotated[ShipOrderHandler, Depends(get_ship_order_use_case)],
 ) -> dict[str, Any]:
     """Ship an order."""
     from bento.core.errors import ApplicationException
@@ -278,7 +278,7 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    use_case: Annotated[CancelOrderUseCase, Depends(get_cancel_order_use_case)],
+    use_case: Annotated[CancelOrderHandler, Depends(get_cancel_order_use_case)],
 ) -> dict[str, Any]:
     """Cancel an order."""
     command = CancelOrderCommand(

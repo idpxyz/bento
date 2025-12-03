@@ -2,16 +2,16 @@
 
 from contexts.identity.application.queries.get_user import (
     GetUserQuery,
-    GetUserUseCase,
+    GetUserHandler,
 )
 from contexts.identity.application.queries.list_users import (
     ListUsersQuery,
-    ListUsersUseCase,
+    ListUsersHandler,
 )
 
 __all__ = [
     "GetUserQuery",
-    "GetUserUseCase",
+    "GetUserHandler",
     "ListUsersQuery",
-    "ListUsersUseCase",
+    "ListUsersHandler",
 ]

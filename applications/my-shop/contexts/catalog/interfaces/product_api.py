@@ -2,26 +2,25 @@
 
 from typing import Annotated, Any
 
-from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from contexts.catalog.application.commands import (
     CreateProductCommand,
-    CreateProductUseCase,
+    CreateProductHandler,
     DeleteProductCommand,
-    DeleteProductUseCase,
+    DeleteProductHandler,
     UpdateProductCommand,
-    UpdateProductUseCase,
+    UpdateProductHandler,
 )
 from contexts.catalog.application.queries import (
+    GetProductHandler,
     GetProductQuery,
-    GetProductUseCase,
+    ListProductsHandler,
     ListProductsQuery,
-    ListProductsUseCase,
 )
 from contexts.catalog.interfaces.presenters import product_to_dict
-from shared.infrastructure.dependencies import get_uow
+from shared.infrastructure.dependencies import get_handler
 
 router = APIRouter()
 
@@ -79,45 +78,11 @@ class ListProductsResponse(BaseModel):
     page_size: int
 
 
-# ==================== Dependency Injection ====================
-
-
-async def get_create_product_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateProductUseCase:
-    """Get create product use case (dependency)."""
-    return CreateProductUseCase(uow)
-
-
-async def get_list_products_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListProductsUseCase:
-    """get_list_products_use_case (dependency)."""
-    return ListProductsUseCase(uow)
-
-
-async def get_get_product_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetProductUseCase:
-    """get_get_product_use_case (dependency)."""
-    return GetProductUseCase(uow)
-
-
-async def get_update_product_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateProductUseCase:
-    """get_update_product_use_case (dependency)."""
-    return UpdateProductUseCase(uow)
-
-
-async def get_delete_product_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteProductUseCase:
-    """get_delete_product_use_case (dependency)."""
-    return DeleteProductUseCase(uow)
-
-
 # ==================== API Routes ====================
+#
+# Note: All Handlers are now injected using the universal get_handler() factory
+# from shared.infrastructure.dependencies. No need for individual DI functions!
+#
 
 
 @router.post(
@@ -128,7 +93,7 @@ async def get_delete_product_use_case(
 )
 async def create_product(
     request: CreateProductRequest,
-    use_case: Annotated[CreateProductUseCase, Depends(get_create_product_use_case)],
+    handler: Annotated[CreateProductHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Create a new product."""
     command = CreateProductCommand(
@@ -142,7 +107,7 @@ async def create_product(
         category_id=request.category_id,
     )
 
-    product = await use_case.execute(command)
+    product = await handler.execute(command)
     return product_to_dict(product)
 
 
@@ -152,7 +117,7 @@ async def create_product(
     summary="List products",
 )
 async def list_products(
-    use_case: Annotated[ListProductsUseCase, Depends(get_list_products_use_case)],
+    handler: Annotated[ListProductsHandler, Depends(get_handler)],
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     category_id: str | None = Query(None),
@@ -164,7 +129,7 @@ async def list_products(
         category_id=category_id,
     )
 
-    result = await use_case.execute(query)
+    result = await handler.execute(query)
 
     return {
         "items": [product_to_dict(p) for p in result.products],
@@ -181,7 +146,7 @@ async def list_products(
 )
 async def get_product(
     product_id: str,
-    use_case: Annotated[GetProductUseCase, Depends(get_get_product_use_case)],
+    handler: Annotated[GetProductHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Get a product by ID."""
     from bento.core.errors import ApplicationException
@@ -189,7 +154,7 @@ async def get_product(
 
     try:
         query = GetProductQuery(product_id=product_id)
-        product = await use_case.execute(query)
+        product = await handler.execute(query)
         return product_to_dict(product)
     except ApplicationException as e:
         if "not found" in str(e).lower():
@@ -205,7 +170,7 @@ async def get_product(
 async def update_product(
     product_id: str,
     request: UpdateProductRequest,
-    use_case: Annotated[UpdateProductUseCase, Depends(get_update_product_use_case)],
+    handler: Annotated[UpdateProductHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Update a product."""
     command = UpdateProductCommand(
@@ -219,7 +184,7 @@ async def update_product(
         is_active=request.is_active,
     )
 
-    product = await use_case.execute(command)
+    product = await handler.execute(command)
     return product_to_dict(product)
 
 
@@ -240,7 +205,7 @@ async def ping() -> dict[str, str]:
 )
 async def delete_product(
     product_id: str,
-    use_case: Annotated[DeleteProductUseCase, Depends(get_delete_product_use_case)],
+    handler: Annotated[DeleteProductHandler, Depends(get_handler)],
 ) -> None:
     """Delete a product (soft delete)."""
     from bento.core.errors import ApplicationException
@@ -248,7 +213,7 @@ async def delete_product(
 
     try:
         command = DeleteProductCommand(product_id=product_id)
-        await use_case.execute(command)
+        await handler.execute(command)
     except ApplicationException as e:
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail="Product not found") from None

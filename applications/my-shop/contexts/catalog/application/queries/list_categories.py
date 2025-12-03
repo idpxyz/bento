@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import QueryHandler
 
 from contexts.catalog.domain.category import Category
 
@@ -37,10 +37,10 @@ class CategoryTreeResult:
     categories: list[Category]
 
 
-class ListCategoriesUseCase(BaseUseCase[ListCategoriesQuery, ListCategoriesResult]):
+class ListCategoriesHandler(QueryHandler[ListCategoriesQuery, ListCategoriesResult]):
     """List categories use case."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: ListCategoriesQuery) -> None:
@@ -68,10 +68,10 @@ class ListCategoriesUseCase(BaseUseCase[ListCategoriesQuery, ListCategoriesResul
         )
 
 
-class GetCategoryTreeUseCase(BaseUseCase[CategoryTreeQuery, CategoryTreeResult]):
+class GetCategoryTreeHandler(QueryHandler[CategoryTreeQuery, CategoryTreeResult]):
     """Get category tree query."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, query: CategoryTreeQuery) -> None:

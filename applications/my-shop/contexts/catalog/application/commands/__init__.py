@@ -2,42 +2,42 @@
 
 from contexts.catalog.application.commands.create_category import (
     CreateCategoryCommand,
-    CreateCategoryUseCase,
+    CreateCategoryHandler,
 )
 from contexts.catalog.application.commands.create_product import (
     CreateProductCommand,
-    CreateProductUseCase,
+    CreateProductHandler,
 )
 from contexts.catalog.application.commands.delete_category import (
     DeleteCategoryCommand,
-    DeleteCategoryUseCase,
+    DeleteCategoryHandler,
 )
 from contexts.catalog.application.commands.delete_product import (
     DeleteProductCommand,
-    DeleteProductUseCase,
+    DeleteProductHandler,
 )
 from contexts.catalog.application.commands.update_category import (
     UpdateCategoryCommand,
-    UpdateCategoryUseCase,
+    UpdateCategoryHandler,
 )
 from contexts.catalog.application.commands.update_product import (
     UpdateProductCommand,
-    UpdateProductUseCase,
+    UpdateProductHandler,
 )
 
 __all__ = [
     # Product commands
     "CreateProductCommand",
-    "CreateProductUseCase",
+    "CreateProductHandler",
     "UpdateProductCommand",
-    "UpdateProductUseCase",
+    "UpdateProductHandler",
     "DeleteProductCommand",
-    "DeleteProductUseCase",
+    "DeleteProductHandler",
     # Category commands
     "CreateCategoryCommand",
-    "CreateCategoryUseCase",
+    "CreateCategoryHandler",
     "UpdateCategoryCommand",
-    "UpdateCategoryUseCase",
+    "UpdateCategoryHandler",
     "DeleteCategoryCommand",
-    "DeleteCategoryUseCase",
+    "DeleteCategoryHandler",
 ]

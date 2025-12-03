@@ -7,7 +7,9 @@ This module provides FastAPI dependencies using Bento's infrastructure:
 """
 
 from collections.abc import AsyncGenerator
+from typing import Annotated, TypeVar
 
+from bento.application.ports.uow import UnitOfWork
 from bento.infrastructure.database import create_async_engine_from_config
 from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
@@ -15,6 +17,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from config import settings
+
+# Type variable for Handler factory
+THandler = TypeVar("THandler")
 
 # Create database engine using Bento's configuration
 db_config = settings.get_database_config()
@@ -106,18 +111,51 @@ async def get_uow(
         pass
 
 
+def get_handler(
+    handler_cls: type[THandler],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> THandler:
+    """Universal Handler factory for CQRS Handlers.
+
+    Automatically injects UnitOfWork into any CommandHandler or QueryHandler.
+    Works with @command_handler and @query_handler decorated classes.
+
+    Usage:
+        ```python
+        # In API route
+        @router.post("/products")
+        async def create_product(
+            request: CreateProductRequest,
+            handler: Annotated[CreateProductHandler, Depends(get_handler)],
+        ):
+            command = CreateProductCommand(...)
+            result = await handler.execute(command)
+            return result
+        ```
+
+    Args:
+        handler_cls: The Handler class (CommandHandler or QueryHandler)
+        uow: Unit of Work (automatically injected by FastAPI)
+
+    Returns:
+        Instantiated Handler with UoW injected
+    """
+    return handler_cls(uow)
+
+
 # ==================== DEPRECATED ====================
-# The following function has been removed due to Session lifecycle issues.
-# Use get_uow() with Depends() instead.
+# The following pattern has been removed due to Session lifecycle issues.
+# Use get_handler() with Depends() instead for all Handlers.
 #
 # Old pattern (INCORRECT - Session closes before use):
 #     async def get_create_order_use_case() -> CreateOrderUseCase:
 #         uow = await get_unit_of_work()  # ❌ Session already closed
 #         return CreateOrderUseCase(uow)
 #
-# New pattern (CORRECT):
-#     async def get_create_order_use_case(
-#         uow: SQLAlchemyUnitOfWork = Depends(get_uow)
-#     ) -> CreateOrderUseCase:
-#         return CreateOrderUseCase(uow)  # ✅ Session managed by FastAPI
+# New pattern (CORRECT - using universal handler factory):
+#     @router.post("/orders")
+#     async def create_order(
+#         handler: Annotated[CreateOrderHandler, Depends(get_handler)],
+#     ):
+#         return await handler.execute(command)  # ✅ Session managed by FastAPI
 # ===================================================

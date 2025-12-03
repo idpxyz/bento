@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -18,14 +18,14 @@ class ShipOrderCommand:
     tracking_number: str | None = None
 
 
-class ShipOrderUseCase(BaseUseCase[ShipOrderCommand, Order]):
+class ShipOrderHandler(CommandHandler[ShipOrderCommand, Order]):
     """Ship order use case.
 
     订单发货。
     发布 OrderShipped 事件。
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: ShipOrderCommand) -> None:

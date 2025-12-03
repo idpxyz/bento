@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from bento.application.mapper import AutoMapper
+from bento.application.mappers import AutoMapper
 
 from contexts.catalog.domain.category import Category
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
