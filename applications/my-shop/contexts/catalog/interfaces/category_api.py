@@ -2,7 +2,6 @@
 
 from typing import Annotated, Any
 
-from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
@@ -21,7 +20,7 @@ from contexts.catalog.application.queries import (
     ListCategoriesHandler,
 )
 from contexts.catalog.interfaces.category_presenters import category_to_dict
-from shared.infrastructure.dependencies import get_uow
+from shared.infrastructure.dependencies import get_handler
 
 router = APIRouter()
 
@@ -62,45 +61,11 @@ class ListCategoriesResponse(BaseModel):
     total: int
 
 
-# ==================== Dependency Injection ====================
-
-
-async def get_create_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateCategoryHandler:
-    """Get create category use case (dependency)."""
-    return CreateCategoryHandler(uow)
-
-
-async def get_list_categories_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListCategoriesHandler:
-    """get_list_categories_use_case (dependency)."""
-    return ListCategoriesHandler(uow)
-
-
-async def get_get_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetCategoryHandler:
-    """get_get_category_use_case (dependency)."""
-    return GetCategoryHandler(uow)
-
-
-async def get_update_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateCategoryHandler:
-    """get_update_category_use_case (dependency)."""
-    return UpdateCategoryHandler(uow)
-
-
-async def get_delete_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteCategoryHandler:
-    """get_delete_category_use_case (dependency)."""
-    return DeleteCategoryHandler(uow)
-
-
 # ==================== API Routes ====================
+#
+# Note: All Handlers are now injected using the universal get_handler() factory
+# from shared.infrastructure.dependencies. No need for individual DI functions!
+#
 
 
 @router.post(
@@ -111,7 +76,7 @@ async def get_delete_category_use_case(
 )
 async def create_category(
     request: CreateCategoryRequest,
-    use_case: Annotated[CreateCategoryHandler, Depends(get_create_category_use_case)],
+    handler: Annotated[CreateCategoryHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Create a new category."""
     command = CreateCategoryCommand(
@@ -120,7 +85,7 @@ async def create_category(
         parent_id=request.parent_id,
     )
 
-    category = await use_case.execute(command)
+    category = await handler.execute(command)
     return category_to_dict(category)
 
 
@@ -130,13 +95,13 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    use_case: Annotated[ListCategoriesHandler, Depends(get_list_categories_use_case)],
+    handler: Annotated[ListCategoriesHandler, Depends(get_handler)],
     parent_id: str | None = Query(None, description="Filter by parent category"),
 ) -> dict[str, Any]:
     """List categories with optional parent filter."""
     query = ListCategoriesQuery(parent_id=parent_id)
 
-    result = await use_case.execute(query)
+    result = await handler.execute(query)
 
     return {
         "items": [category_to_dict(c) for c in result.categories],
@@ -151,11 +116,11 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    use_case: Annotated[GetCategoryHandler, Depends(get_get_category_use_case)],
+    handler: Annotated[GetCategoryHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
-    category = await use_case.execute(query)
+    category = await handler.execute(query)
     return category_to_dict(category)
 
 
@@ -167,7 +132,7 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    use_case: Annotated[UpdateCategoryHandler, Depends(get_update_category_use_case)],
+    handler: Annotated[UpdateCategoryHandler, Depends(get_handler)],
 ) -> dict[str, Any]:
     """Update a category."""
     command = UpdateCategoryCommand(
@@ -177,7 +142,7 @@ async def update_category(
         parent_id=request.parent_id,
     )
 
-    category = await use_case.execute(command)
+    category = await handler.execute(command)
     return category_to_dict(category)
 
 
@@ -188,8 +153,8 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    use_case: Annotated[DeleteCategoryHandler, Depends(get_delete_category_use_case)],
+    handler: Annotated[DeleteCategoryHandler, Depends(get_handler)],
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)
-    await use_case.execute(command)
+    await handler.execute(command)
