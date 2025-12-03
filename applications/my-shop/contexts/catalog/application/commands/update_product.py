@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
+from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 from bento.core.ids import ID
@@ -26,6 +26,7 @@ class UpdateProductCommand:
     category_id: str | None = None  # 可选：更新分类
 
 
+@command_handler
 class UpdateProductHandler(CommandHandler[UpdateProductCommand, Product]):
     """Update product use case."""
 

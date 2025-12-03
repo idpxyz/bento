@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
+from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import CommandHandler
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
 
@@ -17,6 +17,7 @@ class DeleteProductCommand:
     product_id: str
 
 
+@command_handler
 class DeleteProductHandler(CommandHandler[DeleteProductCommand, None]):
     """Delete product use case.
 

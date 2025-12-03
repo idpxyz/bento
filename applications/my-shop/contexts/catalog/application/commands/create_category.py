@@ -23,7 +23,7 @@ class CreateCategoryCommand:
 @command_handler
 class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
     """Create category command handler.
-    
+
     使用 @command_handler 装饰器自动注册到全局 Handler 注册表。
     """
 

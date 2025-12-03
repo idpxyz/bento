@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import QueryHandler
+from bento.application import QueryHandler, query_handler
 
 from contexts.catalog.domain.category import Category
 
@@ -37,6 +37,7 @@ class CategoryTreeResult:
     categories: list[Category]
 
 
+@query_handler
 class ListCategoriesHandler(QueryHandler[ListCategoriesQuery, ListCategoriesResult]):
     """List categories use case."""
 

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
-from bento.application.cqrs import QueryHandler
+from bento.application import QueryHandler, query_handler
 
 from contexts.catalog.domain.product import Product
 
@@ -27,6 +27,7 @@ class ListProductsQuery:
     category_id: str | None = None
 
 
+@query_handler
 class ListProductsHandler(QueryHandler[ListProductsQuery, ListProductsResult]):
     """List products use case."""
 
