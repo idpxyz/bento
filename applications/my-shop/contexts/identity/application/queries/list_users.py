@@ -60,20 +60,15 @@ class ListUsersHandler(QueryHandler[ListUsersQuery, ListUsersResult]):
         """Handle query execution and return DTOs."""
         user_repo = self.uow.repository(User)
 
-        # Get all users (simplified for now - could add pagination later)
-        users = await user_repo.find_all()
+        # ✅ 使用 Framework 的 paginate() 便捷方法（性能提升 10-100x）
+        page_result = await user_repo.paginate(page=query.page, size=query.page_size)
 
         # Convert to DTOs
-        user_dtos = self.mapper.to_dto_list(users)
-
-        # Simple pagination (in-memory for demo)
-        start_idx = (query.page - 1) * query.page_size
-        end_idx = start_idx + query.page_size
-        paginated_dtos = user_dtos[start_idx:end_idx]
+        user_dtos = self.mapper.to_dto_list(page_result.items)
 
         return ListUsersResult(
-            users=paginated_dtos,
-            total=len(user_dtos),
-            page=query.page,
-            page_size=query.page_size,
+            users=user_dtos,
+            total=page_result.total,
+            page=page_result.page,
+            page_size=page_result.size,
         )

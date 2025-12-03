@@ -339,22 +339,33 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             size=page_params.size,
         )
 
-    async def count(self, specification: CompositeSpecification[AR]) -> int:
+    async def count(self, specification: CompositeSpecification[AR] | None = None) -> int:
         """Count aggregate roots matching specification.
 
         Args:
-            specification: Specification to match
+            specification: Optional specification to match. If None, counts all entities.
 
         Returns:
             Count of matching entities
 
         Example:
             ```python
+            # Count all
+            total = await repo.count()
+
+            # Count with filter
             spec = EntitySpecificationBuilder().is_active().build()
-            count = await repo.count(spec)
-            print(f"Active users: {count}")
+            active_count = await repo.count(spec)
             ```
         """
+        if specification is None:
+            # 使用空 specification 计算所有项目
+            from bento.persistence.specification import CompositeSpecification
+
+            empty_spec = CompositeSpecification()
+            po_spec = self._convert_spec_to_po(empty_spec)
+            return await self._repository.count_po_by_spec(po_spec)
+
         po_spec = self._convert_spec_to_po(specification)
         return await self._repository.count_po_by_spec(po_spec)
 

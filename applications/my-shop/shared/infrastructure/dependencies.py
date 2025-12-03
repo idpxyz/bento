@@ -91,8 +91,6 @@ async def get_uow(
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
     # Register repositories
-    from contexts.ordering.domain.models.order import Order
-
     from contexts.catalog.domain.models.category import Category
     from contexts.catalog.domain.models.product import Product
     from contexts.catalog.infrastructure.repositories.category_repository_impl import (
@@ -105,6 +103,7 @@ async def get_uow(
     from contexts.identity.infrastructure.repositories.user_repository_impl import (
         UserRepository,
     )
+    from contexts.ordering.domain.models.order import Order
     from contexts.ordering.infrastructure.repositories.order_repository_impl import (
         OrderRepository,
     )

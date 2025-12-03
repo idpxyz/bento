@@ -57,15 +57,25 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
 
     # ==========================================================================
     # Inherited from RepositoryAdapter
-    # ==========================================================================
-    # The following methods are inherited from RepositoryAdapter
-    # and match ICategoryRepository Protocol:
+    # ==================== Inherited from RepositoryAdapter ====================
+    # The following methods are inherited from RepositoryAdapter and match ICategoryRepository:
     # - async def get(self, id: ID) -> Category | None
     # - async def save(self, entity: Category) -> Category
     # - async def delete(self, entity: Category) -> None
     # - async def find_all() -> list[Category]
-    # - async def exists(id: ID) -> bool
     # - async def count() -> int
+
+    # Override methods to match IRepository interface
+    async def exists(self, id: ID) -> bool:
+        """Check if category exists by ID."""
+        category = await self.get(id)
+        return category is not None
+
+    async def count(self) -> int:
+        """Count all categories."""
+        # Get all categories and return count
+        categories = await self.find_all()
+        return len(categories)
 
     # ==========================================================================
     # Domain-Specific Query Methods (from ICategoryRepository Protocol)
@@ -73,30 +83,25 @@ class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
 
     async def find_by_name(self, name: str) -> Category | None:
         """Find category by exact name."""
-        from sqlalchemy import select
+        from bento.persistence.specification import EntitySpecificationBuilder
 
-        query = select(CategoryPO).where(CategoryPO.name == name)
-        result = await self.repository.session.execute(query)
-        po = result.scalars().first()
-
-        return self.mapper.map_reverse(po) if po else None
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = EntitySpecificationBuilder().where("name", "=", name).build()
+        categories = await self.find_all(spec)
+        return categories[0] if categories else None
 
     async def find_root_categories(self) -> list[Category]:
         """Find all root categories (categories without parent)."""
-        from sqlalchemy import select
+        from bento.persistence.specification import EntitySpecificationBuilder
 
-        query = select(CategoryPO).where(CategoryPO.parent_id.is_(None))
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-
-        return [self.mapper.map_reverse(po) for po in pos]
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = EntitySpecificationBuilder().where("parent_id", "is null").build()
+        return await self.find_all(spec)
 
     async def find_subcategories(self, parent_id: ID) -> list[Category]:
         """Find subcategories of a parent category."""
-        from sqlalchemy import select
+        from bento.persistence.specification import EntitySpecificationBuilder
 
-        query = select(CategoryPO).where(CategoryPO.parent_id == str(parent_id))
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-
-        return [self.mapper.map_reverse(po) for po in pos]
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = EntitySpecificationBuilder().where("parent_id", "=", str(parent_id)).build()
+        return await self.find_all(spec)

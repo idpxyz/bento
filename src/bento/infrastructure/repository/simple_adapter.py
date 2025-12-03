@@ -211,15 +211,21 @@ class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](IRepository[AR, I
             size=page_params.size,
         )
 
-    async def count(self, specification: CompositeSpecification[AR]) -> int:
+    async def count(self, specification: CompositeSpecification[AR] | None = None) -> int:
         """Count aggregate roots matching specification.
 
         Args:
-            specification: Specification to match
+            specification: Optional specification to match. If None, counts all entities.
 
         Returns:
             Count of matching entities
         """
+        if specification is None:
+            # 使用空 specification 计算所有项目
+            from bento.persistence.specification import CompositeSpecification
+
+            empty_spec = CompositeSpecification()
+            return await self._repository.count_po_by_spec(empty_spec)
         return await self._repository.count_po_by_spec(specification)
 
     async def exists(self, specification: CompositeSpecification[AR]) -> bool:

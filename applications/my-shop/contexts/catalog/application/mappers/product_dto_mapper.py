@@ -28,7 +28,13 @@ class ProductDTOMapper(AutoMapper[Product, ProductDTO]):
         # id: ID → str ✅ (automatic)
         # name, price, stock, etc. ✅ (automatic)
 
-        # Custom mapping for computed fields
+        # ✅ 增强计算字段 - 提供更丰富的业务信息
         self.field_mappings = {
-            "is_categorized": lambda product: product.is_categorized()  # 方法 → 属性
+            "is_categorized": lambda product: product.is_categorized(),  # 方法 → 属性
+            "price_tier": lambda product: "expensive" if product.price > 1000 else "affordable",
+            "stock_status": lambda product: "in_stock" if product.stock > 0 else "out_of_stock",
+            "formatted_price": lambda product: f"${product.price:.2f}",
+            "availability": lambda product: "available"
+            if product.is_active and product.stock > 0
+            else "unavailable",
         }

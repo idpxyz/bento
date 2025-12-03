@@ -40,7 +40,17 @@ class OrderDTOMapper(AutoMapper[Order, OrderDTO]):
         super().__init__(Order, OrderDTO)
         self.item_mapper = OrderItemDTOMapper()
 
-        # Custom mapping only for special fields
+        # ✅ 增强映射 - 包含嵌套对象和计算字段
         self.field_mappings = {
             "items": lambda order: self.item_mapper.to_dto_list(order.items),  # Nested mapping
+            "item_count": lambda order: len(order.items),  # 计算字段
+            "status_display": lambda order: order.status.value.replace(
+                "_", " "
+            ).title(),  # 格式化状态
+            "created_at_str": lambda order: order.created_at.isoformat()
+            if order.created_at
+            else None,
+            "is_paid": lambda order: order.status.value in ["paid", "shipped", "delivered"],
+            "can_cancel": lambda order: order.status.value in ["pending", "paid"],
+            "formatted_total": lambda order: f"${order.total:.2f}",
         }

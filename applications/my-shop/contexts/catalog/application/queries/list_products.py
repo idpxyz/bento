@@ -45,15 +45,19 @@ class ListProductsHandler(QueryHandler[ListProductsQuery, ListProductsResult]):
         """Handle query execution and return DTOs."""
         product_repo = self.uow.repository(Product)
 
-        offset = (query.page - 1) * query.page_size
+        # ✅ 完全使用 Framework 的 paginate() 方法 - 性能最优！
+        if query.category_id:
+            from bento.persistence.specification import EntitySpecificationBuilder
 
-        products = await product_repo.list_products(
-            limit=query.page_size,
-            offset=offset,
-            category_id=query.category_id,
-        )
+            spec = EntitySpecificationBuilder().where("category_id", "=", query.category_id).build()
+            page_result = await product_repo.paginate(
+                specification=spec, page=query.page, size=query.page_size
+            )
+        else:
+            page_result = await product_repo.paginate(page=query.page, size=query.page_size)
 
-        total = await product_repo.count(category_id=query.category_id)
+        products = page_result.items
+        total = page_result.total
 
         # Convert to DTOs using mapper (SOLID compliant)
         product_dtos = self.mapper.to_dto_list(products)

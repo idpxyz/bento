@@ -4,7 +4,6 @@ from bento.core.ids import ID
 from bento.infrastructure.repository import RepositoryAdapter
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from contexts.catalog.domain.models.product import Product
@@ -67,12 +66,18 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
     # - async def save(self, aggregate: Product) -> None
     # - async def delete(self, aggregate: Product) -> None
     # - async def list(self, specification: CompositeSpecification[Product] | None = None)
-    # -> list[Product]
+    #   Returns: list[Product]
     # - async def paginate(...) -> Page[Product]
     # - async def count(specification) -> int
     # ... and many more from Mixins
 
-    # ==================== Domain-Specific Query Methods (from IProductRepository Protocol) ====================
+    # Override exists to match IRepository interface
+    async def exists(self, id: ID) -> bool:
+        """Check if product exists by ID."""
+        product = await self.get(id)
+        return product is not None
+
+    # ===== Domain-Specific Query Methods (from IProductRepository Protocol) ====
 
     async def find_by_category(self, category_id: ID) -> list[Product]:
         """Find products by category ID."""
@@ -80,24 +85,32 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
 
     async def find_by_name(self, name: str) -> list[Product]:
         """Find products by name (fuzzy search)."""
-        query = select(ProductPO).where(ProductPO.name.contains(name))
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-        return [self.mapper.map_reverse(po) for po in pos]
+        from bento.persistence.specification import EntitySpecificationBuilder
+
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = EntitySpecificationBuilder().where("name", "like", f"%{name}%").build()
+        return await self.find_all(spec)
 
     async def find_in_stock(self) -> list[Product]:
         """Find products that are in stock."""
-        query = select(ProductPO).where(ProductPO.stock > 0)
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-        return [self.mapper.map_reverse(po) for po in pos]
+        from bento.persistence.specification import EntitySpecificationBuilder
+
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = EntitySpecificationBuilder().where("stock", ">", 0).build()
+        return await self.find_all(spec)
 
     async def find_by_price_range(self, min_price: float, max_price: float) -> list[Product]:
         """Find products within price range."""
-        query = select(ProductPO).where(ProductPO.price >= min_price, ProductPO.price <= max_price)
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-        return [self.mapper.map_reverse(po) for po in pos]
+        from bento.persistence.specification import EntitySpecificationBuilder
+
+        # ✅ 使用 Specification 模式替代手动 SQL
+        spec = (
+            EntitySpecificationBuilder()
+            .where("price", ">=", min_price)
+            .where("price", "<=", max_price)
+            .build()
+        )
+        return await self.find_all(spec)
 
     # ==================== Custom Query Methods ====================
 
@@ -122,37 +135,22 @@ class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
         Returns:
             List of Product domain objects
         """
-        query = select(ProductPO)
+        # ✅ 使用 Framework 的 paginate() 便捷方法
+        from bento.persistence.specification import EntitySpecificationBuilder
 
-        # Apply filters
+        spec = None
         if category_id:
-            query = query.where(ProductPO.category_id == category_id)
+            spec = (
+                EntitySpecificationBuilder()
+                .where("category_id", "=", category_id)
+                .order_by("name")
+                .build()
+            )
 
-        # Apply pagination
-        query = query.limit(limit).offset(offset)
+        # Use Framework paginate() method instead of manual offset/limit
+        page = (offset // limit) + 1
+        page_result = await self.paginate(specification=spec, page=page, size=limit)
 
-        # Order by name
-        query = query.order_by(ProductPO.name)
+        return page_result.items
 
-        result = await self.repository.session.execute(query)
-        pos = result.scalars().all()
-
-        return [self.mapper.map_reverse(po) for po in pos]
-
-    async def count(self, category_id: str | None = None) -> int:
-        """
-        Count total products.
-
-        Args:
-            category_id: Optional category filter
-
-        Returns:
-            Total count of products
-        """
-        query = select(func.count()).select_from(ProductPO)
-
-        if category_id:
-            query = query.where(ProductPO.category_id == category_id)
-
-        result = await self.repository.session.execute(query)
-        return result.scalar_one()
+    # count() 方法已由 RepositoryAdapter 自动提供，无需重写

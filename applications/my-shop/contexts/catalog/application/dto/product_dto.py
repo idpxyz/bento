@@ -23,3 +23,9 @@ class ProductDTO(BaseDTO):
     sales_count: int = Field(0, description="Sales count")
     category_id: str | None = Field(None, description="Category ID")
     is_categorized: bool = Field(False, description="Has category")
+
+    # ✅ 新增计算字段 - 提供业务价值信息（可选，防止验证错误）
+    price_tier: str | None = Field(None, description="Price tier: expensive or affordable")
+    stock_status: str | None = Field(None, description="Stock status: in_stock or out_of_stock")
+    formatted_price: str | None = Field(None, description="Formatted price with currency")
+    availability: str | None = Field(None, description="Overall availability status")

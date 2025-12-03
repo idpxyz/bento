@@ -189,3 +189,41 @@ class IRepository[AR: AggregateRoot, ID: EntityId](Protocol):
             ```
         """
         ...
+
+    async def paginate(
+        self, specification: Any | None = None, page: int = 1, size: int = 20
+    ) -> Any:
+        """Convenient pagination method without creating PageParams object.
+
+        This is a simplified version of find_page() for common pagination scenarios.
+        Ideal when you don't need the complexity of PageParams.
+
+        Args:
+            specification: Optional specification to filter results
+            page: Page number, starting from 1 (default: 1)
+            size: Page size (items per page) (default: 20)
+
+        Returns:
+            Page object with paginated data and metadata
+
+        Note:
+            Return type is Any to avoid circular dependencies with Page type.
+            Implementations should return Page[AR] objects.
+
+        Example:
+            ```python
+            # Simple pagination
+            page = await repo.paginate(page=1, size=20)
+            print(f"Total: {page.total}, Items: {len(page.items)}")
+
+            # With specification
+            from bento.persistence.specification import EntitySpecificationBuilder
+
+            spec = EntitySpecificationBuilder().where("status", "active").build()
+            page = await repo.paginate(spec, page=2, size=10)
+
+            for item in page.items:
+                print(item.name)
+            ```
+        """
+        ...
