@@ -13,7 +13,7 @@ jobs:
       contents: write  # 需要写权限来创建 Release
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0  # 获取完整历史以便生成 changelog
 
