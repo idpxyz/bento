@@ -2,7 +2,7 @@
 
 import logging
 
-from bento.core.errors import ApplicationException
+from bento.core.exceptions import ApplicationException
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
