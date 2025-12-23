@@ -33,6 +33,15 @@ from bento.security.context import SecurityContext
 from bento.security.models import CurrentUser
 from bento.security.ports import IAuthenticator, IAuthorizer
 from bento.security.middleware import add_security_middleware
+from bento.security.decorators import (
+    require_auth,
+    require_permission,
+    require_any_permission,
+    require_all_permissions,
+    require_role,
+    require_any_role,
+    require_owner_or_role,
+)
 
 __all__ = [
     # Context
@@ -44,5 +53,13 @@ __all__ = [
     "IAuthorizer",
     # Middleware
     "add_security_middleware",
+    # Decorators
+    "require_auth",
+    "require_permission",
+    "require_any_permission",
+    "require_all_permissions",
+    "require_role",
+    "require_any_role",
+    "require_owner_or_role",
 ]
 

@@ -344,6 +344,77 @@ authenticator = CompositeAuthenticator([
 5. **Exclude health/docs paths** from authentication
 6. **Log authentication failures** for security monitoring
 
+## Decorators
+
+Declarative security checks for cleaner code.
+
+### @require_auth
+
+```python
+from bento.security import require_auth
+
+@require_auth
+async def protected_endpoint():
+    user = SecurityContext.get_user()  # Guaranteed to exist
+    ...
+```
+
+### @require_permission
+
+```python
+from bento.security import require_permission
+
+@require_permission("orders:write")
+async def create_order():
+    ...
+```
+
+### @require_any_permission / @require_all_permissions
+
+```python
+from bento.security import require_any_permission, require_all_permissions
+
+@require_any_permission("orders:read", "orders:admin")
+async def view_order():
+    ...
+
+@require_all_permissions("orders:read", "orders:write")
+async def manage_order():
+    ...
+```
+
+### @require_role / @require_any_role
+
+```python
+from bento.security import require_role, require_any_role
+
+@require_role("admin")
+async def admin_only():
+    ...
+
+@require_any_role("admin", "moderator")
+async def moderation():
+    ...
+```
+
+### @require_owner_or_role
+
+Resource-based authorization for owner or admin access.
+
+```python
+from bento.security import require_owner_or_role
+
+@require_owner_or_role("admin")
+async def update_order(order: Order):
+    # order.owner_id must match user.id, or user must be admin
+    ...
+
+# Custom owner getter
+@require_owner_or_role("admin", owner_getter=lambda item: item.created_by)
+async def delete_item(item: Item):
+    ...
+```
+
 ## Module Structure
 
 ```
@@ -352,5 +423,6 @@ bento/security/
 ├── context.py       # SecurityContext
 ├── models.py        # CurrentUser
 ├── ports.py         # IAuthenticator, IAuthorizer
-└── middleware.py    # FastAPI middleware
+├── middleware.py    # FastAPI middleware
+└── decorators.py    # Security decorators
 ```
