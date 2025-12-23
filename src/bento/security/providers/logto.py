@@ -18,11 +18,14 @@ Example:
 
 from __future__ import annotations
 
+from typing import Any
+
 from bento.security.models import CurrentUser
 from bento.security.providers.base import JWTAuthenticatorBase, JWTConfig
+from bento.security.providers.m2m import M2MAuthMixin, M2MConfig  # noqa: F401
 
 
-class LogtoAuthenticator(JWTAuthenticatorBase):
+class LogtoAuthenticator(M2MAuthMixin, JWTAuthenticatorBase):
     """Authenticator for Logto identity provider.
 
     Logto uses OIDC-compliant JWT tokens with JWKS for verification.
@@ -54,6 +57,11 @@ class LogtoAuthenticator(JWTAuthenticatorBase):
         app_id: str,
         permissions_claim: str = "permissions",
         roles_claim: str = "roles",
+        # M2M configuration (optional)
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        m2m_permissions: list[str] | None = None,
+        m2m_roles: list[str] | None = None,
     ):
         """Initialize Logto authenticator.
 
@@ -62,6 +70,10 @@ class LogtoAuthenticator(JWTAuthenticatorBase):
             app_id: Logto application ID (used as audience)
             permissions_claim: Claim name for permissions
             roles_claim: Claim name for roles
+            client_id: M2M client ID (enables M2M auth)
+            client_secret: M2M client secret
+            m2m_permissions: Default permissions for M2M clients
+            m2m_roles: Default roles for M2M clients
         """
         self.endpoint = endpoint.rstrip("/")
         self.app_id = app_id
@@ -74,6 +86,36 @@ class LogtoAuthenticator(JWTAuthenticatorBase):
             audience=app_id,
         )
         super().__init__(config)
+
+        # Initialize M2M support
+        if client_id and client_secret:
+            self.m2m_config = M2MConfig(
+                token_url=f"{self.endpoint}/oidc/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                default_permissions=m2m_permissions,
+                default_roles=m2m_roles,
+            )
+        else:
+            self.m2m_config = None
+
+    async def authenticate(self, request: Any) -> CurrentUser | None:
+        """Authenticate request (user or M2M).
+
+        Checks for M2M auth first, then falls back to user JWT auth.
+
+        Args:
+            request: FastAPI Request object
+
+        Returns:
+            CurrentUser if authenticated, None otherwise
+        """
+        # Try M2M auth first
+        if self.should_use_m2m_auth(request):
+            return await self.authenticate_m2m(request)
+
+        # Fall back to JWT auth
+        return await super().authenticate(request)
 
     def _extract_user_from_claims(self, claims: dict) -> CurrentUser:
         """Extract CurrentUser from Logto token claims.

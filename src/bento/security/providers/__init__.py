@@ -24,10 +24,14 @@ from bento.security.providers.logto import LogtoAuthenticator
 from bento.security.providers.auth0 import Auth0Authenticator
 from bento.security.providers.keycloak import KeycloakAuthenticator
 from bento.security.providers.base import JWTAuthenticatorBase
+from bento.security.providers.m2m import M2MAuthMixin, M2MConfig
 
 __all__ = [
     # Base
     "JWTAuthenticatorBase",
+    # M2M
+    "M2MAuthMixin",
+    "M2MConfig",
     # Providers
     "LogtoAuthenticator",
     "Auth0Authenticator",

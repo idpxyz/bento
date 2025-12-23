@@ -19,11 +19,14 @@ Example:
 
 from __future__ import annotations
 
+from typing import Any
+
 from bento.security.models import CurrentUser
 from bento.security.providers.base import JWTAuthenticatorBase, JWTConfig
+from bento.security.providers.m2m import M2MAuthMixin, M2MConfig
 
 
-class KeycloakAuthenticator(JWTAuthenticatorBase):
+class KeycloakAuthenticator(M2MAuthMixin, JWTAuthenticatorBase):
     """Authenticator for Keycloak identity server.
 
     Keycloak uses OIDC-compliant JWT tokens with JWKS for verification.
@@ -58,6 +61,10 @@ class KeycloakAuthenticator(JWTAuthenticatorBase):
         client_id: str,
         use_realm_roles: bool = True,
         use_client_roles: bool = True,
+        # M2M configuration (optional)
+        client_secret: str | None = None,
+        m2m_permissions: list[str] | None = None,
+        m2m_roles: list[str] | None = None,
     ):
         """Initialize Keycloak authenticator.
 
@@ -67,6 +74,9 @@ class KeycloakAuthenticator(JWTAuthenticatorBase):
             client_id: Client ID
             use_realm_roles: Extract roles from realm_access
             use_client_roles: Extract roles from resource_access
+            client_secret: Client secret (enables M2M auth)
+            m2m_permissions: Default permissions for M2M clients
+            m2m_roles: Default roles for M2M clients
         """
         self.server_url = server_url.rstrip("/")
         self.realm = realm
@@ -82,6 +92,31 @@ class KeycloakAuthenticator(JWTAuthenticatorBase):
             audience=client_id,
         )
         super().__init__(config)
+
+        # Initialize M2M support
+        if client_secret:
+            self.m2m_config = M2MConfig(
+                token_url=f"{realm_url}/protocol/openid-connect/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                default_permissions=m2m_permissions,
+                default_roles=m2m_roles,
+            )
+        else:
+            self.m2m_config = None
+
+    async def authenticate(self, request: Any) -> CurrentUser | None:
+        """Authenticate request (user or M2M).
+
+        Args:
+            request: FastAPI Request object
+
+        Returns:
+            CurrentUser if authenticated, None otherwise
+        """
+        if self.should_use_m2m_auth(request):
+            return await self.authenticate_m2m(request)
+        return await super().authenticate(request)
 
     def _extract_user_from_claims(self, claims: dict) -> CurrentUser:
         """Extract CurrentUser from Keycloak token claims.

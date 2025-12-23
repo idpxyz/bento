@@ -18,11 +18,14 @@ Example:
 
 from __future__ import annotations
 
+from typing import Any
+
 from bento.security.models import CurrentUser
 from bento.security.providers.base import JWTAuthenticatorBase, JWTConfig
+from bento.security.providers.m2m import M2MAuthMixin, M2MConfig
 
 
-class Auth0Authenticator(JWTAuthenticatorBase):
+class Auth0Authenticator(M2MAuthMixin, JWTAuthenticatorBase):
     """Authenticator for Auth0 identity platform.
 
     Auth0 uses OIDC-compliant JWT tokens with JWKS for verification.
@@ -52,6 +55,11 @@ class Auth0Authenticator(JWTAuthenticatorBase):
         domain: str,
         audience: str,
         namespace: str = "",
+        # M2M configuration (optional)
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        m2m_permissions: list[str] | None = None,
+        m2m_roles: list[str] | None = None,
     ):
         """Initialize Auth0 authenticator.
 
@@ -59,6 +67,10 @@ class Auth0Authenticator(JWTAuthenticatorBase):
             domain: Auth0 tenant domain
             audience: API audience identifier
             namespace: Custom namespace for claims (Auth0 requires namespaced claims)
+            client_id: M2M client ID (enables M2M auth)
+            client_secret: M2M client secret
+            m2m_permissions: Default permissions for M2M clients
+            m2m_roles: Default roles for M2M clients
         """
         self.domain = domain.rstrip("/")
         self.audience = audience
@@ -70,6 +82,31 @@ class Auth0Authenticator(JWTAuthenticatorBase):
             audience=audience,
         )
         super().__init__(config)
+
+        # Initialize M2M support
+        if client_id and client_secret:
+            self.m2m_config = M2MConfig(
+                token_url=f"https://{self.domain}/oauth/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                default_permissions=m2m_permissions,
+                default_roles=m2m_roles,
+            )
+        else:
+            self.m2m_config = None
+
+    async def authenticate(self, request: Any) -> CurrentUser | None:
+        """Authenticate request (user or M2M).
+
+        Args:
+            request: FastAPI Request object
+
+        Returns:
+            CurrentUser if authenticated, None otherwise
+        """
+        if self.should_use_m2m_auth(request):
+            return await self.authenticate_m2m(request)
+        return await super().authenticate(request)
 
     def _extract_user_from_claims(self, claims: dict) -> CurrentUser:
         """Extract CurrentUser from Auth0 token claims.
