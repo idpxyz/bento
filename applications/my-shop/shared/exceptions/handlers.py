@@ -56,7 +56,7 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         return await generic_exception_handler(request, exc)
 
     logger.warning(
-        f"Application exception for {request.url.path}: {app_exc.error_code} - {app_exc.details}",
+        f"Application exception for {request.url.path}: {app_exc.reason_code} - {app_exc.details}",
     )
 
     # 根据错误类型映射 HTTP 状态码
@@ -64,7 +64,7 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
     error_message = str(app_exc)
 
     # Resource not found 应该返回 404
-    if "not found" in error_message.lower() or "resource not found" in error_message.lower():
+    if app_exc.reason_code == "NOT_FOUND" or "not found" in error_message.lower():
         status_code = status.HTTP_404_NOT_FOUND
         error_message = "Resource not found"
 
@@ -73,7 +73,7 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         content={
             "error": "Application Error",
             "message": error_message,
-            "error_code": str(app_exc.error_code),
+            "reason_code": str(app_exc.reason_code),
             "details": app_exc.details,
             "path": str(request.url.path),
         },

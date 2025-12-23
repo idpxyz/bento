@@ -41,7 +41,7 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
         # Validate parent category exists if parent_id is provided
         if command.parent_id:
             category_repo = self.uow.repository(Category)
-            parent = await category_repo.get(command.parent_id)  # type: ignore[arg-type]
+            parent = await category_repo.get(ID(command.parent_id))
             if not parent:
                 raise ApplicationException(
                     reason_code="NOT_FOUND",

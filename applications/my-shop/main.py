@@ -5,7 +5,7 @@ which wires lifespan, middleware, exception handlers and routes.
 """
 
 from config import settings
-from runtime.bootstrap import create_app
+from runtime.bootstrap_v2 import create_app
 
 app = create_app()
 
