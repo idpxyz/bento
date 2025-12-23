@@ -1,17 +1,23 @@
 """Bento Security module.
 
-Provides authentication and authorization utilities.
+Provides security context for request-scoped data.
 
-Note: Multi-tenant support has been moved to `bento.multitenancy` module.
+Note: Multi-tenant support is in `bento.multitenancy` module.
 
 Example:
     ```python
-    from bento.security import SecurityContext
+    from bento.security import RequestContext
 
-    # Get current user
-    user = SecurityContext.get_current_user()
+    ctx = RequestContext(
+        user_id="user-123",
+        scopes=["read", "write"],
+    )
     ```
 """
 
-__all__: list[str] = []
+from bento.security.context import RequestContext
+
+__all__ = [
+    "RequestContext",
+]
 
