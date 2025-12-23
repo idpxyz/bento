@@ -383,10 +383,10 @@ async def manage_order():
     ...
 ```
 
-### @require_role / @require_any_role
+### @require_role / @require_any_role / @require_all_roles
 
 ```python
-from bento.security import require_role, require_any_role
+from bento.security import require_role, require_any_role, require_all_roles
 
 @require_role("admin")
 async def admin_only():
@@ -394,6 +394,10 @@ async def admin_only():
 
 @require_any_role("admin", "moderator")
 async def moderation():
+    ...
+
+@require_all_roles("admin", "super_admin")
+async def super_admin_action():
     ...
 ```
 
@@ -415,6 +419,89 @@ async def delete_item(item: Item):
     ...
 ```
 
+## FastAPI Depends
+
+For FastAPI users who prefer dependency injection style:
+
+```python
+from fastapi import Depends
+from bento.security import get_current_user, get_optional_user, CurrentUser
+
+@app.get("/me")
+async def get_me(user: CurrentUser = Depends(get_current_user)):
+    return {"id": user.id, "roles": user.roles}
+
+@app.get("/public")
+async def public(user: CurrentUser | None = Depends(get_optional_user)):
+    if user:
+        return {"message": f"Hello, {user.id}"}
+    return {"message": "Hello, guest"}
+```
+
+### Available Depends
+
+| Depend | Description |
+|--------|-------------|
+| `get_current_user` | Returns user or raises UNAUTHORIZED |
+| `get_optional_user` | Returns user or None |
+| `require_permissions("a", "b")` | Requires all permissions |
+| `require_roles("a", "b")` | Requires all roles |
+
+### Factory Pattern
+
+```python
+from bento.security.depends import require_permissions, require_roles
+
+@app.post("/orders")
+async def create_order(
+    user: CurrentUser = Depends(require_permissions("orders:write"))
+):
+    ...
+
+@app.delete("/admin/users/{id}")
+async def delete_user(
+    id: str,
+    admin: CurrentUser = Depends(require_roles("admin"))
+):
+    ...
+```
+
+## Built-in Providers
+
+Pre-built authenticators for popular identity providers.
+
+See [providers/README.md](providers/README.md) for details.
+
+```python
+from bento.security.providers import LogtoAuthenticator, Auth0Authenticator
+
+# Logto
+authenticator = LogtoAuthenticator(
+    endpoint="https://your-app.logto.app",
+    app_id="your-app-id",
+)
+
+# Auth0
+authenticator = Auth0Authenticator(
+    domain="your-tenant.auth0.com",
+    audience="https://your-api.example.com",
+)
+```
+
+### M2M Authentication
+
+All providers support Machine-to-Machine authentication:
+
+```python
+authenticator = LogtoAuthenticator(
+    endpoint="https://your-app.logto.app",
+    app_id="your-app-id",
+    # Enable M2M
+    client_id="m2m-client-id",
+    client_secret="m2m-client-secret",
+)
+```
+
 ## Module Structure
 
 ```
@@ -424,7 +511,14 @@ bento/security/
 ├── models.py        # CurrentUser
 ├── ports.py         # IAuthenticator, IAuthorizer
 ├── middleware.py    # FastAPI middleware
-└── decorators.py    # Security decorators
+├── decorators.py    # Security decorators
+├── depends.py       # FastAPI dependencies
+└── providers/       # Built-in authenticators
+    ├── base.py      # JWTAuthenticatorBase
+    ├── m2m.py       # M2M support
+    ├── logto.py     # Logto
+    ├── auth0.py     # Auth0
+    └── keycloak.py  # Keycloak
 ```
 
 ### 可用装饰器
@@ -437,6 +531,7 @@ bento/security/
 | `@require_all_permissions("a", "b")` | 要求所有权限 |
 | `@require_role("admin")` | 要求特定角色 |
 | `@require_any_role("a", "b")` | 要求任意角色 |
+| `@require_all_roles("a", "b")` | 要求所有角色 |
 | `@require_owner_or_role("admin")` | 资源所有者或角色 |
 
 ### 使用示例
