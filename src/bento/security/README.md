@@ -426,3 +426,30 @@ bento/security/
 ├── middleware.py    # FastAPI middleware
 └── decorators.py    # Security decorators
 ```
+
+### 可用装饰器
+
+| 装饰器 | 用途 |
+|--------|------|
+| `@require_auth` | 要求认证 |
+| `@require_permission("x")` | 要求特定权限 |
+| `@require_any_permission("a", "b")` | 要求任意权限 |
+| `@require_all_permissions("a", "b")` | 要求所有权限 |
+| `@require_role("admin")` | 要求特定角色 |
+| `@require_any_role("a", "b")` | 要求任意角色 |
+| `@require_owner_or_role("admin")` | 资源所有者或角色 |
+
+### 使用示例
+
+```python
+from bento.security import require_permission, require_owner_or_role
+
+@require_permission("orders:write")
+async def create_order():
+    ...
+
+@require_owner_or_role("admin")
+async def update_order(order: Order):
+    # order.owner_id == user.id OR user has 'admin' role
+    ...
+```
