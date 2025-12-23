@@ -149,7 +149,7 @@ async def get_product(
     handler: Annotated[GetProductHandler, handler_dependency(GetProductHandler)],
 ) -> dict[str, Any]:
     """Get a product by ID."""
-    from bento.core.errors import ApplicationException
+    from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
 
     try:
@@ -208,7 +208,7 @@ async def delete_product(
     handler: Annotated[DeleteProductHandler, handler_dependency(DeleteProductHandler)],
 ) -> None:
     """Delete a product (soft delete)."""
-    from bento.core.errors import ApplicationException
+    from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
 
     try:

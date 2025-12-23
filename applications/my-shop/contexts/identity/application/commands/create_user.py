@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
 from bento.application import CommandHandler, command_handler
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
 from contexts.identity.domain.models.user import User
@@ -57,20 +57,20 @@ class CreateUserHandler(CommandHandler[CreateUserCommand, User]):
         """
         if not command.name or not command.name.strip():
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "name", "reason": "cannot be empty"},
             )
 
         if not command.email or not command.email.strip():
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "email", "reason": "cannot be empty"},
             )
 
         # Email format validation (simple)
         if "@" not in command.email:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "email", "reason": "invalid email format"},
             )
 
@@ -78,7 +78,7 @@ class CreateUserHandler(CommandHandler[CreateUserCommand, User]):
         user_repo = self.uow.repository(User)
         if await user_repo.email_exists(command.email):
             raise ApplicationException(
-                error_code=CommonErrors.ALREADY_EXISTS,
+                reason_code="ALREADY_EXISTS",
                 details={"field": "email", "reason": f"email '{command.email}' already exists"},
             )
 

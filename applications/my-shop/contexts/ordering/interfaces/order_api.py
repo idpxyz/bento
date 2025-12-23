@@ -205,7 +205,7 @@ async def ship_order(
     handler: Annotated[ShipOrderHandler, handler_dependency(ShipOrderHandler)],
 ) -> dict[str, Any]:
     """Ship an order."""
-    from bento.core.errors import ApplicationException
+    from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
 
     try:

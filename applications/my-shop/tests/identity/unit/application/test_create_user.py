@@ -1,13 +1,13 @@
 """CreateUser 用例单元测试"""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from contexts.identity.application.usecases.create_user import (
-    CreateUserUseCase,
+from contexts.identity.application.commands.create_user import (
+    CreateUserHandler,
     CreateUserCommand,
 )
 
 
-class TestCreateUserUseCase:
+class TestCreateUserHandler:
     """CreateUser 用例单元测试
 
     测试用例的业务流程编排逻辑。
@@ -30,7 +30,7 @@ class TestCreateUserUseCase:
     @pytest.fixture
     def usecase(self, mock_repository, mock_uow):
         """用例实例"""
-        return CreateUserUseCase(
+        return CreateUserHandler(
             repository=mock_repository,
             unit_of_work=mock_uow,
         )

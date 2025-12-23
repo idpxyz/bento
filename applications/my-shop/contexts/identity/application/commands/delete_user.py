@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application.ports.uow import UnitOfWork
 from bento.application.cqrs import CommandHandler
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.identity.domain.models.user import User
 
@@ -34,7 +34,7 @@ class DeleteUserHandler(CommandHandler[DeleteUserCommand, None]):
         """Validate command."""
         if not command.user_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "user_id", "reason": "cannot be empty"},
             )
 
@@ -46,7 +46,7 @@ class DeleteUserHandler(CommandHandler[DeleteUserCommand, None]):
         user = await user_repo.get(command.user_id)  # type: ignore[arg-type]
         if not user:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "user", "id": command.user_id},
             )
 

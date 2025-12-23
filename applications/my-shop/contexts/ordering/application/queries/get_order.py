@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import QueryHandler, query_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.ordering.application.dto import OrderDTO
 from contexts.ordering.application.mappers import OrderDTOMapper
@@ -34,7 +34,7 @@ class GetOrderHandler(QueryHandler[GetOrderQuery, OrderDTO]):
         """Validate query."""
         if not query.order_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
     
@@ -45,7 +45,7 @@ class GetOrderHandler(QueryHandler[GetOrderQuery, OrderDTO]):
         order = await order_repo.get(query.order_id)  # type: ignore[arg-type]
         if not order:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "order", "id": query.order_id},
             )
 

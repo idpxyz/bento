@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
 from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent as OrderCreated
@@ -50,13 +50,13 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
         """Validate command."""
         if not command.customer_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "customer_id", "reason": "cannot be empty"},
             )
 
         if not command.items:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "items", "reason": "order must have at least one item"},
             )
 
@@ -64,17 +64,17 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
         for idx, item in enumerate(command.items):
             if not item.product_id:
                 raise ApplicationException(
-                    error_code=CommonErrors.INVALID_PARAMS,
+                    reason_code="INVALID_PARAMS",
                     details={"field": f"items[{idx}].product_id", "reason": "cannot be empty"},
                 )
             if item.quantity <= 0:
                 raise ApplicationException(
-                    error_code=CommonErrors.INVALID_PARAMS,
+                    reason_code="INVALID_PARAMS",
                     details={"field": f"items[{idx}].quantity", "reason": "must be greater than 0"},
                 )
             if item.unit_price < 0:
                 raise ApplicationException(
-                    error_code=CommonErrors.INVALID_PARAMS,
+                    reason_code="INVALID_PARAMS",
                     details={"field": f"items[{idx}].unit_price", "reason": "cannot be negative"},
                 )
 
@@ -93,7 +93,7 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
 
         if unavailable_ids:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={
                     "resource": "product",
                     "unavailable_products": unavailable_ids,

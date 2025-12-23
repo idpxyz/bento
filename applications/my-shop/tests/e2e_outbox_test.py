@@ -16,7 +16,7 @@ from sqlalchemy import text
 from contexts.catalog.domain.models.product import Product
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 from contexts.ordering.domain.models.order import Order
@@ -65,7 +65,7 @@ async def test_order_creation_persists_outbox_events(db_session):
     uow.register_repository(Order, lambda s: OrderRepository(s))
 
     product_catalog = MockProductCatalog()
-    use_case = CreateOrderUseCase(uow, product_catalog)
+    use_case = CreateOrderHandler(uow, product_catalog)
 
     command = CreateOrderCommand(
         customer_id="test-customer-123",

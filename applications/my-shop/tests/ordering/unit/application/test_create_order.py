@@ -6,12 +6,12 @@ import pytest
 
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 
 
-class TestCreateOrderUseCase:
+class TestCreateOrderHandler:
     """CreateOrder 用例单元测试
 
     测试用例的业务流程编排逻辑。
@@ -40,7 +40,7 @@ class TestCreateOrderUseCase:
     @pytest.fixture
     def usecase(self, mock_uow, mock_product_catalog):
         """用例实例"""
-        return CreateOrderUseCase(
+        return CreateOrderHandler(
             uow=mock_uow,
             product_catalog=mock_product_catalog,
         )

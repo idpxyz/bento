@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
 from contexts.catalog.domain.models.category import Category
@@ -34,7 +34,7 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
         """Validate command."""
         if not command.name or not command.name.strip():
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "name", "reason": "cannot be empty"},
             )
 
@@ -44,7 +44,7 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
             parent = await category_repo.get(command.parent_id)  # type: ignore[arg-type]
             if not parent:
                 raise ApplicationException(
-                    error_code=CommonErrors.NOT_FOUND,
+                    reason_code="NOT_FOUND",
                     details={"resource": "parent category", "id": command.parent_id},
                 )
 

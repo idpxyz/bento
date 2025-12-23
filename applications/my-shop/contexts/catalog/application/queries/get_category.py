@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import QueryHandler, query_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.catalog.application.dto import CategoryDTO
 from contexts.catalog.application.mappers import CategoryDTOMapper
@@ -35,7 +35,7 @@ class GetCategoryHandler(QueryHandler[GetCategoryQuery, CategoryDTO]):
         """Validate query."""
         if not query.category_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "category_id", "reason": "cannot be empty"},
             )
 
@@ -46,7 +46,7 @@ class GetCategoryHandler(QueryHandler[GetCategoryQuery, CategoryDTO]):
         category = await category_repo.get(query.category_id)  # type: ignore[arg-type]
         if not category:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "category", "id": query.category_id},
             )
 

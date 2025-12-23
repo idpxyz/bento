@@ -6,11 +6,11 @@ import pytest
 
 from contexts.catalog.application.commands.create_category import (
     CreateCategoryCommand,
-    CreateCategoryUseCase,
+    CreateCategoryHandler,
 )
 
 
-class TestCreateCategoryUseCase:
+class TestCreateCategoryHandler:
     """CreateCategory 用例单元测试
 
     测试用例的业务流程编排逻辑。
@@ -33,7 +33,7 @@ class TestCreateCategoryUseCase:
     @pytest.fixture
     def usecase(self, mock_uow):
         """用例实例"""
-        return CreateCategoryUseCase(uow=mock_uow)
+        return CreateCategoryHandler(uow=mock_uow)
 
     @pytest.mark.asyncio
     async def test_create_category_success(self, usecase, mock_repository):

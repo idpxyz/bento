@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import QueryHandler, query_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from pydantic import BaseModel, Field
 
 from contexts.catalog.domain.models.category import Category
@@ -52,7 +52,7 @@ class GetCategoryTreeHandler(QueryHandler[GetCategoryTreeQuery, list[CategoryTre
             category = await category_repo.get(query.root_id)  # type: ignore
             if not category:
                 raise ApplicationException(
-                    error_code=CommonErrors.NOT_FOUND,
+                    reason_code="NOT_FOUND",
                     details={"resource": "category", "id": query.root_id},
                 )
 

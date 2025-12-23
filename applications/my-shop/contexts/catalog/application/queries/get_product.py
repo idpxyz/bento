@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import QueryHandler, query_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.catalog.application.dto import ProductDTO
 from contexts.catalog.application.mappers import ProductDTOMapper
@@ -35,7 +35,7 @@ class GetProductHandler(QueryHandler[GetProductQuery, ProductDTO]):
         """Validate query."""
         if not query.product_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "product_id", "reason": "cannot be empty"},
             )
 
@@ -46,7 +46,7 @@ class GetProductHandler(QueryHandler[GetProductQuery, ProductDTO]):
         product = await product_repo.get(query.product_id)  # type: ignore[arg-type]
         if not product:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "product", "id": query.product_id},
             )
 

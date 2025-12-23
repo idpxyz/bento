@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.ordering.domain.models.order import Order
 
@@ -32,7 +32,7 @@ class PayOrderHandler(CommandHandler[PayOrderCommand, Order]):
         """Validate command."""
         if not command.order_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "order_id", "reason": "cannot be empty"},
             )
 
@@ -48,7 +48,7 @@ class PayOrderHandler(CommandHandler[PayOrderCommand, Order]):
         order = await order_repo.get(command.order_id)
         if not order:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "order", "id": command.order_id},
             )
 
@@ -57,7 +57,7 @@ class PayOrderHandler(CommandHandler[PayOrderCommand, Order]):
             order.confirm_payment()
         except ValueError as e:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"reason": str(e)},
             ) from e
 

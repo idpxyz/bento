@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
 from contexts.catalog.domain.models.product import Product
@@ -36,13 +36,13 @@ class CreateProductHandler(CommandHandler[CreateProductCommand, Product]):
         """Validate command."""
         if not command.name or not command.name.strip():
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "name", "reason": "cannot be empty"},
             )
 
         if command.price <= 0:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "price", "reason": "must be greater than 0"},
             )
 

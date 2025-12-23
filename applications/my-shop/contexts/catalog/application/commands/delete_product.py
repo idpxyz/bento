@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.catalog.domain.models.product import Product
 
@@ -31,7 +31,7 @@ class DeleteProductHandler(CommandHandler[DeleteProductCommand, None]):
         """Validate command."""
         if not command.product_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "product_id", "reason": "cannot be empty"},
             )
 
@@ -43,7 +43,7 @@ class DeleteProductHandler(CommandHandler[DeleteProductCommand, None]):
         product = await product_repo.get(command.product_id)  # type: ignore[arg-type]
         if not product:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "product", "id": command.product_id},
             )
 

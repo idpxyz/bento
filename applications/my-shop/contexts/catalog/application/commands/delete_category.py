@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.catalog.domain.models.category import Category
 
@@ -31,7 +31,7 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
         """Validate command."""
         if not command.category_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "category_id", "reason": "cannot be empty"},
             )
 
@@ -40,7 +40,7 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
         category = await category_repo.get(command.category_id)  # type: ignore
         if not category:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "category", "id": command.category_id},
             )
 
@@ -51,7 +51,7 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
         ]
         if children:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={
                     "reason": "Cannot delete category with children",
                     "category_id": command.category_id,
@@ -67,7 +67,7 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
         category = await category_repo.get(command.category_id)  # type: ignore
         if not category:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "category", "id": command.category_id},
             )
 

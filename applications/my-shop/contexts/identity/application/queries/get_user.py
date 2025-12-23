@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from bento.application import QueryHandler, query_handler
 from bento.application.ports.uow import UnitOfWork
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.identity.application.dto.user_dto import UserDTO
 from contexts.identity.application.mappers.user_dto_mapper import UserDTOMapper
@@ -38,7 +38,7 @@ class GetUserHandler(QueryHandler[GetUserQuery, UserDTO]):
         """Validate query."""
         if not query.user_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "user_id", "reason": "cannot be empty"},
             )
 
@@ -49,7 +49,7 @@ class GetUserHandler(QueryHandler[GetUserQuery, UserDTO]):
         user = await user_repo.get(query.user_id)  # type: ignore[arg-type]
         if not user:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "user", "id": query.user_id},
             )
 
