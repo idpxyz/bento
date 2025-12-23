@@ -179,6 +179,75 @@ add_tenant_middleware(
 
 The `TokenTenantResolver` reads tenant from `request.state.user.metadata["tenant_id"]`.
 
+## M2M (Machine-to-Machine) Authentication
+
+All providers support M2M authentication for service-to-service communication.
+
+### Enable M2M
+
+```python
+# Logto with M2M
+authenticator = LogtoAuthenticator(
+    endpoint="https://your-app.logto.app",
+    app_id="your-app-id",
+    # M2M credentials
+    client_id="m2m-client-id",
+    client_secret="m2m-client-secret",
+    m2m_permissions=["api:access"],
+    m2m_roles=["service"],
+)
+
+# Auth0 with M2M
+authenticator = Auth0Authenticator(
+    domain="your-tenant.auth0.com",
+    audience="https://your-api.example.com",
+    client_id="m2m-client-id",
+    client_secret="m2m-client-secret",
+)
+
+# Keycloak with M2M
+authenticator = KeycloakAuthenticator(
+    server_url="https://keycloak.example.com",
+    realm="your-realm",
+    client_id="your-client-id",
+    client_secret="your-client-secret",
+)
+```
+
+### M2M Request Detection
+
+Requests are detected as M2M when:
+
+1. **Explicit header**: `X-M2M-Auth: true`
+2. **Client credentials headers**: `X-Client-ID` + `X-Client-Secret`
+3. **Basic auth**: `Authorization: Basic <base64(client_id:client_secret)>`
+
+### M2M User
+
+M2M clients get a `CurrentUser` with:
+
+```python
+CurrentUser(
+    id="m2m:client-id",
+    permissions=["api:access"],  # from m2m_permissions
+    roles=["service"],           # from m2m_roles
+    metadata={"type": "m2m", "client_id": "..."},
+)
+```
+
+### Get Token for Outbound Calls
+
+When your service needs to call another service:
+
+```python
+# Get access token using Client Credentials Grant
+token = await authenticator.get_m2m_token(scope="api:read api:write")
+
+# Use token in outbound request
+headers = {"Authorization": f"Bearer {token}"}
+response = await httpx.get("https://other-service/api", headers=headers)
+```
+
 ## Error Handling
 
 All providers return `None` on authentication failure:
