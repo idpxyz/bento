@@ -20,8 +20,7 @@ Example:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
-import asyncio
+from typing import Any
 
 from bento.security.models import CurrentUser
 
@@ -234,11 +233,11 @@ class M2MAuthMixin:
 
         try:
             import httpx
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "httpx is required for M2M token requests. "
                 "Install it with: pip install httpx"
-            )
+            ) from err
 
         async with httpx.AsyncClient() as client:
             data = {
