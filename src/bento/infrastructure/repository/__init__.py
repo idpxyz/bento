@@ -19,12 +19,18 @@ from .cascade_helper import CascadeConfig, CascadeHelper, CascadeMixin
 from .inmemory import InMemoryRepository
 from .simple_adapter import SimpleRepositoryAdapter
 from .tenant_aware import TenantAwareRepositoryAdapter
+from .tenant_aware_simple import TenantAwareSimpleAdapter
 
 __all__ = [
+    # Standard adapters
     "RepositoryAdapter",
     "SimpleRepositoryAdapter",
+    # Tenant-aware adapters
     "TenantAwareRepositoryAdapter",
+    "TenantAwareSimpleAdapter",
+    # Testing
     "InMemoryRepository",
+    # Cascade helpers
     "CascadeHelper",
     "CascadeMixin",
     "CascadeConfig",

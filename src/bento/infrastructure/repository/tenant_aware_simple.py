@@ -1,18 +1,18 @@
-"""Tenant-aware repository adapter for multi-tenant applications.
+"""Tenant-aware simple repository adapter for multi-tenant applications.
 
-This module provides a repository adapter that automatically filters
-and injects tenant_id for all operations using TenantFilterMixin.
+This module provides a simple repository adapter with automatic tenant filtering
+for cases where AR = PO (no mapping needed).
 
 Example:
     ```python
-    from bento.infrastructure.repository import TenantAwareRepositoryAdapter
+    from bento.infrastructure.repository import TenantAwareSimpleAdapter
 
-    class ProductRepository(TenantAwareRepositoryAdapter[Product, ProductPO, ID]):
+    class ConfigRepository(TenantAwareSimpleAdapter[Config, ID]):
         pass
 
     # All queries automatically filtered by current tenant
     TenantContext.set("tenant-123")
-    products = await repo.find_all()  # Only tenant-123's products
+    configs = await repo.find_all()  # Only tenant-123's configs
     ```
 """
 
@@ -20,34 +20,35 @@ from __future__ import annotations
 
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
-from bento.infrastructure.repository.adapter import RepositoryAdapter
 from bento.infrastructure.repository.mixins import TenantFilterMixin
-from bento.persistence.po import Base
+from bento.infrastructure.repository.simple_adapter import SimpleRepositoryAdapter
 from bento.persistence.specification import CompositeSpecification
 
 
-class TenantAwareRepositoryAdapter[AR: AggregateRoot, PO: Base, ID: EntityId](
+class TenantAwareSimpleAdapter[AR: AggregateRoot, ID: EntityId](
     TenantFilterMixin,
-    RepositoryAdapter[AR, PO, ID],
+    SimpleRepositoryAdapter[AR, ID],
 ):
-    """Repository adapter with automatic tenant filtering.
+    """Simple repository adapter with automatic tenant filtering.
 
     Uses TenantFilterMixin to provide:
     - Automatic tenant_id filter on all queries
     - Automatic tenant_id injection on save
     - Tenant validation on get operations
 
+    Use this when AR = PO (no mapping needed) and you need tenant isolation.
+
     Example:
         ```python
-        from bento.infrastructure.repository import TenantAwareRepositoryAdapter
+        from bento.infrastructure.repository import TenantAwareSimpleAdapter
 
-        class OrderRepository(TenantAwareRepositoryAdapter[Order, OrderPO, ID]):
+        class AuditLogRepository(TenantAwareSimpleAdapter[AuditLog, ID]):
             tenant_field = "tenant_id"  # Optional, this is the default
 
         # Usage
         TenantContext.set("tenant-123")
-        orders = await repo.find_all()  # Automatically filtered
-        await repo.save(order)  # Automatically sets tenant_id
+        logs = await repo.find_all()  # Automatically filtered
+        await repo.save(log)  # Automatically sets tenant_id
         ```
     """
 
@@ -89,7 +90,7 @@ class TenantAwareRepositoryAdapter[AR: AggregateRoot, PO: Base, ID: EntityId](
             return None
         return entity
 
-    async def save(self, aggregate: AR) -> AR:
+    async def save(self, aggregate: AR) -> None:
         """Save with automatic tenant_id injection."""
         self._inject_tenant_id(aggregate)
-        return await super().save(aggregate)
+        await super().save(aggregate)
