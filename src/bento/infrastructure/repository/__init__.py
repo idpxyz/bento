@@ -18,10 +18,12 @@ from .adapter import RepositoryAdapter
 from .cascade_helper import CascadeConfig, CascadeHelper, CascadeMixin
 from .inmemory import InMemoryRepository
 from .simple_adapter import SimpleRepositoryAdapter
+from .tenant_aware import TenantAwareRepositoryAdapter
 
 __all__ = [
     "RepositoryAdapter",
     "SimpleRepositoryAdapter",
+    "TenantAwareRepositoryAdapter",
     "InMemoryRepository",
     "CascadeHelper",
     "CascadeMixin",

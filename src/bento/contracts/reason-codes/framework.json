@@ -141,6 +141,20 @@
       "http_status": 409,
       "category": "DOMAIN",
       "retryable": false
+    },
+    {
+      "reason_code": "TENANT_REQUIRED",
+      "message": "Tenant ID is required for this operation",
+      "http_status": 400,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "TENANT_MISMATCH",
+      "message": "Resource belongs to a different tenant",
+      "http_status": 403,
+      "category": "CLIENT",
+      "retryable": false
     }
   ]
 }
