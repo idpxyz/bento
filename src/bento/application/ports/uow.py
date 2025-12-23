@@ -7,15 +7,21 @@ The Unit of Work pattern ensures that:
 1. Multiple changes are committed atomically
 2. Domain events are collected and published after successful commit
 3. Changes are rolled back on failure
+4. Message deduplication via Inbox pattern
+5. Command idempotency via Idempotency pattern
 """
 
 from collections.abc import Callable
-from typing import Any, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.domain_event import DomainEvent
 from bento.domain.ports.repository import IRepository
+
+if TYPE_CHECKING:
+    from bento.messaging.idempotency import IdempotencyStore
+    from bento.messaging.inbox import Inbox
 
 AR = TypeVar("AR", bound=AggregateRoot)
 T = TypeVar("T")
@@ -55,12 +61,12 @@ class UnitOfWork(Protocol):
                     # Get port for cross-BC service
                     product_catalog = self.uow.port(IProductCatalogService)
                     await product_catalog.check_products_available(...)
-                    
+
                     # Get repository for data access
                     order_repo = self.uow.repository(Order)
                     order = Order.create(...)
                     await order_repo.save(order)
-                    
+
                     await self.uow.commit()  # Auto-publishes events
                 return order
         ```
@@ -235,6 +241,64 @@ class UnitOfWork(Protocol):
             async with uow:
                 order_repo = uow.repository(Order)
                 order = await order_repo.find_by_id(order_id)
+                await uow.commit()
+            ```
+        """
+        ...
+
+    @property
+    def inbox(self) -> "Inbox":
+        """Get the Inbox for message deduplication.
+
+        The Inbox pattern ensures exactly-once processing of messages
+        by tracking which message IDs have already been processed.
+
+        Returns:
+            Inbox instance for the current transaction
+
+        Example:
+            ```python
+            async with uow:
+                # Check if already processed (idempotency)
+                if await uow.inbox.is_processed(event_id):
+                    return  # Skip duplicate
+
+                # Process message
+                await process_business_logic(payload)
+
+                # Mark as processed (same transaction)
+                await uow.inbox.mark_processed(event_id, "OrderCreated")
+                await uow.commit()
+            ```
+        """
+        ...
+
+    @property
+    def idempotency(self) -> "IdempotencyStore":
+        """Get the IdempotencyStore for command deduplication.
+
+        The Idempotency pattern ensures exactly-once command execution
+        by caching results keyed by client-provided idempotency keys.
+
+        Returns:
+            IdempotencyStore instance for the current transaction
+
+        Example:
+            ```python
+            async with uow:
+                # Check for cached response
+                cached = await uow.idempotency.get_response(idempotency_key)
+                if cached:
+                    return cached.response
+
+                # Lock the key
+                await uow.idempotency.lock(idempotency_key, "CreateOrder")
+
+                # Execute command
+                result = await handler.execute(command)
+
+                # Store response
+                await uow.idempotency.store_response(idempotency_key, result)
                 await uow.commit()
             ```
         """

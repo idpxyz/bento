@@ -15,6 +15,9 @@ from contexts.catalog.infrastructure.models.product_po import ProductPO  # noqa:
 from contexts.identity.infrastructure.models.user_po import UserPO  # noqa: F401
 from contexts.ordering.infrastructure.models.order_po import OrderPO  # noqa: F401
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO  # noqa: F401
+from contexts.ordering.infrastructure.models.read_models.order_read_model import (
+    OrderReadModel,  # noqa: F401
+)
 
 # this is the Alembic Config object
 config = context.config

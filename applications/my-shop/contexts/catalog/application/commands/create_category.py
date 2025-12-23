@@ -38,6 +38,16 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
                 details={"field": "name", "reason": "cannot be empty"},
             )
 
+        # Validate parent category exists if parent_id is provided
+        if command.parent_id:
+            category_repo = self.uow.repository(Category)
+            parent = await category_repo.get(command.parent_id)  # type: ignore[arg-type]
+            if not parent:
+                raise ApplicationException(
+                    error_code=CommonErrors.NOT_FOUND,
+                    details={"resource": "parent category", "id": command.parent_id},
+                )
+
     async def handle(self, command: CreateCategoryCommand) -> Category:
         """Handle command execution."""
         category_id = ID.generate()

@@ -229,7 +229,7 @@ class TestEventRegistry:
         # Should fall back to base DomainEvent
         assert isinstance(event, DomainEvent)
         assert event.topic == "UnknownEvent"
-        assert "not registered" in caplog.text
+        assert "not found in registry" in caplog.text
 
     def test_deserialize_event_with_datetime_string(self):
         """Test deserializing event with datetime as string."""

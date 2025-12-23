@@ -1,6 +1,6 @@
 """ProductCreated 领域事件"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bento.domain.domain_event import DomainEvent
 from bento.domain.event_registry import register_event
@@ -21,11 +21,15 @@ class ProductCreated(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    topic: str = "productcreated"
+    # 事件字段
+    product_id: str = field(default="")
+    name: str = field(default="")
+    price: float = field(default=0.0)
 
-    # TODO: 添加事件字段
-    # 例如:
-    # productcreated_id: str
-    # user_id: str
-    # old_value: str
+    # 可选字段
+    sku: str | None = field(default=None)
+    brand: str | None = field(default=None)
+
+    # 元数据（必须放在最后）
+    topic: str = field(default="catalog.product.created")
     # new_value: str

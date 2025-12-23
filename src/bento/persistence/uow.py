@@ -20,6 +20,8 @@ from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
 from bento.application.ports.message_bus import MessageBus
 from bento.application.ports.uow import UnitOfWork as IUnitOfWork
 from bento.domain.domain_event import DomainEvent
+from bento.messaging.idempotency import IdempotencyStore
+from bento.messaging.inbox import Inbox
 from bento.messaging.outbox import Outbox
 from bento.persistence.config import is_outbox_listener_enabled
 
@@ -78,6 +80,9 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         outbox: Outbox,
         repository_factories: dict[type, Callable[[AsyncSession], Any]] | None = None,
         event_bus: MessageBus | None = None,  # Optional: for dual publishing strategy
+        inbox: Inbox | None = None,  # Optional: for message deduplication
+        idempotency: IdempotencyStore | None = None,  # Optional: for command idempotency
+        tenant_id: str = "default",
     ) -> None:
         """Initialize unit of work with Outbox pattern support.
 
@@ -86,6 +91,9 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             outbox: Outbox for transactional event publishing
             repository_factories: Dictionary mapping aggregate types to repository factory functions
             event_bus: Optional event bus for immediate publishing (dual publishing strategy)
+            inbox: Optional Inbox for message deduplication
+            idempotency: Optional IdempotencyStore for command idempotency
+            tenant_id: Tenant identifier for multi-tenant operations
         """
         self._session = session
         self._outbox = outbox
@@ -101,6 +109,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self.pending_events: list[DomainEvent] = []
         self._tracked_aggregates: list[Any] = []  # Track aggregates for event collection
         self._ctx_token: contextvars.Token | None = None
+        # Inbox and Idempotency (injected or lazy-loaded)
+        self._inbox: Inbox | None = inbox
+        self._idempotency: IdempotencyStore | None = idempotency
+        self._tenant_id: str = tenant_id
         logger.debug(
             "UoW initialized with outbox: %s, event_bus: %s",
             outbox.__class__.__name__ if outbox else "None",
@@ -222,6 +234,47 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         """Get underlying session."""
         return self._session
 
+    @property
+    def inbox(self) -> Inbox:
+        """Get the Inbox for message deduplication.
+
+        Lazily creates SqlAlchemyInbox on first access.
+
+        Returns:
+            Inbox instance for the current transaction
+        """
+        if self._inbox is None:
+            from bento.persistence.inbox import SqlAlchemyInbox
+
+            self._inbox = SqlAlchemyInbox(self._session, self._tenant_id)  # type: ignore[assignment]
+        return self._inbox  # type: ignore[return-value]
+
+    @property
+    def idempotency(self) -> IdempotencyStore:
+        """Get the IdempotencyStore for command deduplication.
+
+        Lazily creates SqlAlchemyIdempotency on first access.
+
+        Returns:
+            IdempotencyStore instance for the current transaction
+        """
+        if self._idempotency is None:
+            from bento.persistence.idempotency import SqlAlchemyIdempotency
+
+            self._idempotency = SqlAlchemyIdempotency(self._session, self._tenant_id)  # type: ignore[assignment]
+        return self._idempotency  # type: ignore[return-value]
+
+    def set_tenant_id(self, tenant_id: str) -> None:
+        """Set the tenant ID for multi-tenant operations.
+
+        Args:
+            tenant_id: The tenant identifier
+        """
+        self._tenant_id = tenant_id
+        # Reset lazy-loaded instances to use new tenant_id
+        self._inbox = None
+        self._idempotency = None
+
     def track(self, aggregate: Any) -> None:
         """Track an aggregate for event collection.
 
@@ -239,6 +292,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         # Transaction starts automatically on first operation
         self.pending_events.clear()
         self._tracked_aggregates.clear()
+        # Reset lazy-loaded instances for new transaction (if not injected)
+        # This ensures each transaction gets fresh instances
+        self._inbox = None
+        self._idempotency = None
 
         # Register UoW in session.info for Event Listener access
         # For AsyncSession, we need to set it on the sync_session

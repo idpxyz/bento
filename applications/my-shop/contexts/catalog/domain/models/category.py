@@ -1,9 +1,15 @@
 """Category 聚合根 - 智能 ID 处理"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
+
+if TYPE_CHECKING:
+    pass
 
 
 @dataclass
@@ -46,3 +52,14 @@ class Category(AggregateRoot):
     def move_to(self, new_parent_id: ID | None) -> None:
         """移动到新的父分类"""
         self.parent_id = new_parent_id
+
+    def mark_deleted(self) -> None:
+        """标记分类为已删除，触发事件"""
+        # Import here to avoid circular import
+        from contexts.catalog.domain.events.categorydeleted_event import CategoryDeleted
+
+        event = CategoryDeleted(
+            category_id=str(self.id),
+            category_name=self.name,
+        )
+        self.add_event(event)

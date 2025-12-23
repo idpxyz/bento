@@ -35,6 +35,30 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
                 details={"field": "category_id", "reason": "cannot be empty"},
             )
 
+        # Check if category exists
+        category_repo = self.uow.repository(Category)
+        category = await category_repo.get(command.category_id)  # type: ignore
+        if not category:
+            raise ApplicationException(
+                error_code=CommonErrors.NOT_FOUND,
+                details={"resource": "category", "id": command.category_id},
+            )
+
+        # Check if category has children
+        all_categories = await category_repo.find_all()
+        children = [
+            c for c in all_categories if c.parent_id and str(c.parent_id) == command.category_id
+        ]
+        if children:
+            raise ApplicationException(
+                error_code=CommonErrors.INVALID_PARAMS,
+                details={
+                    "reason": "Cannot delete category with children",
+                    "category_id": command.category_id,
+                    "children_count": len(children),
+                },
+            )
+
     async def handle(self, command: DeleteCategoryCommand) -> None:
         """Handle command execution."""
         category_repo = self.uow.repository(Category)
@@ -46,6 +70,9 @@ class DeleteCategoryHandler(CommandHandler[DeleteCategoryCommand, None]):
                 error_code=CommonErrors.NOT_FOUND,
                 details={"resource": "category", "id": command.category_id},
             )
+
+        # Mark category as deleted (triggers event)
+        category.mark_deleted()
 
         # Delete category (soft delete via framework)
         await category_repo.delete(category)

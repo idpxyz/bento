@@ -89,6 +89,25 @@ async def lifespan(app: FastAPI):  # pragma: no cover - thin wiring layer
         tenant_id="default",
     )
 
+    # Initialize OrderProjection and register event handlers
+    from contexts.ordering.application.projections.order_projection import OrderProjection
+    from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
+    from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
+    from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
+
+    # Create a new session for the projection
+    session = session_factory()
+    order_projection = OrderProjection(session)
+
+    # Register event handlers with their corresponding event types
+    logger.info("Registering event handlers...")
+    await bus.subscribe(OrderCreatedEvent, order_projection.handle_order_created)
+    logger.info(f"Registered handler for {OrderCreatedEvent.__name__}")
+    await bus.subscribe(OrderPaidEvent, order_projection.handle_order_paid)
+    logger.info(f"Registered handler for {OrderPaidEvent.__name__}")
+    await bus.subscribe(OrderShippedEvent, order_projection.handle_order_shipped)
+    logger.info(f"Registered handler for {OrderShippedEvent.__name__}")
+
     # Start bus and projector loop
     await bus.start()
     projector_task = asyncio.create_task(projector.run_forever())
@@ -135,6 +154,10 @@ async def lifespan(app: FastAPI):  # pragma: no cover - thin wiring layer
         projector_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await projector_task
+
+        # Close the projection session
+        if "session" in locals():
+            await session.close()
 
         await bus.stop()
 

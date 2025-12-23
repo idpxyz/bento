@@ -3,7 +3,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from contexts.catalog.application.commands import (
     CreateCategoryCommand,
@@ -16,9 +16,12 @@ from contexts.catalog.application.commands import (
 from contexts.catalog.application.queries import (
     GetCategoryHandler,
     GetCategoryQuery,
+    GetCategoryTreeHandler,
+    GetCategoryTreeQuery,
     ListCategoriesHandler,
     ListCategoriesQuery,
 )
+from contexts.catalog.application.queries.get_category_tree import CategoryTreeNodeDTO
 from contexts.catalog.interfaces.category_presenters import category_to_dict
 from shared.infrastructure.dependencies import handler_dependency
 
@@ -31,9 +34,9 @@ router = APIRouter()
 class CreateCategoryRequest(BaseModel):
     """Create category request model."""
 
-    name: str
-    description: str
-    parent_id: str | None = None
+    name: str = Field(..., min_length=1, max_length=100, description="Category name")
+    description: str = Field(..., min_length=1, max_length=500, description="Category description")
+    parent_id: str | None = Field(None, description="Parent category ID (UUID format)")
 
 
 class UpdateCategoryRequest(BaseModel):
@@ -158,3 +161,36 @@ async def delete_category(
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)
     await handler.execute(command)
+
+
+@router.get(
+    "/tree/all",
+    response_model=list[CategoryTreeNodeDTO],
+    summary="Get category tree structure",
+)
+async def get_category_tree(
+    handler: Annotated[GetCategoryTreeHandler, handler_dependency(GetCategoryTreeHandler)],
+) -> list[CategoryTreeNodeDTO]:
+    """Get all categories in tree structure.
+
+    Returns a hierarchical tree of all root categories with their children.
+    """
+    query = GetCategoryTreeQuery(root_id=None)
+    return await handler.execute(query)
+
+
+@router.get(
+    "/tree/{root_id}",
+    response_model=list[CategoryTreeNodeDTO],
+    summary="Get category subtree",
+)
+async def get_category_subtree(
+    root_id: str,
+    handler: Annotated[GetCategoryTreeHandler, handler_dependency(GetCategoryTreeHandler)],
+) -> list[CategoryTreeNodeDTO]:
+    """Get a specific category and its subtree.
+
+    Returns the specified category with all its descendants in tree structure.
+    """
+    query = GetCategoryTreeQuery(root_id=root_id)
+    return await handler.execute(query)

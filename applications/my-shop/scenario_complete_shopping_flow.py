@@ -28,6 +28,7 @@ from pathlib import Path
 from bento.adapters.messaging.inprocess import InProcessMessageBus
 
 # Bento framework imports
+from bento.config.outbox import OutboxProjectorConfig
 from bento.core.ids import ID
 from bento.infrastructure.database import DatabaseConfig, create_async_engine_from_config
 from bento.infrastructure.projection.projector import OutboxProjector
@@ -41,7 +42,7 @@ from contexts.catalog.infrastructure.repositories.product_repository_impl import
 )
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
@@ -49,6 +50,9 @@ from contexts.ordering.domain.events.orderdelivered_event import OrderDeliveredE
 from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
 from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
 from contexts.ordering.domain.models.order import Order
+from contexts.ordering.domain.ports.services.i_product_catalog_service import (
+    IProductCatalogService,
+)
 from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
     ProductCatalogAdapter,
 )
@@ -291,11 +295,12 @@ async def setup_event_handlers(bus: InProcessMessageBus):
 
 async def process_events(session_factory, bus):
     """处理 Outbox 中的事件"""
+    config = OutboxProjectorConfig(batch_size=10)
     projector = OutboxProjector(
         session_factory=session_factory,
         message_bus=bus,
         tenant_id="default",
-        batch_size=10,
+        config=config,
     )
     await projector.publish_all()
     await asyncio.sleep(0.5)  # 等待异步 Handler 执行
@@ -406,7 +411,8 @@ async def main():
         outbox = SqlAlchemyOutbox(session)
         uow = SQLAlchemyUnitOfWork(session, outbox)
         register_repositories(uow)
-        use_case = CreateOrderUseCase(uow, product_catalog=ProductCatalogAdapter(session))
+        uow.register_port(IProductCatalogService, lambda s: ProductCatalogAdapter(s))
+        handler = CreateOrderHandler(uow)
 
         command = CreateOrderCommand(
             customer_id=customer_id,
@@ -426,9 +432,7 @@ async def main():
             ],
         )
 
-        async with uow:
-            order = await use_case.handle(command)
-            await uow.commit()
+        order = await handler.execute(command)
 
         order_id = order.id
         order_total = order.total

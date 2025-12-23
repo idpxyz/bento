@@ -1,20 +1,25 @@
 """Catalog module queries."""
 
 from contexts.catalog.application.queries.get_category import (
-    GetCategoryQuery,
     GetCategoryHandler,
+    GetCategoryQuery,
+)
+from contexts.catalog.application.queries.get_category_tree import (
+    CategoryTreeNodeDTO,
+    GetCategoryTreeHandler,
+    GetCategoryTreeQuery,
 )
 from contexts.catalog.application.queries.get_product import (
-    GetProductQuery,
     GetProductHandler,
+    GetProductQuery,
 )
 from contexts.catalog.application.queries.list_categories import (
-    ListCategoriesQuery,
     ListCategoriesHandler,
+    ListCategoriesQuery,
 )
 from contexts.catalog.application.queries.list_products import (
-    ListProductsQuery,
     ListProductsHandler,
+    ListProductsQuery,
 )
 
 __all__ = [
@@ -28,4 +33,7 @@ __all__ = [
     "GetCategoryHandler",
     "ListCategoriesQuery",
     "ListCategoriesHandler",
+    "GetCategoryTreeQuery",
+    "GetCategoryTreeHandler",
+    "CategoryTreeNodeDTO",
 ]

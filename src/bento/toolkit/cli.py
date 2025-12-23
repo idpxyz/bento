@@ -167,7 +167,7 @@ def generate_query(name: str, action: str, output_dir: pathlib.Path, context: st
 
 def generate_event(name: str, output_dir: pathlib.Path, context: str = "shared"):
     """生成领域事件
-    
+
     Args:
         name: 事件名称（如 ProductCreated）
         output_dir: 输出目录
@@ -176,13 +176,13 @@ def generate_event(name: str, output_dir: pathlib.Path, context: str = "shared")
     # 提取实体名称（去除事件后缀）
     entity_name = name
     event_name = name.lower()
-    
+
     # 尝试提取实体名称（例如：ProductCreated -> Product）
     for suffix in ["Created", "Updated", "Deleted", "Changed"]:
         if name.endswith(suffix):
             entity_name = name[:-len(suffix)]
             break
-    
+
     return generate_file(
         "event.py.tpl",
         output_dir / "domain" / "events" / f"{event_name}_event.py",
@@ -639,7 +639,7 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
         context=context.lower(),
         fields=fields,
     )
-    
+
     # Application tests (CQRS - Command tests)
     for action in ["Create", "Update", "Delete"]:
         generate_file(
@@ -651,7 +651,7 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
             action_lower=action.lower(),
             context=context.lower(),
         )
-    
+
     # Application tests (CQRS - Query tests)
     for action in ["Get", "List"]:
         generate_file(
@@ -663,7 +663,7 @@ def generate_module(name: str, fields, output_dir: pathlib.Path, context: str):
             action_lower=action.lower(),
             context=context.lower(),
         )
-    
+
     # Integration tests
     generate_file(
         "test_repository.py.tpl",
@@ -713,6 +713,99 @@ def run_validation(args):
         return 1
     except Exception as e:
         print(f"❌ Validation error: {e}")
+        return 1
+
+
+def run_contracts_command(args):
+    """执行 Contract-as-Code 命令"""
+    try:
+        from bento.contracts.gates import ContractGate
+        from bento.contracts import ContractLoader
+
+        contracts_path = args.contracts_path
+
+        if args.contracts_cmd == "validate":
+            print("🔍 Validating Contract-as-Code definitions")
+            print("=" * 50)
+            print(f"📁 Contracts path: {contracts_path}")
+
+            gate = ContractGate(
+                contracts_root=contracts_path,
+                require_state_machines=args.require_state_machines,
+                require_reason_codes=args.require_reason_codes,
+                require_routing=args.require_routing,
+            )
+            result = gate.check()
+
+            # Print warnings
+            for warning in result.warnings:
+                print(f"⚠️  {warning}")
+
+            # Print errors
+            for error in result.errors:
+                print(f"❌ {error}")
+
+            if result.passed:
+                print("\n✅ All contract validations passed!")
+                return 0
+            else:
+                print(f"\n❌ Contract validation failed with {len(result.errors)} error(s)")
+                return 1
+
+        elif args.contracts_cmd == "list":
+            print("📋 Contract-as-Code Definitions")
+            print("=" * 50)
+            print(f"📁 Contracts path: {contracts_path}")
+
+            try:
+                contracts = ContractLoader.load_from_dir(contracts_path)
+            except Exception as e:
+                print(f"❌ Failed to load contracts: {e}")
+                return 1
+
+            list_type = args.type
+
+            if list_type in ("all", "state-machines"):
+                print("\n🔄 State Machines:")
+                aggregates = contracts.state_machines.aggregates
+                if aggregates:
+                    for agg in aggregates:
+                        states = contracts.state_machines.get_states(agg)
+                        print(f"  • {agg}: {len(states)} states")
+                else:
+                    print("  (none)")
+
+            if list_type in ("all", "reason-codes"):
+                print("\n📝 Reason Codes:")
+                codes = contracts.reason_codes.all()
+                if codes:
+                    for code in codes[:10]:  # Show first 10
+                        print(f"  • {code.code} ({code.http_status}): {code.message[:40]}...")
+                    if len(codes) > 10:
+                        print(f"  ... and {len(codes) - 10} more")
+                else:
+                    print("  (none)")
+
+            if list_type in ("all", "routing"):
+                print("\n🔀 Event Routing:")
+                routes = contracts.routing.all_routes()
+                if routes:
+                    for route in routes[:10]:  # Show first 10
+                        print(f"  • {route.event_type} → {route.topic}")
+                    if len(routes) > 10:
+                        print(f"  ... and {len(routes) - 10} more")
+                else:
+                    print("  (none)")
+
+            print()
+            return 0
+
+    except ImportError as e:
+        print(f"❌ Error: Cannot import contracts module: {e}")
+        print("💡 Make sure PyYAML is installed: pip install pyyaml")
+        return 1
+    except Exception as e:
+        print(f"❌ Contract command error: {e}")
         return 1
 
 
@@ -824,7 +917,7 @@ Examples:
   bento gen command Product Publish --context catalog # PublishProductHandler
   bento gen query Product Get --context catalog       # GetProductHandler
   bento gen query Product Search --context catalog    # SearchProductHandler
-  
+
   # Generate domain components
   bento gen event OrderCreated --context order
   bento gen aggregate Order --fields "customer_id:str,total:float" --context order
@@ -903,6 +996,71 @@ Example:
         "--fail-on-violations", action="store_true", help="Exit with error code if violations found"
     )
 
+    # contracts 命令 - Contract-as-Code 验证
+    contracts_help = """
+Validate and inspect Contract-as-Code definitions.
+
+This command checks:
+  - State machine definitions (YAML)
+  - Reason codes catalog (JSON)
+  - Event routing matrix (YAML)
+  - Event schemas (JSON Schema)
+
+Example:
+  bento contracts validate ./contracts
+  bento contracts list ./contracts --type state-machines
+  bento contracts list ./contracts --type reason-codes
+"""
+
+    contracts_parser = sub.add_parser(
+        "contracts",
+        help="Contract-as-Code validation and inspection",
+        description=contracts_help,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    contracts_sub = contracts_parser.add_subparsers(
+        dest="contracts_cmd", required=True, title="contract commands"
+    )
+
+    # contracts validate
+    cv = contracts_sub.add_parser("validate", help="Validate contract files")
+    cv.add_argument(
+        "contracts_path",
+        nargs="?",
+        default="./contracts",
+        help="Path to contracts directory (default: ./contracts)",
+    )
+    cv.add_argument(
+        "--require-state-machines",
+        action="store_true",
+        help="Fail if no state machines found",
+    )
+    cv.add_argument(
+        "--require-reason-codes",
+        action="store_true",
+        help="Fail if no reason codes found",
+    )
+    cv.add_argument(
+        "--require-routing",
+        action="store_true",
+        help="Fail if no routing matrix found",
+    )
+
+    # contracts list
+    cl = contracts_sub.add_parser("list", help="List contract definitions")
+    cl.add_argument(
+        "contracts_path",
+        nargs="?",
+        default="./contracts",
+        help="Path to contracts directory (default: ./contracts)",
+    )
+    cl.add_argument(
+        "--type",
+        choices=["all", "state-machines", "reason-codes", "routing"],
+        default="all",
+        help="Type of contracts to list (default: all)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -911,6 +1069,10 @@ Example:
             output_dir = args.output.absolute()
             generate_project_scaffold(args.project_name, output_dir, args.description)
             return 0
+
+        elif args.cmd == "contracts":
+            # Contract-as-Code 验证和检查
+            return run_contracts_command(args)
 
         elif args.cmd == "validate":
             # 架构验证
@@ -960,7 +1122,7 @@ Example:
                     entity_name = name
                     action = "Create"
                 generate_command(entity_name, action, output_dir, context)
-                
+
             elif args.what == "query":
                 # CQRS: Query handlers (read operations)
                 # Support both formats:

@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
 
+from ..events.productcreated_event import ProductCreated
+
 
 @dataclass
 class Product(AggregateRoot):
@@ -41,6 +43,44 @@ class Product(AggregateRoot):
     sales_count: int = 0  # 销量
 
     category_id: ID | None = None  # ✅ 分类 ID 也使用标准类型
+
+    @classmethod
+    def create(
+        cls,
+        id: ID,
+        name: str,
+        description: str,
+        price: float,
+        stock: int = 0,
+        sku: str | None = None,
+        brand: str | None = None,
+        is_active: bool = True,
+        category_id: ID | None = None,
+    ) -> "Product":
+        """工厂方法：创建新产品并触发 ProductCreated 事件"""
+        product = cls(
+            id=id,
+            name=name,
+            description=description,
+            price=price,
+            stock=stock,
+            sku=sku,
+            brand=brand,
+            is_active=is_active,
+            category_id=category_id,
+        )
+
+        # 触发领域事件
+        event = ProductCreated(
+            product_id=str(id),
+            name=name,
+            price=price,
+            sku=sku,
+            brand=brand,
+        )
+        product.add_event(event)
+
+        return product
 
     def __post_init__(self):
         super().__init__(id=str(self.id))  # ✅ ID 自动转字符串

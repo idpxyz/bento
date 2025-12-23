@@ -15,6 +15,31 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Enable debug logging for this module
+logger.setLevel(logging.DEBUG)
+
+
+def _log_registry_state(action: str, event_name: str, topic: str = "") -> None:
+    """Log the current state of the registry for debugging.
+
+    Args:
+        action: The action being performed (e.g., "AFTER_REGISTER", "MISSING_EVENT")
+        event_name: The name of the event being processed
+        topic: Optional topic associated with the event (defaults to empty string)
+    """
+    with _REGISTRY_LOCK, _TOPIC_REGISTRY_LOCK:
+        logger.debug(
+            "Registry State [%s] - Event: %s, Topic: %s\n"
+            "  Registered Events: %s\n"
+            "  Registered Topics: %s",
+            action,
+            event_name,
+            topic or "N/A",
+            list(_EVENT_REGISTRY.keys()),
+            list(_TOPIC_TO_CLASS_REGISTRY.keys()),
+        )
+
+
 # Thread-safe event registry with locks
 _EVENT_REGISTRY: dict[str, type[DomainEvent]] = {}
 _TOPIC_TO_CLASS_REGISTRY: dict[str, type[DomainEvent]] = {}
@@ -46,6 +71,7 @@ def register_event[T: "DomainEvent"](event_class: type[T]) -> type[T]:
         ```
     """
     event_name = event_class.__name__
+    logger.info("🔔 Starting registration for event: %s", event_name)
 
     # Thread-safe registration with locks
     with _REGISTRY_LOCK:
@@ -57,6 +83,7 @@ def register_event[T: "DomainEvent"](event_class: type[T]) -> type[T]:
                 event_class,
             )
         _EVENT_REGISTRY[event_name] = event_class
+        logger.debug("Registered event by name: %s", event_name)
 
     # Register by topic (new capability) - separate lock for topic registry
     with _TOPIC_REGISTRY_LOCK:
@@ -64,21 +91,31 @@ def register_event[T: "DomainEvent"](event_class: type[T]) -> type[T]:
         try:
             default_instance = event_class()
             topic = getattr(default_instance, "topic", "") or _class_name_to_topic(event_name)
-        except (TypeError, ValueError):
-            # If instantiation fails (validation or type errors), generate topic from class name
+            logger.debug("Detected topic '%s' for event %s", topic, event_name)
+        except (TypeError, ValueError) as e:
             topic = _class_name_to_topic(event_name)
+            logger.debug(
+                "Could not instantiate %s, using generated topic: %s. Error: %s",
+                event_name,
+                topic,
+                str(e),
+            )
 
         if topic and topic != event_name:  # Don't duplicate if topic equals class name
             if topic in _TOPIC_TO_CLASS_REGISTRY:
+                existing = _TOPIC_TO_CLASS_REGISTRY[topic].__name__
                 logger.warning(
-                    "Topic %s is already registered, overwriting with %s",
+                    "Topic '%s' already registered to %s, will be overwritten by %s",
                     topic,
-                    event_class,
+                    existing,
+                    event_name,
                 )
             _TOPIC_TO_CLASS_REGISTRY[topic] = event_class
-            logger.debug("Registered event topic mapping: %s -> %s", topic, event_name)
+            logger.info("✅ Registered event topic: %s -> %s", topic, event_name)
+        else:
+            logger.info("✅ Registered event (no topic): %s", event_name)
 
-    logger.debug("Registered event: %s", event_name)
+    _log_registry_state("AFTER_REGISTER", event_name, topic)
     return event_class
 
 
@@ -182,16 +219,20 @@ def get_event_class(event_name: str) -> type[DomainEvent] | None:
         event_class = get_event_class("order.created")     # by topic
         ```
     """
-    # Thread-safe lookup with read locks
-    # First try by class name (existing behavior)
+    # First try direct class name lookup (existing behavior)
     with _REGISTRY_LOCK:
-        event_class = _EVENT_REGISTRY.get(event_name)
-        if event_class:
+        if event_class := _EVENT_REGISTRY.get(event_name):
+            logger.debug("Found event by class name: %s", event_name)
             return event_class
 
     # Then try by topic (new capability)
     with _TOPIC_REGISTRY_LOCK:
-        return _TOPIC_TO_CLASS_REGISTRY.get(event_name)
+        if event_class := _TOPIC_TO_CLASS_REGISTRY.get(event_name):
+            logger.debug("Found event by topic: %s -> %s", event_name, event_class.__name__)
+            return event_class
+
+    logger.debug("Event not found in registry: %s", event_name)
+    return None
 
 
 def deserialize_event(event_type: str, payload: dict) -> DomainEvent:
@@ -218,23 +259,34 @@ def deserialize_event(event_type: str, payload: dict) -> DomainEvent:
     """
     from bento.domain.domain_event import DomainEvent
 
+    logger.debug(
+        "🔍 Attempting to deserialize event. Type: %s, Payload keys: %s",
+        event_type,
+        list(payload.keys()) if payload else "EMPTY",
+    )
+
     event_class = get_event_class(event_type)
 
     if event_class is None:
-        logger.warning(
-            "Event type %s not registered, falling back to base DomainEvent",
+        _log_registry_state("MISSING_EVENT", event_type)
+        logger.error(
+            "❌ Event type '%s' not found in registry! Available events: %s, Topics: %s",
             event_type,
+            list(_EVENT_REGISTRY.keys()),
+            list(_TOPIC_TO_CLASS_REGISTRY.keys()),
         )
-        # Fallback to base DomainEvent
+        logger.warning("Falling back to base DomainEvent for: %s", event_type)
         event_class = DomainEvent
 
     try:
-        # 🔒 Security: Safe deserialization with validation
         safe_payload = _validate_and_sanitize_payload(payload, event_class)
-        return event_class(**safe_payload)
+        logger.debug("Successfully validated payload for %s", event_type)
+        event = event_class(**safe_payload)
+        logger.info("✅ Successfully deserialized event: %s", event_type)
+        return event
     except Exception as e:
         logger.error(
-            "Failed to deserialize event %s: %s. Payload: %s",
+            "❌ Failed to deserialize event %s: %s\nPayload: %s",
             event_type,
             str(e),
             payload,

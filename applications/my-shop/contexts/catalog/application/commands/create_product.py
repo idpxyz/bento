@@ -49,7 +49,9 @@ class CreateProductHandler(CommandHandler[CreateProductCommand, Product]):
     async def handle(self, command: CreateProductCommand) -> Product:
         """Handle command execution."""
         product_id = ID.generate()
-        product = Product(
+
+        # 使用工厂方法创建产品，这会自动触发 ProductCreated 事件
+        product = Product.create(
             id=product_id,
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",

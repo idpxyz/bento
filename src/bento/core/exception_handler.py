@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from bento.core.errors import BentoException, ErrorCategory
+from bento.core.exceptions import BentoException, ExceptionCategory
 
 logger = logging.getLogger(__name__)
 
@@ -68,28 +68,26 @@ def register_exception_handlers(app: FastAPI) -> None:
             JSON response with error details
         """
         # Build log message
-        log_message = (
-            f"[{exc.category.value.upper()}] {exc.error_code.code}: {exc.error_code.message}"
-        )
+        log_message = f"[{exc.category.value.upper()}] {exc.reason_code}: {exc.message}"
 
         # Log exception with different levels based on category
         log_extra: dict[str, Any] = {
             "category": exc.category.value,
-            "code": exc.error_code.code,
+            "reason_code": exc.reason_code,
             "details": exc.details,
             "path": request.url.path,
             "method": request.method,
         }
 
         # Log based on severity
-        if exc.category == ErrorCategory.INFRASTRUCTURE:
+        if exc.category == ExceptionCategory.INFRASTRUCTURE:
             # Infrastructure errors are more serious
             logger.error(
                 log_message,
                 extra=log_extra,
-                exc_info=exc.__cause__,  # Include cause for debugging
+                exc_info=exc.cause,  # Include cause for debugging
             )
-        elif exc.category == ErrorCategory.APPLICATION:
+        elif exc.category == ExceptionCategory.APPLICATION:
             # Application errors are warnings
             logger.warning(log_message, extra=log_extra)
         else:
@@ -97,15 +95,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             logger.info(log_message, extra=log_extra)
 
         # Log cause if present (for debugging)
-        if exc.__cause__:
+        if exc.cause:
             logger.debug(
-                f"Caused by: {type(exc.__cause__).__name__}: {exc.__cause__}",
-                exc_info=exc.__cause__,
+                f"Caused by: {type(exc.cause).__name__}: {exc.cause}",
+                exc_info=exc.cause,
             )
 
         # Return JSON response
         return JSONResponse(
-            status_code=exc.error_code.http_status,
+            status_code=exc.http_status,
             content=exc.to_dict(),
         )
 
@@ -140,7 +138,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=500,
             content={
-                "code": "INTERNAL_ERROR",
+                "reason_code": "INTERNAL_ERROR",
                 "message": "Internal server error",
                 "category": "system",
                 "details": {},
@@ -148,7 +146,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
 
-def get_error_responses_schema() -> dict[int, dict[str, Any]]:
+def get_exception_responses_schema() -> dict[int, dict[str, Any]]:
     """Get OpenAPI schema for error responses.
 
     Use this to document error responses in FastAPI route definitions.
@@ -171,10 +169,10 @@ def get_error_responses_schema() -> dict[int, dict[str, Any]]:
     error_response_schema = {
         "type": "object",
         "properties": {
-            "code": {
+            "reason_code": {
                 "type": "string",
-                "description": "Error code",
-                "example": "ORDER_001",
+                "description": "Reason code from contracts",
+                "example": "NOT_FOUND",
             },
             "message": {
                 "type": "string",

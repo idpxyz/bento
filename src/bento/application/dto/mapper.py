@@ -5,7 +5,7 @@ Separates data definition (DTO) from conversion logic (Mapper).
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 Domain = TypeVar("Domain")  # Domain object (AggregateRoot/Entity)
 DTO = TypeVar("DTO")  # Data Transfer Object
@@ -61,7 +61,7 @@ class DTOMapper(Protocol[Domain, DTO]):
         ...
 
 
-class BaseDTOMapper(Generic[Domain, DTO], ABC):
+class BaseDTOMapper[Domain, DTO](ABC):
     """Base implementation for DTO Mappers (Adapter in Hexagonal Architecture).
 
     Provides default implementations for list and optional conversions.

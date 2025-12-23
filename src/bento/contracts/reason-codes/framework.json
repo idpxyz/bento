@@ -1,0 +1,146 @@
+{
+  "version": "1.0.0",
+  "description": "Bento Framework - Common Reason Codes",
+  "reason_codes": [
+    {
+      "reason_code": "UNKNOWN_EXCEPTION",
+      "message": "An unexpected exception occurred",
+      "http_status": 500,
+      "category": "INFRASTRUCTURE",
+      "retryable": false
+    },
+    {
+      "reason_code": "INVALID_PARAMS",
+      "message": "Invalid parameters provided",
+      "http_status": 400,
+      "category": "VALIDATION",
+      "retryable": false
+    },
+    {
+      "reason_code": "VALIDATION_FAILED",
+      "message": "Validation failed",
+      "http_status": 400,
+      "category": "VALIDATION",
+      "retryable": false
+    },
+    {
+      "reason_code": "NOT_FOUND",
+      "message": "Resource not found",
+      "http_status": 404,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "RESOURCE_NOT_FOUND",
+      "message": "Requested resource does not exist",
+      "http_status": 404,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "CONFLICT",
+      "message": "Resource conflict",
+      "http_status": 409,
+      "category": "DOMAIN",
+      "retryable": false
+    },
+    {
+      "reason_code": "STATE_CONFLICT",
+      "message": "Operation not allowed in current state",
+      "http_status": 409,
+      "category": "DOMAIN",
+      "retryable": false
+    },
+    {
+      "reason_code": "ALREADY_EXISTS",
+      "message": "Resource already exists",
+      "http_status": 409,
+      "category": "DOMAIN",
+      "retryable": false
+    },
+    {
+      "reason_code": "UNAUTHORIZED",
+      "message": "Authentication required",
+      "http_status": 401,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "FORBIDDEN",
+      "message": "Access denied",
+      "http_status": 403,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "RATE_LIMITED",
+      "message": "Too many requests",
+      "http_status": 429,
+      "category": "CLIENT",
+      "retryable": true
+    },
+    {
+      "reason_code": "SERVICE_UNAVAILABLE",
+      "message": "Service temporarily unavailable",
+      "http_status": 503,
+      "category": "INFRASTRUCTURE",
+      "retryable": true
+    },
+    {
+      "reason_code": "DATABASE_ERROR",
+      "message": "Database operation failed",
+      "http_status": 500,
+      "category": "INFRASTRUCTURE",
+      "retryable": true
+    },
+    {
+      "reason_code": "TIMEOUT",
+      "message": "Operation timed out",
+      "http_status": 504,
+      "category": "INFRASTRUCTURE",
+      "retryable": true
+    },
+    {
+      "reason_code": "IDEMPOTENCY_CONFLICT",
+      "message": "Idempotency key conflict",
+      "http_status": 409,
+      "category": "CLIENT",
+      "retryable": false
+    },
+    {
+      "reason_code": "OPTIMISTIC_LOCK_CONFLICT",
+      "message": "Resource was modified by another process",
+      "http_status": 409,
+      "category": "DOMAIN",
+      "retryable": true
+    },
+    {
+      "reason_code": "TRANSACTION_FAILED",
+      "message": "Transaction could not be completed",
+      "http_status": 500,
+      "category": "INFRASTRUCTURE",
+      "retryable": true
+    },
+    {
+      "reason_code": "MESSAGE_ALREADY_PROCESSED",
+      "message": "Message has already been processed",
+      "http_status": 200,
+      "category": "DOMAIN",
+      "retryable": false
+    },
+    {
+      "reason_code": "CONTRACT_VALIDATION_FAILED",
+      "message": "Contract validation failed at startup",
+      "http_status": 500,
+      "category": "INFRASTRUCTURE",
+      "retryable": false
+    },
+    {
+      "reason_code": "STATE_TRANSITION_INVALID",
+      "message": "Invalid state transition attempted",
+      "http_status": 409,
+      "category": "DOMAIN",
+      "retryable": false
+    }
+  ]
+}

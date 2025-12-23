@@ -1,49 +1,49 @@
 """Core module - fundamental building blocks.
 
 This module provides core utilities and exception handling for the Bento framework.
+
+Exception System:
+    Exceptions are driven by contracts (reason codes from JSON files):
+
+    ```python
+    from bento.core import DomainException
+    raise DomainException(reason_code="STATE_CONFLICT", order_id="123")
+    # Automatically gets: http_status=409, message from contracts
+    ```
 """
 
 # from bento.core.clock import Clock, SystemClock  # Not yet implemented
-from bento.core.error_codes import CommonErrors, RepositoryErrors
-from bento.core.error_handler import get_error_responses_schema, register_exception_handlers
-from bento.core.errors import (
-    ApplicationError,
+from bento.core.exception_handler import get_exception_responses_schema, register_exception_handlers
+
+# Exception system (contract-based)
+from bento.core.exceptions import (
     ApplicationException,
     BentoException,
-    DomainError,
     DomainException,
-    ErrorCategory,
-    ErrorCode,
-    InfraError,
+    ExceptionCategory,
     InfrastructureException,
     InterfaceException,
+    set_global_catalog,
+    get_global_catalog,
 )
+
 from bento.core.guard import require
 from bento.core.ids import ID, EntityId
 from bento.core.result import Err, Ok, Result
 
 __all__ = [
-    # Clock (not yet implemented)
-    # "Clock",
-    # "SystemClock",
-    # Errors - New exception system
+    # Exceptions - Contract-based system
     "BentoException",
     "DomainException",
     "ApplicationException",
     "InfrastructureException",
     "InterfaceException",
-    "ErrorCode",
-    "ErrorCategory",
-    # Errors - Legacy aliases
-    "DomainError",
-    "ApplicationError",
-    "InfraError",
-    # Error codes (framework-level only)
-    "CommonErrors",
-    "RepositoryErrors",
-    # Error handler
+    "ExceptionCategory",
+    "set_global_catalog",
+    "get_global_catalog",
+    # Exception handler
     "register_exception_handlers",
-    "get_error_responses_schema",
+    "get_exception_responses_schema",
     # Guard
     "require",
     # ID
