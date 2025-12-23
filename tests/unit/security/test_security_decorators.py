@@ -14,6 +14,7 @@ from bento.security import (
     require_all_permissions,
     require_role,
     require_any_role,
+    require_all_roles,
     require_owner_or_role,
 )
 from bento.core.exceptions import DomainException
@@ -205,6 +206,45 @@ class TestRequireAnyRole:
 
         assert exc_info.value.reason_code == "FORBIDDEN"
         assert exc_info.value.details["mode"] == "any"
+
+
+class TestRequireAllRoles:
+    """Tests for @require_all_roles decorator."""
+
+    async def test_allows_user_with_all_roles(self):
+        user = CurrentUser(id="user-123", roles=["admin", "super_admin"])
+        SecurityContext.set_user(user)
+
+        @require_all_roles("admin", "super_admin")
+        async def super_admin_action():
+            return "success"
+
+        result = await super_admin_action()
+        assert result == "success"
+
+    async def test_raises_forbidden_without_all_roles(self):
+        user = CurrentUser(id="user-123", roles=["admin"])
+        SecurityContext.set_user(user)
+
+        @require_all_roles("admin", "super_admin")
+        async def super_admin_action():
+            return "success"
+
+        with pytest.raises(DomainException) as exc_info:
+            await super_admin_action()
+
+        assert exc_info.value.reason_code == "FORBIDDEN"
+        assert exc_info.value.details["mode"] == "all"
+
+    async def test_raises_unauthorized_when_not_authenticated(self):
+        @require_all_roles("admin")
+        async def admin_action():
+            return "success"
+
+        with pytest.raises(DomainException) as exc_info:
+            await admin_action()
+
+        assert exc_info.value.reason_code == "UNAUTHORIZED"
 
 
 class TestRequireOwnerOrRole:
