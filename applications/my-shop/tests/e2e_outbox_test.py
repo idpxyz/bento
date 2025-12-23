@@ -64,8 +64,12 @@ async def test_order_creation_persists_outbox_events(db_session):
     uow.register_repository(Product, lambda s: ProductRepository(s))
     uow.register_repository(Order, lambda s: OrderRepository(s))
 
+    # Register product catalog as a port
+    from contexts.ordering.domain.ports.services import IProductCatalogService
     product_catalog = MockProductCatalog()
-    use_case = CreateOrderHandler(uow, product_catalog)
+    uow.register_port(IProductCatalogService, lambda s: product_catalog)
+
+    use_case = CreateOrderHandler(uow)
 
     command = CreateOrderCommand(
         customer_id="test-customer-123",
@@ -89,7 +93,7 @@ async def test_order_creation_persists_outbox_events(db_session):
     result = await db_session.execute(
         text(
             """
-            SELECT id, aggregate_id, type, status, payload
+            SELECT id, aggregate_id, topic, status, payload
             FROM outbox
             WHERE aggregate_id = :order_id
             ORDER BY created_at DESC
@@ -104,12 +108,12 @@ async def test_order_creation_persists_outbox_events(db_session):
 
     event = outbox_events[0]
     assert event.aggregate_id == str(order_id)
-    assert event.type == "OrderCreatedEvent"
+    assert event.topic == "order.created"  # topic 使用 snake_case 格式
     assert event.status == "NEW"
-    assert "customer_id" in event.payload
-    assert "items" in event.payload
+    assert "customer_id" in str(event.payload)
+    assert "items" in str(event.payload)
 
-    print(f"✅ Outbox event verified: {event.type} (status={event.status})")
+    print(f"✅ Outbox event verified: {event.topic} (status={event.status})")
 
 
 if __name__ == "__main__":

@@ -24,6 +24,9 @@ from contexts.identity.infrastructure.models.user_po import UserPO  # noqa: F401
 from contexts.ordering.infrastructure.models.order_po import OrderPO  # noqa: F401
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO  # noqa: F401
 
+# Import OutboxRecord to create outbox table for e2e tests
+from bento.persistence.outbox.record import OutboxRecord  # noqa: F401
+
 # Test database URL (in-memory SQLite)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

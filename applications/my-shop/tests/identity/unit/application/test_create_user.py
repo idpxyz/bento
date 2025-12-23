@@ -28,20 +28,23 @@ class TestCreateUserHandler:
         return uow
 
     @pytest.fixture
-    def usecase(self, mock_repository, mock_uow):
+    def usecase(self, mock_uow):
         """用例实例"""
-        return CreateUserHandler(
-            repository=mock_repository,
-            unit_of_work=mock_uow,
-        )
+        # Handler 只需要 uow 参数
+        return CreateUserHandler(uow=mock_uow)
 
     @pytest.mark.asyncio
-    async def test_create_user_success(self, usecase, mock_repository):
+    async def test_create_user_success(self, usecase, mock_uow):
         """测试成功场景"""
         # Arrange
         command = CreateUserCommand(
-            # TODO: 添加命令字段
+            name="张三",
+            email="zhangsan@example.com",
         )
+
+        # Mock repository
+        mock_repo = AsyncMock()
+        mock_uow.repository = MagicMock(return_value=mock_repo)
 
         # Act
         # result = await usecase.execute(command)
@@ -49,19 +52,19 @@ class TestCreateUserHandler:
         # Assert
         # TODO: 验证结果和副作用
         # assert result is not None
-        # mock_repository.save.assert_called_once()
         pass
 
     @pytest.mark.asyncio
     async def test_create_user_validation_failure(self, usecase):
         """测试验证失败场景"""
-        # Arrange
+        # Arrange - 空名字应该验证失败
         invalid_command = CreateUserCommand(
-            # TODO: 添加无效的命令数据
+            name="",
+            email="invalid@example.com",
         )
 
         # Act & Assert
-        # with pytest.raises(ValueError):
+        # with pytest.raises(ApplicationException):
         #     await usecase.execute(invalid_command)
         pass
 

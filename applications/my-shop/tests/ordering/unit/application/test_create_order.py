@@ -38,12 +38,10 @@ class TestCreateOrderHandler:
         return AsyncMock()
 
     @pytest.fixture
-    def usecase(self, mock_uow, mock_product_catalog):
+    def usecase(self, mock_uow):
         """用例实例"""
-        return CreateOrderHandler(
-            uow=mock_uow,
-            product_catalog=mock_product_catalog,
-        )
+        # Handler 只需要 uow 参数，product_catalog 通过 uow.port() 获取
+        return CreateOrderHandler(uow=mock_uow)
 
     @pytest.mark.asyncio
     async def test_create_order_success(self, usecase, mock_product_catalog, mock_uow):
@@ -61,11 +59,12 @@ class TestCreateOrderHandler:
             ],
         )
 
-        # Mock 产品目录服务返回所有产品可用
-        mock_product_catalog.check_products_available.return_value = (
+        # Mock product_catalog 通过 uow.port() 获取
+        mock_product_catalog.check_products_available = AsyncMock(return_value=(
             ["product-001"],  # available
             [],  # unavailable
-        )
+        ))
+        mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Mock 仓储
         mock_repo = AsyncMock()
@@ -83,7 +82,7 @@ class TestCreateOrderHandler:
         mock_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_order_product_not_found(self, usecase, mock_product_catalog):
+    async def test_create_order_product_not_found(self, usecase, mock_product_catalog, mock_uow):
         """测试产品不存在的场景"""
         # Arrange
         command = CreateOrderCommand(
@@ -98,14 +97,15 @@ class TestCreateOrderHandler:
             ],
         )
 
-        # Mock 产品目录服务返回产品不可用
-        mock_product_catalog.check_products_available.return_value = (
+        # Mock product_catalog 通过 uow.port() 获取
+        mock_product_catalog.check_products_available = AsyncMock(return_value=(
             [],  # available
             ["nonexistent-product"],  # unavailable
-        )
+        ))
+        mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Act & Assert
-        from bento.core.errors import ApplicationException
+        from bento.core.exceptions import ApplicationException
 
         with pytest.raises(ApplicationException) as exc_info:
             await usecase.execute(command)
@@ -122,7 +122,7 @@ class TestCreateOrderHandler:
         )
 
         # Act & Assert
-        from bento.core.errors import ApplicationException
+        from bento.core.exceptions import ApplicationException
 
         with pytest.raises(ApplicationException) as exc_info:
             await usecase.execute(invalid_command)
