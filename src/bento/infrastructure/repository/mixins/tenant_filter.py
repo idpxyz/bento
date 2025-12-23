@@ -54,8 +54,8 @@ class TenantFilterMixin:
     tenant_field: str = "tenant_id"
     """Name of the tenant field in aggregates and POs"""
 
-    tenant_enabled: bool = True
-    """Whether tenant filtering is enabled"""
+    tenant_enabled: bool = False
+    """Whether tenant filtering is enabled (default: False, opt-in)"""
 
     def _get_current_tenant(self) -> str | None:
         """Get current tenant from context.
