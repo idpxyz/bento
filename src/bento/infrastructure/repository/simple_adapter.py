@@ -18,11 +18,15 @@ from __future__ import annotations
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.ports.repository import IRepository
+from bento.infrastructure.repository.mixins import TenantFilterMixin
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
 
 
-class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](IRepository[AR, ID]):
+class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](
+    TenantFilterMixin,
+    IRepository[AR, ID],
+):
     """Simple Repository Adapter for AR = PO scenarios.
 
     This adapter is designed for cases where the Aggregate Root and

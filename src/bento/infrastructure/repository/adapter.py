@@ -23,6 +23,7 @@ from bento.infrastructure.repository.mixins import (
     RandomSamplingMixin,
     SoftDeleteEnhancedMixin,
     SortingLimitingMixin,
+    TenantFilterMixin,
     UniquenessChecksMixin,
 )
 from bento.persistence.repository.sqlalchemy import BaseRepository
@@ -47,6 +48,8 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
     SoftDeleteEnhancedMixin,
     # P3 Mixins
     RandomSamplingMixin,
+    # Multi-tenant
+    TenantFilterMixin,
     # Base
     IRepository[AR, ID],
 ):
