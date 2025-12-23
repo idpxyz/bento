@@ -63,7 +63,7 @@ class TenantFilterMixin:
         Returns:
             Current tenant ID or None
         """
-        from bento.security.tenant import TenantContext
+        from bento.multitenancy import TenantContext
         return TenantContext.get()
 
     def _apply_tenant_filter(

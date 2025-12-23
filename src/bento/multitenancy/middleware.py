@@ -6,8 +6,7 @@ in FastAPI applications.
 Example:
     ```python
     from fastapi import FastAPI
-    from bento.security.middleware import add_tenant_middleware
-    from bento.security.tenant import HeaderTenantResolver
+    from bento.multitenancy import add_tenant_middleware, HeaderTenantResolver
 
     app = FastAPI()
     add_tenant_middleware(
@@ -25,7 +24,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-from bento.security.tenant import TenantContext, TenantResolver
+from bento.multitenancy.context import TenantContext
+from bento.multitenancy.resolvers import TenantResolver
 
 
 def add_tenant_middleware(
@@ -51,8 +51,7 @@ def add_tenant_middleware(
     Example:
         ```python
         from fastapi import FastAPI
-        from bento.security.middleware import add_tenant_middleware
-        from bento.security.tenant import TokenTenantResolver
+        from bento.multitenancy import add_tenant_middleware, TokenTenantResolver
 
         app = FastAPI()
 

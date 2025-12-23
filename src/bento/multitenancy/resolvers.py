@@ -1,96 +1,22 @@
-"""Multi-tenant support for Bento Framework.
+"""Tenant resolution strategies for multi-tenant applications.
 
-This module provides tenant context management and resolution strategies
-for multi-tenant applications.
+This module provides various strategies for resolving tenant ID from requests.
 
 Example:
     ```python
-    from fastapi import FastAPI
-    from bento.security.tenant import (
-        TenantContext,
-        TokenTenantResolver,
-        add_tenant_middleware,
-    )
+    from bento.multitenancy import HeaderTenantResolver, TokenTenantResolver
 
-    app = FastAPI()
+    # From header
+    resolver = HeaderTenantResolver(header_name="X-Tenant-ID")
 
-    # Add tenant middleware
-    add_tenant_middleware(
-        app,
-        resolver=TokenTenantResolver(),
-        require_tenant=True,
-    )
-
-    # In business code
-    tenant_id = TenantContext.require()  # Raises if no tenant
+    # From JWT token
+    resolver = TokenTenantResolver(claim_name="tenant_id")
     ```
 """
 
 from __future__ import annotations
 
-from contextvars import ContextVar
 from typing import Protocol, Any
-
-from bento.core.exceptions import DomainException
-
-
-class TenantContext:
-    """Tenant context - stores current request's tenant information.
-
-    Uses ContextVar for async-safe, request-scoped tenant storage.
-
-    Example:
-        ```python
-        # Set tenant (usually in middleware)
-        TenantContext.set("tenant-123")
-
-        # Get tenant (in business code)
-        tenant_id = TenantContext.get()  # May be None
-        tenant_id = TenantContext.require()  # Raises if None
-        ```
-    """
-
-    _current_tenant: ContextVar[str | None] = ContextVar(
-        'current_tenant', default=None
-    )
-
-    @classmethod
-    def get(cls) -> str | None:
-        """Get current tenant ID.
-
-        Returns:
-            Current tenant ID or None if not set
-        """
-        return cls._current_tenant.get()
-
-    @classmethod
-    def require(cls) -> str:
-        """Get current tenant ID, raising if not set.
-
-        Returns:
-            Current tenant ID
-
-        Raises:
-            DomainException: If tenant is not set (TENANT_REQUIRED)
-        """
-        tenant_id = cls._current_tenant.get()
-        if not tenant_id:
-            raise DomainException(reason_code="TENANT_REQUIRED")
-        return tenant_id
-
-    @classmethod
-    def set(cls, tenant_id: str | None) -> None:
-        """Set current tenant ID.
-
-        Args:
-            tenant_id: Tenant ID to set, or None to clear
-        """
-        cls._current_tenant.set(tenant_id)
-
-    @classmethod
-    def clear(cls) -> None:
-        """Clear current tenant."""
-        cls._current_tenant.set(None)
 
 
 class TenantResolver(Protocol):
