@@ -195,6 +195,37 @@ def require_any_role(*roles: str) -> Callable:
     return decorator
 
 
+def require_all_roles(*roles: str) -> Callable:
+    """Decorator that requires all of the specified roles.
+
+    Raises UNAUTHORIZED if not authenticated.
+    Raises FORBIDDEN if user lacks any of the roles.
+
+    Args:
+        *roles: Role names to check
+
+    Example:
+        ```python
+        @require_all_roles("admin", "super_admin")
+        async def super_admin_action():
+            ...
+        ```
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            user = SecurityContext.require_user()
+            for role in roles:
+                if not user.has_role(role):
+                    raise DomainException(
+                        reason_code="FORBIDDEN",
+                        details={"required_roles": list(roles), "mode": "all"},
+                    )
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
 def require_owner_or_role(
     role: str,
     owner_getter: Callable[[Any], str] | None = None,

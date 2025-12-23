@@ -23,12 +23,14 @@ class JWTConfig:
         issuer: Expected token issuer
         audience: Expected token audience
         algorithms: Allowed signing algorithms
+        jwks_cache_ttl: JWKS cache TTL in seconds (default: 300)
     """
 
     jwks_url: str
     issuer: str
     audience: str | None = None
     algorithms: list[str] = field(default_factory=lambda: ["RS256"])
+    jwks_cache_ttl: int = 300  # 5 minutes
 
 
 class JWTAuthenticatorBase(IAuthenticator, ABC):
@@ -55,6 +57,8 @@ class JWTAuthenticatorBase(IAuthenticator, ABC):
         ```
     """
 
+    _jwks_client_cache: dict = {}  # Class-level cache for PyJWKClient instances
+
     def __init__(self, config: JWTConfig):
         """Initialize with JWT configuration.
 
@@ -62,7 +66,7 @@ class JWTAuthenticatorBase(IAuthenticator, ABC):
             config: JWT verification configuration
         """
         self.config = config
-        self._jwks_cache: dict | None = None
+        self._jwks_client: Any | None = None
 
     async def authenticate(self, request: Any) -> CurrentUser | None:
         """Authenticate request using JWT token.
@@ -97,6 +101,36 @@ class JWTAuthenticatorBase(IAuthenticator, ABC):
             return auth_header[7:]
         return None
 
+    def _get_jwks_client(self):
+        """Get or create cached PyJWKClient.
+
+        Returns a cached client for the JWKS URL to avoid
+        repeated network requests for the same keys.
+
+        Returns:
+            PyJWKClient instance
+        """
+        try:
+            from jwt import PyJWKClient
+        except ImportError as err:
+            raise ImportError(
+                "PyJWT is required for JWT verification. "
+                "Install it with: pip install PyJWT[crypto]"
+            ) from err
+
+        jwks_url = self.config.jwks_url
+
+        # Check class-level cache
+        if jwks_url not in JWTAuthenticatorBase._jwks_client_cache:
+            # Create client with caching enabled
+            JWTAuthenticatorBase._jwks_client_cache[jwks_url] = PyJWKClient(
+                jwks_url,
+                cache_jwk_set=True,
+                lifespan=self.config.jwks_cache_ttl,
+            )
+
+        return JWTAuthenticatorBase._jwks_client_cache[jwks_url]
+
     async def _verify_token(self, token: str) -> dict:
         """Verify JWT token and return claims.
 
@@ -111,15 +145,14 @@ class JWTAuthenticatorBase(IAuthenticator, ABC):
         """
         try:
             import jwt
-            from jwt import PyJWKClient
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "PyJWT is required for JWT verification. "
                 "Install it with: pip install PyJWT[crypto]"
-            )
+            ) from err
 
-        # Get signing key from JWKS
-        jwks_client = PyJWKClient(self.config.jwks_url)
+        # Get signing key from cached JWKS client
+        jwks_client = self._get_jwks_client()
         signing_key = jwks_client.get_signing_key_from_jwt(token)
 
         # Verify token

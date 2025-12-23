@@ -40,7 +40,14 @@ from bento.security.decorators import (
     require_all_permissions,
     require_role,
     require_any_role,
+    require_all_roles,
     require_owner_or_role,
+)
+from bento.security.depends import (
+    get_current_user,
+    get_optional_user,
+    require_permissions,
+    require_roles,
 )
 
 __all__ = [
@@ -60,6 +67,12 @@ __all__ = [
     "require_all_permissions",
     "require_role",
     "require_any_role",
+    "require_all_roles",
     "require_owner_or_role",
+    # FastAPI Depends
+    "get_current_user",
+    "get_optional_user",
+    "require_permissions",
+    "require_roles",
 ]
 
