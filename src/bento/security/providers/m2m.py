@@ -134,11 +134,11 @@ class M2MAuthMixin:
 
         client_id, client_secret = self._extract_client_credentials(request)
 
-        # Validate credentials
-        if not self._validate_client_credentials(client_id, client_secret):
+        # Validate credentials (also ensures client_id is not None)
+        if not client_id or not self._validate_client_credentials(client_id, client_secret):
             return None
 
-        # Create M2M user
+        # Create M2M user (client_id is guaranteed to be str here)
         return self._create_m2m_user(client_id)
 
     def _extract_client_credentials(
@@ -206,11 +206,17 @@ class M2MAuthMixin:
         Returns:
             CurrentUser representing the M2M client
         """
-        config = self.m2m_config
+        permissions: list[str] = []
+        roles: list[str] = []
+
+        if self.m2m_config:
+            permissions = self.m2m_config.default_permissions or []
+            roles = self.m2m_config.default_roles or []
+
         return CurrentUser(
             id=f"m2m:{client_id}",
-            permissions=config.default_permissions or [],
-            roles=config.default_roles or [],
+            permissions=permissions,
+            roles=roles,
             metadata={
                 "type": "m2m",
                 "client_id": client_id,
