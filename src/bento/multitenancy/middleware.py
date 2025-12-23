@@ -69,7 +69,10 @@ def add_tenant_middleware(
     exclude_paths = exclude_paths or []
 
     @app.middleware("http")
-    async def tenant_middleware(request: Request, call_next):
+    async def tenant_middleware(  # pyright: ignore[reportUnusedFunction]
+        request: Request,
+        call_next,
+    ):
         # Check if path is excluded
         path = request.url.path
         if any(path.startswith(ep) for ep in exclude_paths):

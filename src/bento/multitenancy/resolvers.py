@@ -97,18 +97,23 @@ class TokenTenantResolver:
         """Resolve tenant from user's token claims.
 
         Args:
-            request: FastAPI Request object (not directly used)
+            request: FastAPI Request object
 
         Returns:
             Tenant ID from token or None
         """
-        try:
-            from bento.security.context import SecurityContext
-            user = SecurityContext.get_current_user()
-            if user and user.metadata:
+        # Try to get tenant from request state (set by auth middleware)
+        if hasattr(request, "state"):
+            # Check for user object with metadata
+            user = getattr(request.state, "user", None)
+            if user and hasattr(user, "metadata") and user.metadata:
                 return user.metadata.get(self.claim_name)
-        except ImportError:
-            pass
+
+            # Check for claims directly
+            claims = getattr(request.state, "claims", None)
+            if claims and isinstance(claims, dict):
+                return claims.get(self.claim_name)
+
         return None
 
 
