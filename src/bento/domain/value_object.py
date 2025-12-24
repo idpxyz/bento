@@ -195,8 +195,10 @@ class CompositeValueObject:
         for field in fields(self):
             value = getattr(self, field.name)
             # Recursively convert nested value objects
-            if isinstance(value, (ValueObject, CompositeValueObject)):
-                result[field.name] = value.to_dict() if hasattr(value, "to_dict") else value.to_primitive()
+            if isinstance(value, CompositeValueObject):
+                result[field.name] = value.to_dict()
+            elif isinstance(value, ValueObject):
+                result[field.name] = value.to_primitive()
             else:
                 result[field.name] = value
         return result
