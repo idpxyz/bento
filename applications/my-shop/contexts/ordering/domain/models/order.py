@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from bento.core.ids import ID
@@ -50,7 +50,7 @@ class Order(AggregateRoot):
     def __post_init__(self):
         super().__init__(id=str(self.id))  # ✅ ID 自动转字符串
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(UTC)
         # 自动计算总额
         if self.items:
             self.total = self.calculate_total()
@@ -100,7 +100,7 @@ class Order(AggregateRoot):
             raise ValueError("订单必须至少有一个商品")
 
         self.status = OrderStatus.PAID
-        self.paid_at = datetime.utcnow()
+        self.paid_at = datetime.now(UTC)
 
         from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
 
@@ -121,7 +121,7 @@ class Order(AggregateRoot):
             raise ValueError("只有已支付订单可以发货")
 
         self.status = OrderStatus.SHIPPED
-        self.shipped_at = datetime.utcnow()
+        self.shipped_at = datetime.now(UTC)
 
         from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
 
@@ -149,7 +149,7 @@ class Order(AggregateRoot):
                 aggregate_id=self.id,  # ✅ 直接传递 ID 对象
                 tenant_id="default",
                 order_id=self.id,  # ✅ 直接传递 ID 对象
-                delivered_at=datetime.utcnow(),
+                delivered_at=datetime.now(UTC),
             )
         )
 

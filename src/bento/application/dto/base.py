@@ -69,16 +69,13 @@ class BaseDTO(BaseModel):
         str_strip_whitespace=True,  # Auto-strip whitespace
         validate_assignment=True,  # Validate on field assignment
         use_enum_values=True,  # Serialize enums to values
-        # JSON handling
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-            UUID: str,
-        },
         # API integration
         populate_by_name=True,  # Support field aliases
         extra="forbid",  # Strict mode - no extra fields
         # Documentation support
         arbitrary_types_allowed=False,  # Keep types JSON-serializable
+        # Serialization mode (Pydantic v2)
+        ser_json_timedelta="iso8601",
     )
 
 
