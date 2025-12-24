@@ -1,7 +1,7 @@
 """Product Repository Implementation using Bento's RepositoryAdapter"""
 
 from bento.core.ids import ID
-from bento.infrastructure.repository import RepositoryAdapter
+from bento.infrastructure.repository import RepositoryAdapter, repository_for
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
 from contexts.catalog.infrastructure.models.product_po import ProductPO
 
 
+@repository_for(Product)
 class ProductRepository(RepositoryAdapter[Product, ProductPO, ID]):
     """
     Product Repository using Bento's RepositoryAdapter.

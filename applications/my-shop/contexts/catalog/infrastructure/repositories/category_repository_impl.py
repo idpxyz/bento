@@ -1,7 +1,7 @@
 """Category Repository Implementation using Bento's RepositoryAdapter"""
 
 from bento.core.ids import ID
-from bento.infrastructure.repository import RepositoryAdapter
+from bento.infrastructure.repository import RepositoryAdapter, repository_for
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapp
 from contexts.catalog.infrastructure.models.category_po import CategoryPO
 
 
+@repository_for(Category)
 class CategoryRepository(RepositoryAdapter[Category, CategoryPO, ID]):
     """
     Category Repository using Bento's RepositoryAdapter.

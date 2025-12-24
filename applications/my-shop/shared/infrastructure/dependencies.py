@@ -78,28 +78,17 @@ async def get_uow(
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
-    # Register repositories
-    from contexts.catalog.domain.models.category import Category
-    from contexts.catalog.domain.models.product import Product
-    from contexts.catalog.infrastructure.repositories.category_repository_impl import (
-        CategoryRepository,
-    )
-    from contexts.catalog.infrastructure.repositories.product_repository_impl import (
-        ProductRepository,
-    )
-    from contexts.identity.domain.models.user import User
-    from contexts.identity.infrastructure.repositories.user_repository_impl import (
-        UserRepository,
-    )
-    from contexts.ordering.domain.models.order import Order
-    from contexts.ordering.infrastructure.repositories.order_repository_impl import (
-        OrderRepository,
-    )
+    # Import repositories to trigger @repository_for registration
+    import contexts.catalog.infrastructure.repositories.category_repository_impl  # noqa: F401
+    import contexts.catalog.infrastructure.repositories.product_repository_impl  # noqa: F401
+    import contexts.identity.infrastructure.repositories.user_repository_impl  # noqa: F401
+    import contexts.ordering.infrastructure.repositories.order_repository_impl  # noqa: F401
 
-    uow.register_repository(Product, lambda s: ProductRepository(s))
-    uow.register_repository(Category, lambda s: CategoryRepository(s))
-    uow.register_repository(Order, lambda s: OrderRepository(s))
-    uow.register_repository(User, lambda s: UserRepository(s))
+    # Auto-register all discovered repositories
+    from bento.infrastructure.repository import get_repository_registry
+
+    for ar_type, repo_cls in get_repository_registry().items():
+        uow.register_repository(ar_type, lambda s, cls=repo_cls: cls(s))
 
     # Register outbound ports (adapters for cross-BC services)
     from contexts.ordering.domain.ports.services.i_product_catalog_service import (
