@@ -10,9 +10,11 @@
 
 from dataclasses import dataclass
 
+from bento.domain import CompositeValueObject
+
 
 @dataclass(frozen=True)
-class ProductInfo:
+class ProductInfo(CompositeValueObject):
     """产品信息值对象
 
     订单上下文只关心创建订单时需要的产品属性：
@@ -22,6 +24,18 @@ class ProductInfo:
 
     不关心：
     - 产品的分类、库存管理等 Catalog Context 的内部细节
+
+    使用示例：
+        ```python
+        info = ProductInfo.create(
+            product_id="prod-123",
+            product_name="iPhone 15",
+            unit_price=999.0,
+            is_available=True
+        )
+        data = info.to_dict()  # 序列化
+        info2 = ProductInfo.from_dict(data)  # 反序列化
+        ```
     """
 
     product_id: str
@@ -29,7 +43,7 @@ class ProductInfo:
     unit_price: float
     is_available: bool = True
 
-    def __post_init__(self):
+    def validate(self) -> None:
         """验证值对象的不变式"""
         if not self.product_id or not self.product_id.strip():
             raise ValueError("产品ID不能为空")
