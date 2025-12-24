@@ -16,10 +16,11 @@ from bento.domain.ports.repository import (
     IRepository,
 )
 from bento.domain.specification import Specification
-from bento.domain.value_object import ValueObject
+from bento.domain.value_object import CompositeValueObject, ValueObject
 
 __all__ = [
     "AggregateRoot",
+    "CompositeValueObject",
     "DomainEvent",
     "Entity",
     "IRepository",

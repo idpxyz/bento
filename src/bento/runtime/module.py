@@ -27,9 +27,11 @@ Example:
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
+    from fastapi import APIRouter
+
     from bento.runtime.container import BentoContainer
 
 
@@ -85,7 +87,7 @@ class BentoModule(ABC):
         """
         pass
 
-    def get_routers(self) -> "list[APIRouter]":
+    def get_routers(self) -> list[APIRouter]:
         """Return FastAPI routers provided by this module.
 
         Override to provide API routers.
