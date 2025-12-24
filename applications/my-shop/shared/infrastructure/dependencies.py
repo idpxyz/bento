@@ -8,27 +8,15 @@ This module provides FastAPI dependencies using Bento's infrastructure:
 """
 
 from collections.abc import AsyncGenerator
-from typing import Annotated, Protocol, TypeVar
 
-from bento.application.ports.uow import UnitOfWork
 from bento.infrastructure.database import create_async_engine_from_config
+from bento.interfaces.fastapi import create_handler_dependency
 from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from config import settings
-
-
-# Protocol for Handler classes that accept UoW in constructor
-class HandlerProtocol(Protocol):
-    """Protocol for Handler classes with UoW constructor."""
-
-    def __init__(self, uow: UnitOfWork) -> None: ...
-
-
-# Type variable for Handler factory
-THandler = TypeVar("THandler", bound=HandlerProtocol)
 
 # Create database engine using Bento's configuration
 db_config = settings.get_database_config()
@@ -133,30 +121,9 @@ async def get_uow(
         pass
 
 
-def handler_dependency(handler_cls: type[THandler]):
-    """Create a FastAPI dependency for a specific handler class.
-
-    This is the elegant way to inject handlers without exposing
-    handler_cls as an API parameter.
-
-    Usage:
-        ```python
-        @router.post("/orders")
-        async def create_order(
-            request: CreateOrderRequest,
-            handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
-        ):
-            return await handler.execute(command)
-        ```
-
-    Returns:
-        A Depends instance that can be used in FastAPI route parameters
-    """
-
-    def factory(uow: Annotated[UnitOfWork, Depends(get_uow)]) -> THandler:
-        return handler_cls(uow)
-
-    return Depends(factory)
+# Create handler_dependency using Bento Framework's factory
+# This provides clean DI for all CQRS handlers
+handler_dependency = create_handler_dependency(get_uow)
 
 
 # Legacy get_handler() function has been removed.
