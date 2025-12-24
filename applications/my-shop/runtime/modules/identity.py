@@ -35,10 +35,10 @@ class IdentityModule(BentoModule):
         logger.info("Identity services registered")
 
     def get_routers(self) -> list[Any]:
-        """Return identity API routers."""
+        """Return identity API routers with /api/v1 prefix."""
         from fastapi import APIRouter
         from contexts.identity.interfaces import register_routes
 
-        router = APIRouter()
+        router = APIRouter(prefix="/api/v1")
         register_routes(router)
         return [router]

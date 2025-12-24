@@ -70,10 +70,10 @@ class CatalogModule(BentoModule):
         logger.info("Catalog cache warmed up")
 
     def get_routers(self) -> list[Any]:
-        """Return catalog API routers."""
+        """Return catalog API routers with /api/v1 prefix."""
         from fastapi import APIRouter
         from contexts.catalog.interfaces import register_routes
 
-        router = APIRouter()
+        router = APIRouter(prefix="/api/v1")
         register_routes(router)
         return [router]
