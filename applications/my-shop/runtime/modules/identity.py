@@ -8,7 +8,7 @@ Provides identity context:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from bento.runtime import BentoModule
 
@@ -34,7 +34,7 @@ class IdentityModule(BentoModule):
 
         logger.info("Identity services registered")
 
-    def get_routers(self) -> list[Any]:
+    def get_routers(self) -> list:
         """Return identity API routers with /api/v1 prefix."""
         from fastapi import APIRouter
         from contexts.identity.interfaces import register_routes

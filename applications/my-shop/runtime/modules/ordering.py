@@ -9,7 +9,7 @@ Provides ordering context:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from bento.runtime import BentoModule
 
@@ -68,7 +68,7 @@ class OrderingModule(BentoModule):
 
         logger.info("Ordering resources cleaned up")
 
-    def get_routers(self) -> list[Any]:
+    def get_routers(self) -> list:
         """Return ordering API routers with /api/v1 prefix."""
         from fastapi import APIRouter
         from contexts.ordering.interfaces import register_routes
