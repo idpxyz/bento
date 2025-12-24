@@ -25,6 +25,10 @@ class CatalogModule(BentoModule):
 
     name = "catalog"
     requires = ["infra"]
+    scan_packages = [
+        "contexts.catalog.infrastructure.repositories.product_repository_impl",
+        "contexts.catalog.infrastructure.repositories.category_repository_impl",
+    ]
 
     async def on_register(self, container: "BentoContainer") -> None:
         """Register catalog services."""

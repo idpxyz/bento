@@ -23,6 +23,9 @@ class IdentityModule(BentoModule):
 
     name = "identity"
     requires = ["infra"]
+    scan_packages = [
+        "contexts.identity.infrastructure.repositories.user_repository_impl",
+    ]
 
     async def on_register(self, container: "BentoContainer") -> None:
         """Register identity services."""

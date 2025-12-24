@@ -202,7 +202,22 @@ class BentoRuntime:
 
         for module in modules:
             logger.debug(f"Registering module: {module.name}")
+
+            # Auto-scan packages to trigger @repository_for decorators
+            self._scan_module_packages(module)
+
             await module.on_register(self.container)
+
+    def _scan_module_packages(self, module: "BentoModule") -> None:
+        """Scan module's declared packages to trigger decorator registration."""
+        import importlib
+
+        for package_name in module.scan_packages:
+            try:
+                importlib.import_module(package_name)
+                logger.debug(f"Scanned package: {package_name}")
+            except ImportError as e:
+                logger.warning(f"Failed to scan package {package_name}: {e}")
 
     async def _startup_modules(self) -> None:
         """Run startup hooks for all modules."""

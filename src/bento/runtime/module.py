@@ -44,14 +44,17 @@ class BentoModule(ABC):
     - Register services in the container
     - Define startup/shutdown hooks
     - Provide FastAPI routers
+    - Declare packages to scan for @repository_for decorators
 
     Attributes:
         name: Unique module name
         requires: List of module names this module depends on
+        scan_packages: List of package names to scan for decorators
     """
 
     name: str = ""
     requires: Sequence[str] = ()
+    scan_packages: Sequence[str] = ()
 
     def __init__(self) -> None:
         if not self.name:

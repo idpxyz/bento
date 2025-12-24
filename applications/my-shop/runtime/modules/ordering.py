@@ -24,6 +24,9 @@ class OrderingModule(BentoModule):
 
     name = "ordering"
     requires = ["infra", "catalog"]
+    scan_packages = [
+        "contexts.ordering.infrastructure.repositories.order_repository_impl",
+    ]
 
     async def on_register(self, container: "BentoContainer") -> None:
         """Register ordering services."""

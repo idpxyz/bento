@@ -78,13 +78,9 @@ async def get_uow(
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
-    # Import repositories to trigger @repository_for registration
-    import contexts.catalog.infrastructure.repositories.category_repository_impl  # noqa: F401
-    import contexts.catalog.infrastructure.repositories.product_repository_impl  # noqa: F401
-    import contexts.identity.infrastructure.repositories.user_repository_impl  # noqa: F401
-    import contexts.ordering.infrastructure.repositories.order_repository_impl  # noqa: F401
-
     # Auto-register all discovered repositories
+    # - Production: scanned by BentoModule.scan_packages during startup
+    # - Tests: scanned by conftest.py
     from bento.infrastructure.repository import get_repository_registry
 
     for ar_type, repo_cls in get_repository_registry().items():
