@@ -85,7 +85,7 @@ class BentoModule(ABC):
         """
         pass
 
-    def get_routers(self) -> list[Any]:
+    def get_routers(self) -> "list[APIRouter]":
         """Return FastAPI routers provided by this module.
 
         Override to provide API routers.

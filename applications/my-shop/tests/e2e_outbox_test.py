@@ -7,8 +7,6 @@ This test verifies:
 3. Outbox events can be queried and have correct status
 """
 
-import asyncio
-
 import pytest
 from bento.core.ids import ID
 from sqlalchemy import text
@@ -117,7 +115,6 @@ async def test_order_creation_persists_outbox_events(db_session):
 
 
 if __name__ == "__main__":
-    # Run the test standalone
-    from tests.conftest import db_session
-
-    asyncio.run(test_order_creation_persists_outbox_events(db_session))
+    # Run the test via pytest instead of standalone
+    # (db_session is a pytest fixture, not directly importable)
+    pytest.main([__file__, "-v"])
