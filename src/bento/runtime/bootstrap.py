@@ -38,6 +38,16 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class DatabaseConfig:
+    """Database configuration for BentoRuntime."""
+
+    url: str = ""
+    echo: bool = False
+    pool_size: int = 5
+    max_overflow: int = 10
+
+
+@dataclass
 class RuntimeConfig:
     """Configuration for BentoRuntime."""
 
@@ -46,6 +56,7 @@ class RuntimeConfig:
     environment: str = "local"
     service_name: str = "bento-app"
     skip_gates_in_local: bool = True
+    database: DatabaseConfig | None = None
 
 
 @dataclass
@@ -78,6 +89,9 @@ class BentoRuntime:
     registry: ModuleRegistry = field(default_factory=ModuleRegistry)
     _built: bool = field(default=False, repr=False)
     _contracts: Any = field(default=None, repr=False)
+    _session_factory: Any = field(default=None, repr=False)
+    _get_uow_func: Any = field(default=None, repr=False)
+    _handler_dependency_func: Any = field(default=None, repr=False)
 
     def with_config(
         self,
@@ -145,6 +159,35 @@ class BentoRuntime:
             Self for chaining
         """
         self.container.set(key, value)
+        return self
+
+    def with_database(
+        self,
+        url: str | None = None,
+        config: DatabaseConfig | None = None,
+        **kwargs: Any,
+    ) -> "BentoRuntime":
+        """Configure database connection.
+
+        Args:
+            url: Database URL (shorthand)
+            config: Full DatabaseConfig object
+            **kwargs: Additional database config options
+
+        Returns:
+            Self for chaining
+
+        Example:
+            ```python
+            runtime.with_database(url="postgresql+asyncpg://...")
+            # or
+            runtime.with_database(config=DatabaseConfig(url="...", pool_size=10))
+            ```
+        """
+        if config:
+            self.config.database = config
+        elif url:
+            self.config.database = DatabaseConfig(url=url, **kwargs)
         return self
 
     async def _run_gates(self) -> None:
@@ -352,3 +395,116 @@ class BentoRuntime:
             }
 
         return app
+
+    def _setup_database(self) -> None:
+        """Setup database session factory."""
+        if self._session_factory is not None:
+            return
+
+        if not self.config.database or not self.config.database.url:
+            logger.warning("No database configured, DI functions won't be available")
+            return
+
+        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+        engine = create_async_engine(
+            self.config.database.url,
+            echo=self.config.database.echo,
+            pool_size=self.config.database.pool_size,
+            max_overflow=self.config.database.max_overflow,
+        )
+        self._session_factory = async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+        )
+        self.container.set("db.engine", engine)
+        self.container.set("db.session_factory", self._session_factory)
+        logger.info("Database configured")
+
+    @property
+    def get_uow(self):
+        """Get the UnitOfWork dependency function for FastAPI.
+
+        Returns:
+            FastAPI Depends-compatible async generator function
+
+        Example:
+            ```python
+            @router.post("/products")
+            async def create_product(uow: UnitOfWork = Depends(runtime.get_uow)):
+                ...
+            ```
+        """
+        if self._get_uow_func is not None:
+            return self._get_uow_func
+
+        self._setup_database()
+
+        if not self._session_factory:
+            raise RuntimeError("Database not configured. Call with_database() first.")
+
+        from collections.abc import AsyncGenerator
+
+        from fastapi import Depends
+
+        from bento.infrastructure.ports import get_port_registry
+        from bento.infrastructure.repository import get_repository_registry
+        from bento.persistence.outbox.record import SqlAlchemyOutbox
+        from bento.persistence.uow import SQLAlchemyUnitOfWork
+
+        session_factory = self._session_factory
+
+        async def get_db_session() -> AsyncGenerator:
+            async with session_factory() as session:
+                try:
+                    yield session
+                finally:
+                    await session.close()
+
+        async def get_uow(
+            session=Depends(get_db_session),
+        ) -> AsyncGenerator[SQLAlchemyUnitOfWork, None]:
+            outbox = SqlAlchemyOutbox(session)
+            uow = SQLAlchemyUnitOfWork(session, outbox)
+
+            # Auto-register all discovered repositories
+            for ar_type, repo_cls in get_repository_registry().items():
+                uow.register_repository(ar_type, lambda s, cls=repo_cls: cls(s))
+
+            # Auto-register all discovered ports
+            for port_type, adapter_cls in get_port_registry().items():
+                uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
+
+            try:
+                yield uow
+            finally:
+                pass
+
+        self._get_uow_func = get_uow
+        return self._get_uow_func
+
+    @property
+    def handler_dependency(self):
+        """Get the handler dependency factory for FastAPI.
+
+        Returns:
+            Handler dependency factory function
+
+        Example:
+            ```python
+            @router.post("/products")
+            async def create_product(
+                handler: Annotated[CreateProductHandler, runtime.handler_dependency(CreateProductHandler)],
+            ):
+                ...
+            ```
+        """
+        if self._handler_dependency_func is not None:
+            return self._handler_dependency_func
+
+        from bento.interfaces.fastapi import create_handler_dependency
+
+        self._handler_dependency_func = create_handler_dependency(self.get_uow)
+        return self._handler_dependency_func

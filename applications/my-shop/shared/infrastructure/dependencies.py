@@ -78,26 +78,17 @@ async def get_uow(
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
-    # Auto-register all discovered repositories
+    # Auto-register all discovered repositories and ports
     # - Production: scanned by BentoModule.scan_packages during startup
     # - Tests: scanned by conftest.py
+    from bento.infrastructure.ports import get_port_registry
     from bento.infrastructure.repository import get_repository_registry
 
     for ar_type, repo_cls in get_repository_registry().items():
         uow.register_repository(ar_type, lambda s, cls=repo_cls: cls(s))
 
-    # Register outbound ports (adapters for cross-BC services)
-    from contexts.ordering.domain.ports.services.i_product_catalog_service import (
-        IProductCatalogService,
-    )
-    from contexts.ordering.infrastructure.adapters.adapter_factory import (
-        get_product_catalog_adapter,
-    )
-
-    uow.register_port(
-        IProductCatalogService,
-        lambda s: get_product_catalog_adapter(s),
-    )
+    for port_type, adapter_cls in get_port_registry().items():
+        uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
 
     try:
         yield uow

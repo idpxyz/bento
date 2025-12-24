@@ -27,7 +27,7 @@ Example:
     ```
 """
 
-from bento.runtime.bootstrap import BentoRuntime, RuntimeConfig
+from bento.runtime.bootstrap import BentoRuntime, DatabaseConfig, RuntimeConfig
 from bento.runtime.container import BentoContainer
 from bento.runtime.module import BentoModule
 from bento.runtime.registry import ModuleRegistry
@@ -35,6 +35,7 @@ from bento.runtime.registry import ModuleRegistry
 __all__ = [
     "BentoRuntime",
     "RuntimeConfig",
+    "DatabaseConfig",
     "BentoContainer",
     "BentoModule",
     "ModuleRegistry",

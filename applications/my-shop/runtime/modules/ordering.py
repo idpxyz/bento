@@ -26,6 +26,7 @@ class OrderingModule(BentoModule):
     requires = ["infra", "catalog"]
     scan_packages = [
         "contexts.ordering.infrastructure.repositories.order_repository_impl",
+        "contexts.ordering.infrastructure.adapters.services.product_catalog_adapter",
     ]
 
     async def on_register(self, container: "BentoContainer") -> None:

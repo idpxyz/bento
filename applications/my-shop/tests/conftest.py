@@ -16,13 +16,14 @@ from sqlalchemy.pool import StaticPool
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # ============================================================
-# Auto-scan repositories (same as BentoRuntime.scan_packages)
-# This triggers @repository_for decorator registration
+# Auto-scan repositories and ports (same as BentoRuntime.scan_packages)
+# This triggers @repository_for and @port_for decorator registration
 # ============================================================
 import contexts.catalog.infrastructure.repositories.category_repository_impl  # noqa: F401
 import contexts.catalog.infrastructure.repositories.product_repository_impl  # noqa: F401
 import contexts.identity.infrastructure.repositories.user_repository_impl  # noqa: F401
 import contexts.ordering.infrastructure.repositories.order_repository_impl  # noqa: F401
+import contexts.ordering.infrastructure.adapters.services.product_catalog_adapter  # noqa: F401
 
 # Import all PO models to register them with Base.metadata
 from contexts.catalog.infrastructure.models.category_po import CategoryPO  # noqa: F401
