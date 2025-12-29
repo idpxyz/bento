@@ -24,6 +24,8 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from bento.runtime.middleware import IdempotencyMiddleware
+
 from config import settings
 from runtime.modules.catalog import CatalogModule
 from runtime.modules.identity import IdentityModule
@@ -35,7 +37,6 @@ from shared.exceptions import (
     response_validation_exception_handler,
     validation_exception_handler,
 )
-from shared.infrastructure.idempotency_middleware import idempotency_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -124,8 +125,14 @@ def create_app() -> FastAPI:
     logger.debug("FastAPI app created with BentoRuntime's built-in lifespan")
 
     # Add idempotency middleware (must be before CORS)
-    app.middleware("http")(idempotency_middleware)
-    logger.debug("Idempotency middleware registered")
+    # Uses framework's IdempotencyMiddleware with database session injection
+    app.add_middleware(
+        IdempotencyMiddleware,
+        header_name="x-idempotency-key",
+        ttl_seconds=86400,  # 24 hours
+        tenant_id="default",
+    )
+    logger.debug("Idempotency middleware registered (framework implementation)")
 
     # Add CORS middleware
     app.add_middleware(
