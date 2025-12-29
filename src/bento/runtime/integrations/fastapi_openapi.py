@@ -1,20 +1,24 @@
-"""OpenAPI customization for Swagger UI.
+"""OpenAPI customization for FastAPI integration.
 
 This module provides custom OpenAPI schema modifications to support
-custom HTTP headers in Swagger UI.
+Bento Framework's middleware features in Swagger UI.
 """
 
-from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
-def custom_openapi_schema(app: FastAPI) -> dict:
-    """Customize OpenAPI schema to add global header parameters.
+def customize_openapi_for_bento(app: "FastAPI") -> dict:
+    """Customize OpenAPI schema to add Bento Framework headers.
 
     This adds custom headers to all endpoints in Swagger UI:
     - X-Idempotency-Key: For idempotent operations
     - X-Tenant-ID: For multi-tenant operations
-    - X-Request-ID: For request tracing (optional, auto-generated if not provided)
+    - X-Request-ID: For request tracing
 
     Args:
         app: FastAPI application instance
@@ -22,6 +26,8 @@ def custom_openapi_schema(app: FastAPI) -> dict:
     Returns:
         Customized OpenAPI schema
     """
+    from fastapi.openapi.utils import get_openapi
+
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -100,10 +106,25 @@ def custom_openapi_schema(app: FastAPI) -> dict:
     return app.openapi_schema
 
 
-def setup_openapi(app: FastAPI) -> None:
-    """Setup custom OpenAPI schema for the application.
+def setup_bento_openapi(app: "FastAPI") -> None:
+    """Setup custom OpenAPI schema for Bento Framework features.
+
+    This configures the FastAPI application to use Bento's custom OpenAPI schema
+    which includes support for:
+    - Idempotency headers
+    - Multi-tenant headers
+    - Request tracing headers
 
     Args:
         app: FastAPI application instance
+
+    Example:
+        ```python
+        from fastapi import FastAPI
+        from bento.runtime.integrations.fastapi_openapi import setup_bento_openapi
+
+        app = FastAPI()
+        setup_bento_openapi(app)
+        ```
     """
-    app.openapi = lambda: custom_openapi_schema(app)
+    app.openapi = lambda: customize_openapi_for_bento(app)

@@ -32,6 +32,7 @@ from bento.runtime.middleware import (
     # TenantMiddleware,  # Available but not used (see commented config below)
     # TenantContext,
 )
+from bento.runtime.integrations import setup_bento_openapi
 
 from config import settings
 from runtime.modules.catalog import CatalogModule
@@ -46,7 +47,6 @@ from shared.exceptions import (
     response_validation_exception_handler,
     validation_exception_handler,
 )
-from shared.openapi import setup_openapi
 
 # Configure logging
 logging.basicConfig(
@@ -237,7 +237,7 @@ def create_app() -> FastAPI:
     logger.debug("Custom routes registered: /, /ping, /health")
 
     # Setup custom OpenAPI schema for Swagger UI
-    setup_openapi(app)
+    setup_bento_openapi(app)
     logger.info("✅ Custom OpenAPI schema configured (X-Idempotency-Key, X-Tenant-ID, X-Request-ID)")
 
     logger.info(f"FastAPI application created successfully: {settings.app_name} (Best Practice)")
