@@ -70,8 +70,9 @@ class Category(AggregateRoot):
             parent_id=parent_id,
         )
 
-        # Trigger CategoryCreated event
+        # Trigger CategoryCreated event with aggregate_id set to category id
         event = CategoryCreated(
+            aggregate_id=str(category.id),
             category_id=str(category.id),
             category_name=category.name,
             parent_id=str(category.parent_id) if category.parent_id else None,
