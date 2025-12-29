@@ -166,19 +166,38 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
                 # Store response if successful
                 if response.status_code < 500:
-                    # Extract response body
-                    response_body = {}
-                    if isinstance(response, JSONResponse):
-                        try:
-                            body_content = response.body
-                            if isinstance(body_content, (bytes, bytearray)):
-                                response_body = json.loads(body_content.decode("utf-8"))
-                            else:
-                                response_body = json.loads(str(body_content))
-                        except Exception:
-                            response_body = {"_raw": str(response.body)}
+                    # Read response body
+                    response_body_bytes: bytes = b""
 
-                    # Store response
+                    # Try different ways to get response body
+                    if hasattr(response, "body_iterator"):
+                        # StreamingResponse - iterate through chunks
+                        async for chunk in response.body_iterator:  # type: ignore
+                            if isinstance(chunk, bytes):
+                                response_body_bytes += chunk
+                            else:
+                                response_body_bytes += bytes(chunk)
+                    elif hasattr(response, "body"):
+                        # Regular Response with body attribute
+                        body = response.body  # type: ignore
+                        if isinstance(body, bytes):
+                            response_body_bytes = body
+                        elif isinstance(body, (bytearray, memoryview)):
+                            response_body_bytes = bytes(body)
+                        else:
+                            response_body_bytes = str(body).encode("utf-8")
+                    else:
+                        # Cannot read body, skip idempotency storage
+                        return response
+
+                    # Parse response body
+                    response_body = {}
+                    try:
+                        response_body = json.loads(response_body_bytes.decode("utf-8"))
+                    except Exception:
+                        response_body = {"_raw": response_body_bytes.decode("utf-8", errors="ignore")}
+
+                    # Store response in idempotency record
                     await idempotency.store_response(
                         idempotency_key=idempotency_key,
                         response=response_body,
@@ -191,8 +210,15 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     # Commit the transaction
                     await session.commit()
 
-                    # Add header to indicate successful processing
-                    response.headers["X-Idempotent-Processed"] = "1"
+                    # Rebuild response with cached body and add header
+                    return JSONResponse(
+                        content=response_body,
+                        status_code=response.status_code,
+                        headers={
+                            **dict(response.headers),
+                            "X-Idempotent-Processed": "1",
+                        },
+                    )
                 else:
                     # Mark as failed (allows retry)
                     await idempotency.mark_failed(idempotency_key)
