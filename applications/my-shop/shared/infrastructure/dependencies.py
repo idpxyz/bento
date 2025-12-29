@@ -58,8 +58,14 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     container = _get_container()
 
     # Get session_factory from container
-    # It's guaranteed to be available after BentoRuntime's build_async()
-    session_factory = container.get("db.session_factory")
+    # It's set by BentoRuntime's DatabaseManager during build_async()
+    try:
+        session_factory = container.get("db.session_factory")
+    except KeyError:
+        # If not in container, use standalone factory as fallback
+        # This can happen during testing or if runtime initialization is delayed
+        from shared.infrastructure.standalone_db import get_standalone_session_factory
+        session_factory = get_standalone_session_factory()
 
     async with session_factory() as session:
         try:
