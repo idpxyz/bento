@@ -7,6 +7,7 @@ Available middleware:
 - RequestIDMiddleware: Request tracking and tracing
 - StructuredLoggingMiddleware: Structured HTTP logging
 - RateLimitingMiddleware: API rate limiting
+- TenantMiddleware: Multi-tenant context management (re-exported from multitenancy)
 """
 
 from bento.runtime.middleware.idempotency import IdempotencyMiddleware
@@ -14,9 +15,15 @@ from bento.runtime.middleware.request_id import RequestIDMiddleware
 from bento.runtime.middleware.logging import StructuredLoggingMiddleware
 from bento.runtime.middleware.rate_limiting import RateLimitingMiddleware
 
+# Re-export from multitenancy module for unified import path
+from bento.multitenancy.middleware import add_tenant_middleware as TenantMiddleware
+from bento.multitenancy import TenantContext
+
 __all__ = [
     "IdempotencyMiddleware",
     "RequestIDMiddleware",
     "StructuredLoggingMiddleware",
     "RateLimitingMiddleware",
+    "TenantMiddleware",
+    "TenantContext",
 ]

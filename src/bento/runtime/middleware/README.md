@@ -147,6 +147,74 @@ X-RateLimit-Reset: 1735459200
 
 ---
 
+### 5. TenantMiddleware
+**功能**: 多租户上下文管理（从 multitenancy 模块 re-export）
+
+```python
+from bento.runtime.middleware import TenantMiddleware, TenantContext
+from bento.multitenancy import HeaderTenantResolver
+
+# 添加租户 middleware
+TenantMiddleware(
+    app,
+    resolver=HeaderTenantResolver(header_name="X-Tenant-ID"),
+    require_tenant=False,
+    exclude_paths=["/health", "/ping", "/docs"],
+)
+```
+
+**租户识别策略**:
+```python
+from bento.multitenancy import (
+    HeaderTenantResolver,      # 从 HTTP header 提取
+    TokenTenantResolver,        # 从 JWT token 提取
+    SubdomainTenantResolver,    # 从子域名提取
+    CompositeTenantResolver,    # 组合多种策略
+)
+
+# 从 header 提取
+resolver = HeaderTenantResolver(header_name="X-Tenant-ID")
+
+# 从 JWT token 提取
+resolver = TokenTenantResolver(claim_name="tenant_id")
+
+# 从子域名提取
+resolver = SubdomainTenantResolver()
+
+# 组合策略（优先级顺序）
+resolver = CompositeTenantResolver([
+    TokenTenantResolver(),
+    HeaderTenantResolver(),
+])
+```
+
+**在业务代码中使用**:
+```python
+from bento.runtime.middleware import TenantContext
+
+@app.get("/orders")
+async def get_orders():
+    tenant_id = TenantContext.get()  # 获取当前租户（可能为 None）
+    tenant_id = TenantContext.require()  # 必须存在，否则抛异常
+
+    # 自动按租户过滤数据
+    orders = await order_repo.find_all()
+    return orders
+```
+
+**使用场景**:
+- SaaS 多租户应用
+- 白标解决方案
+- 企业多部门部署
+- 数据隔离需求
+
+**注意**:
+- 需要在数据模型中添加 `tenant_id` 字段
+- 使用 `TenantFilterMixin` 自动过滤查询
+- 参考 `/applications/my-shop/docs/MULTI_TENANCY_ANALYSIS.md`
+
+---
+
 ## 完整配置示例
 
 ### 推荐的 Middleware 顺序
@@ -157,9 +225,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from bento.runtime.middleware import (
     RequestIDMiddleware,
     StructuredLoggingMiddleware,
+    TenantMiddleware,
     RateLimitingMiddleware,
     IdempotencyMiddleware,
+    TenantContext,
 )
+from bento.multitenancy import HeaderTenantResolver
 
 app = FastAPI()
 
@@ -175,6 +246,14 @@ app.add_middleware(
     logger_name="api",
     log_request_body=False,
     log_response_body=False,
+)
+
+# 3. Tenant Context (多租户识别，可选)
+TenantMiddleware(
+    app,
+    resolver=HeaderTenantResolver(),
+    require_tenant=False,
+    exclude_paths=["/health", "/ping"],
 )
 
 # 3. Rate Limiting (在业务逻辑前限流)
