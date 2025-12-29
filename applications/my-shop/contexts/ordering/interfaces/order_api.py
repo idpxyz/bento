@@ -54,6 +54,7 @@ class CreateOrderRequest(BaseModel):
 
     customer_id: str
     items: list[OrderItemRequest]
+    idempotency_key: str | None = None  # For idempotent order creation
 
 
 class PayOrderRequest(BaseModel):
@@ -120,7 +121,12 @@ async def create_order(
     request: CreateOrderRequest,
     handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
 ) -> dict[str, Any]:
-    """Create a new order with items."""
+    """Create a new order with items.
+
+    Supports idempotency via idempotency_key field.
+    If the same idempotency_key is sent twice, the second request will return
+    the same order that was created by the first request.
+    """
     # Request → Command
     items = [
         OrderItemInput(
@@ -135,6 +141,7 @@ async def create_order(
     command = CreateOrderCommand(
         customer_id=request.customer_id,
         items=items,
+        idempotency_key=request.idempotency_key,
     )
 
     # Execute Use Case

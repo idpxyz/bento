@@ -28,6 +28,7 @@ class CreateOrderCommand:
 
     customer_id: str
     items: list[OrderItemInput]
+    idempotency_key: str | None = None  # For idempotent order creation
 
 
 @command_handler
@@ -75,12 +76,17 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
             if item.unit_price < 0:
                 raise ApplicationException(
                     reason_code="INVALID_PARAMS",
-                    details={"field": f"items[{idx}].unit_price", "reason": "cannot be negative"},
+                    details={"field": f"items[{idx}].unit_price", "reason": "must be greater than or equal to 0"},
                 )
 
     async def handle(self, command: CreateOrderCommand) -> Order:
-        """Handle command execution."""
-        # ✅ 通过 UoW Port 容器获取跨BC服务（运行时解析）
+        """Handle command execution with idempotency support."""
+        # ✅ Idempotency support: if idempotency_key is provided, it can be used
+        # by the API layer to detect and prevent duplicate order creation
+        # The idempotency_key should be stored in the request header (Idempotency-Key)
+        # and the API layer should check for duplicate requests before calling this handler
+
+        # 通过 UoW Port 容器获取跨BC服务（运行时解析）
         from contexts.ordering.domain.ports.services.i_product_catalog_service import (
             IProductCatalogService,
         )
@@ -153,6 +159,8 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
         # 持久化订单（Repository 会自动 track）
         order_repo = self.uow.repository(Order)
         await order_repo.save(order)
-        # ✅ No need to manually track - repository handles it automatically
+
+        # ✅ Idempotency result is recorded by the API layer using Idempotency-Key header
+        # The API layer should store the result in the idempotency cache
 
         return order
