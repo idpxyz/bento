@@ -29,6 +29,8 @@ from bento.runtime.middleware import (
     RequestIDMiddleware,
     StructuredLoggingMiddleware,
     RateLimitingMiddleware,
+    # TenantMiddleware,  # Available but not used (see commented config below)
+    # TenantContext,
 )
 
 from config import settings
@@ -151,7 +153,19 @@ def create_app() -> FastAPI:
     )
     logger.info("✅ StructuredLogging middleware registered (logger: my-shop)")
 
-    # 3. Rate Limiting - Protect API from abuse (60 req/min per IP)
+    # 3. Tenant Context - Multi-tenant identification (Optional, disabled by default)
+    # Uncomment to enable multi-tenancy support
+    # See: docs/MULTI_TENANCY_ANALYSIS.md for details
+    # from bento.multitenancy import HeaderTenantResolver
+    # TenantMiddleware(
+    #     app,
+    #     resolver=HeaderTenantResolver(header_name="X-Tenant-ID"),
+    #     require_tenant=False,
+    #     exclude_paths=["/health", "/ping", "/docs", "/openapi.json"],
+    # )
+    # logger.info("✅ TenantMiddleware registered (header: X-Tenant-ID)")
+
+    # 4. Rate Limiting - Protect API from abuse (60 req/min per IP)
     app.add_middleware(
         RateLimitingMiddleware,
         requests_per_minute=60,
