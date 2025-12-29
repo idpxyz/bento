@@ -53,6 +53,33 @@ class Category(AggregateRoot):
         """移动到新的父分类"""
         self.parent_id = new_parent_id
 
+    @classmethod
+    def create(cls, id: ID, name: str, description: str, parent_id: ID | None = None) -> Category:
+        """Factory method to create a new category with CategoryCreated event.
+
+        This method ensures that the CategoryCreated event is automatically
+        triggered when a new category is created.
+        """
+        # Import here to avoid circular import
+        from contexts.catalog.domain.events.categorycreated_event import CategoryCreated
+
+        category = cls(
+            id=id,
+            name=name,
+            description=description,
+            parent_id=parent_id,
+        )
+
+        # Trigger CategoryCreated event
+        event = CategoryCreated(
+            category_id=str(category.id),
+            category_name=category.name,
+            parent_id=str(category.parent_id) if category.parent_id else None,
+        )
+        category.add_event(event)
+
+        return category
+
     def mark_deleted(self) -> None:
         """标记分类为已删除，触发事件"""
         # Import here to avoid circular import

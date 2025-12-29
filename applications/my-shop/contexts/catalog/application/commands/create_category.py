@@ -51,7 +51,9 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
     async def handle(self, command: CreateCategoryCommand) -> Category:
         """Handle command execution."""
         category_id = ID.generate()
-        category = Category(
+
+        # Use factory method to create category with CategoryCreated event
+        category = Category.create(
             id=category_id,
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",
@@ -59,6 +61,8 @@ class CreateCategoryHandler(CommandHandler[CreateCategoryCommand, Category]):
         )
 
         # Persist via repository
+        # The UnitOfWork will automatically collect the CategoryCreated event
+        # and persist it to the Outbox during commit
         category_repo = self.uow.repository(Category)
         await category_repo.save(category)
 
