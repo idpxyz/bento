@@ -10,11 +10,13 @@
     from shared.exceptions import (
         validation_exception_handler,
         response_validation_exception_handler,
+        application_exception_handler,
         generic_exception_handler,
     )
 
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(ResponseValidationError, response_validation_exception_handler)
+    app.add_exception_handler(ApplicationException, application_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
 """
 

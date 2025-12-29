@@ -39,7 +39,9 @@ from runtime.modules.identity import IdentityModule
 from runtime.modules.infra import InfraModule
 from runtime.modules.ordering import OrderingModule
 from runtime.modules.service_discovery import create_service_discovery_module
+from bento.core.exceptions import ApplicationException
 from shared.exceptions import (
+    application_exception_handler,
     generic_exception_handler,
     response_validation_exception_handler,
     validation_exception_handler,
@@ -198,6 +200,7 @@ def create_app() -> FastAPI:
     # Add exception handlers
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(ResponseValidationError, response_validation_exception_handler)
+    app.add_exception_handler(ApplicationException, application_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
     logger.debug("Exception handlers registered")
 
