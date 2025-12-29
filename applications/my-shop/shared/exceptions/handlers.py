@@ -33,6 +33,9 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
     # 类型转换以获取错误详情
     validation_exc = exc if isinstance(exc, RequestValidationError) else None
 
+    # 获取 request_id（由 RequestIDMiddleware 设置）
+    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
@@ -40,6 +43,7 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
             "message": "请求数据格式不正确",
             "details": validation_exc.errors() if validation_exc else str(exc),
             "path": str(request.url.path),
+            "request_id": request_id,
         },
     )
 
@@ -50,8 +54,11 @@ async def response_validation_exception_handler(request: Request, exc: Exception
     这通常表示服务器内部的数据格式问题，但不应该让用户看到 500 错误。
     记录详细日志供开发者调试。
     """
+    # 获取 request_id（由 RequestIDMiddleware 设置）
+    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+
     logger.error(
-        f"Response validation failed for {request.url.path}: {exc}",
+        f"[{request_id}] Response validation failed for {request.url.path}: {exc}",
         exc_info=True,
     )
 
@@ -60,7 +67,7 @@ async def response_validation_exception_handler(request: Request, exc: Exception
         content={
             "error": "Internal Server Error",
             "message": "服务器返回数据格式异常，请稍后重试或联系技术支持",
-            "request_id": request.headers.get("X-Request-ID", "unknown"),
+            "request_id": request_id,
         },
     )
 
@@ -73,8 +80,11 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         # 不是 ApplicationException，交给通用处理器
         return await generic_exception_handler(request, exc)
 
+    # 获取 request_id（由 RequestIDMiddleware 设置）
+    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+
     logger.warning(
-        f"Application exception for {request.url.path}: {app_exc.reason_code} - {app_exc.details}",
+        f"[{request_id}] Application exception for {request.url.path}: {app_exc.reason_code} - {app_exc.details}",
     )
 
     # 根据错误类型映射 HTTP 状态码
@@ -94,6 +104,7 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
             "reason_code": str(app_exc.reason_code),
             "details": app_exc.details,
             "path": str(request.url.path),
+            "request_id": request_id,
         },
     )
 
@@ -109,10 +120,13 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     if isinstance(exc, ApplicationException):
         return await application_exception_handler(request, exc)
 
+    # 获取 request_id（由 RequestIDMiddleware 设置）
+    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+
     # 业务验证错误（领域模型抛出的 ValueError）
     if isinstance(exc, ValueError):
         logger.warning(
-            f"Business validation error for {request.url.path}: {exc}",
+            f"[{request_id}] Business validation error for {request.url.path}: {exc}",
         )
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -121,12 +135,13 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
                 "message": "业务规则验证失败",
                 "details": str(exc),
                 "path": str(request.url.path),
+                "request_id": request_id,
             },
         )
 
     # 其他未预期的异常
     logger.error(
-        f"Unhandled exception for {request.url.path}: {exc}",
+        f"[{request_id}] Unhandled exception for {request.url.path}: {exc}",
         exc_info=True,
     )
 
@@ -135,6 +150,6 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         content={
             "error": "Internal Server Error",
             "message": "服务器内部错误，请稍后重试",
-            "request_id": request.headers.get("X-Request-ID", "unknown"),
+            "request_id": request_id,
         },
     )

@@ -16,6 +16,7 @@ class ShipOrderCommand:
 
     order_id: str
     tracking_number: str | None = None
+    idempotency_key: str | None = None  # For idempotent shipping
 
 
 @command_handler

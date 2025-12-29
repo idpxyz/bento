@@ -15,6 +15,7 @@ class PayOrderCommand:
     """Pay order command."""
 
     order_id: str
+    idempotency_key: str | None = None  # For idempotent payment processing
 
 
 @command_handler

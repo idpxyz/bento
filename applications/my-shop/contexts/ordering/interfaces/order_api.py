@@ -60,13 +60,14 @@ class CreateOrderRequest(BaseModel):
 class PayOrderRequest(BaseModel):
     """Pay order request model."""
 
-    pass  # 只需要 order_id（从路径获取）
+    idempotency_key: str | None = None  # For idempotent payment processing
 
 
 class ShipOrderRequest(BaseModel):
     """Ship order request model."""
 
     tracking_number: str | None = None
+    idempotency_key: str | None = None  # For idempotent shipping
 
 
 class CancelOrderRequest(BaseModel):
@@ -193,10 +194,17 @@ async def get_order(
 )
 async def pay_order(
     order_id: str,
+    request: PayOrderRequest,
     handler: Annotated[PayOrderHandler, handler_dependency(PayOrderHandler)],
 ) -> dict[str, Any]:
-    """Confirm payment for an order."""
-    command = PayOrderCommand(order_id=order_id)
+    """Confirm payment for an order.
+
+    Supports idempotency via idempotency_key field to prevent duplicate payments.
+    """
+    command = PayOrderCommand(
+        order_id=order_id,
+        idempotency_key=request.idempotency_key,
+    )
     order = await handler.execute(command)
     return order_to_dict(order)
 
@@ -211,7 +219,10 @@ async def ship_order(
     request: ShipOrderRequest,
     handler: Annotated[ShipOrderHandler, handler_dependency(ShipOrderHandler)],
 ) -> dict[str, Any]:
-    """Ship an order."""
+    """Ship an order.
+
+    Supports idempotency via idempotency_key field to prevent duplicate shipments.
+    """
     from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
 
@@ -219,6 +230,7 @@ async def ship_order(
         command = ShipOrderCommand(
             order_id=order_id,
             tracking_number=request.tracking_number,
+            idempotency_key=request.idempotency_key,
         )
         order = await handler.execute(command)
         return order_to_dict(order)
