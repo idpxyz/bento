@@ -8,6 +8,7 @@ from pathlib import Path
 
 from bento.application.decorators import set_global_contracts
 from bento.runtime import BentoRuntime
+from bento.runtime.middleware import IdempotencyMiddleware
 
 from loms.contexts.leg.module import LegModule
 from loms.contexts.shipment.module import ShipmentModule
@@ -63,6 +64,14 @@ def create_app():
         title="LOMS Platform",
         version="1.0.0",
         description="Logistics Order Management System",
+    )
+
+    # Add idempotency middleware (framework implementation)
+    app.add_middleware(
+        IdempotencyMiddleware,
+        header_name="x-idempotency-key",
+        ttl_seconds=86400,  # 24 hours
+        tenant_id="demo-tenant",
     )
 
     # Store runtime in app state for route access
