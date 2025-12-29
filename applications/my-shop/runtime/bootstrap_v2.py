@@ -132,13 +132,14 @@ def create_app() -> FastAPI:
     # ========================================
     # Middleware Stack (Order Matters!)
     # ========================================
+    logger.info("Configuring middleware stack...")
 
     # 1. Request ID - Generate unique ID for each request (for tracing)
     app.add_middleware(
         RequestIDMiddleware,
         header_name="X-Request-ID",
     )
-    logger.debug("RequestID middleware registered")
+    logger.info("✅ RequestID middleware registered (header: X-Request-ID)")
 
     # 2. Structured Logging - Log all requests with structured data
     app.add_middleware(
@@ -148,7 +149,7 @@ def create_app() -> FastAPI:
         log_response_body=False,  # Disable in production for security
         skip_paths={"/health", "/ping", "/metrics"},
     )
-    logger.debug("StructuredLogging middleware registered")
+    logger.info("✅ StructuredLogging middleware registered (logger: my-shop)")
 
     # 3. Rate Limiting - Protect API from abuse (60 req/min per IP)
     app.add_middleware(
@@ -158,7 +159,7 @@ def create_app() -> FastAPI:
         key_func=lambda req: req.client.host if req.client else "unknown",
         skip_paths={"/health", "/ping"},
     )
-    logger.debug("RateLimiting middleware registered (60 req/min per IP)")
+    logger.info("✅ RateLimiting middleware registered (60 req/min, 1000 req/hour per IP)")
 
     # 4. Idempotency - Prevent duplicate operations
     app.add_middleware(
@@ -167,7 +168,7 @@ def create_app() -> FastAPI:
         ttl_seconds=86400,  # 24 hours
         tenant_id="default",
     )
-    logger.debug("Idempotency middleware registered")
+    logger.info("✅ Idempotency middleware registered (TTL: 24h, header: x-idempotency-key)")
 
     # 5. CORS - Cross-Origin Resource Sharing
     app.add_middleware(
@@ -177,7 +178,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    logger.debug(f"CORS middleware configured with origins: {settings.cors_origins}")
+    logger.info(f"✅ CORS middleware registered (origins: {settings.cors_origins})")
+    logger.info("Middleware stack configuration completed")
 
     # Add exception handlers
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
