@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # API
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8007
     api_reload: bool = True
 
     # Security
@@ -39,6 +39,20 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+
+    # Service Discovery
+    service_discovery_backend: str = "env"
+    service_discovery_timeout: int = 5
+    service_discovery_retry: int = 3
+    service_discovery_cache_ttl: int = 300
+
+    # Consul settings (if using Consul backend)
+    consul_url: str | None = None
+    consul_datacenter: str = "dc1"
+
+    # Kubernetes settings (if using Kubernetes backend)
+    kubernetes_namespace: str = "default"
+    kubernetes_service_suffix: str = "svc.cluster.local"
 
     model_config = SettingsConfigDict(
         env_file=".env",

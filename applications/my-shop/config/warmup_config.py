@@ -74,9 +74,9 @@ async def setup_cache_warmup(
             app.state.warmup_coordinator = coordinator
         ```
     """
-    logger.info("🔧 开始配置缓存预热系统...")
+    logger.info("Configuring cache warmup system...")
 
-    # 1. 创建协调器（共享基础设施）
+    # 1. Create coordinator (shared infrastructure)
     coordinator = CacheWarmupCoordinator(
         cache,
         max_concurrency=max_concurrency,
@@ -84,49 +84,49 @@ async def setup_cache_warmup(
         enable_progress=True,
     )
 
-    # 2. 注册 Catalog BC 的预热策略
-    logger.info("📦 注册 Catalog BC 预热策略...")
+    # 2. Register Catalog BC warmup strategies
+    logger.info("Registering Catalog BC warmup strategies...")
 
     coordinator.register_strategy(
         HotProductsWarmupStrategy(product_repository),
         tags=["catalog", "product", "high-priority"],
-        metadata={"description": "预热热销商品（最常访问的100个商品）"},
+        metadata={"description": "Warm up hot products (top 100 most accessed products)"},
     )
 
     coordinator.register_strategy(
         CategoryWarmupStrategy(category_repository),
         tags=["catalog", "category"],
-        metadata={"description": "预热分类数据（所有分类+列表页）"},
+        metadata={"description": "Warm up category data (all categories + list pages)"},
     )
 
-    # 3. TODO: 注册其他BC的预热策略
+    # 3. TODO: Register warmup strategies from other BCs
     # coordinator.register_strategy(
     #     UserSessionWarmupStrategy(user_service),
     #     bc_name="identity",
-    #     description="预热活跃用户会话",
+    #     description="Warm up active user sessions",
     # )
 
     # coordinator.register_strategy(
     #     RecentOrdersWarmupStrategy(order_repository),
     #     bc_name="ordering",
-    #     description="预热最近订单",
+    #     description="Warm up recent orders",
     # )
 
-    # 4. 打印已注册策略
+    # 4. Print registered strategies
     strategies = coordinator.list_strategies()
-    logger.info(f"✅ 已注册 {len(strategies)} 个预热策略:")
+    logger.info(f"Registered {len(strategies)} warmup strategies:")
     for name, metadata in strategies.items():
         tags_str = ", ".join(metadata.get("tags", []))
         logger.info(f"   - {name} (Tags: {tags_str}, Priority: {metadata['priority']})")
 
-    # 5. 可选：执行启动时预热
+    # 5. Optional: Execute warmup on startup
     if warmup_on_startup:
-        logger.info("🚀 执行启动时预热...")
+        logger.info("Executing startup warmup...")
         await coordinator.warmup_all()
     else:
-        logger.info("⏸️  跳过启动时预热（warmup_on_startup=False）")
+        logger.info("Skipping startup warmup (warmup_on_startup=False)")
 
-    logger.info("✅ 缓存预热系统配置完成")
+    logger.info("Cache warmup system configuration completed")
 
     return coordinator
 

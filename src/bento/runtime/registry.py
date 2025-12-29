@@ -41,6 +41,7 @@ class ModuleRegistry:
 
     def __init__(self) -> None:
         self._modules: dict[str, "BentoModule"] = {}
+        self._cached_order: list["BentoModule"] | None = None
 
     def register(self, module: "BentoModule") -> "ModuleRegistry":
         """Register a module.
@@ -54,6 +55,7 @@ class ModuleRegistry:
         if module.name in self._modules:
             raise ValueError(f"Module already registered: {module.name}")
         self._modules[module.name] = module
+        self._cached_order = None  # Invalidate cache
         return self
 
     def register_all(self, *modules: "BentoModule") -> "ModuleRegistry":
@@ -105,12 +107,18 @@ class ModuleRegistry:
     def resolve_order(self) -> list["BentoModule"]:
         """Return modules in topological order (dependencies first).
 
+        Uses cached result if available for performance.
+
         Returns:
             List of modules in initialization order
 
         Raises:
             ValueError: If circular dependency detected
         """
+        # Return cached result if available
+        if self._cached_order is not None:
+            return self._cached_order
+
         self.validate()
 
         visited: set[str] = set()
@@ -133,7 +141,9 @@ class ModuleRegistry:
         for name in self._modules:
             visit(name)
 
-        return [self._modules[name] for name in order]
+        # Cache the result
+        self._cached_order = [self._modules[name] for name in order]
+        return self._cached_order
 
     def names(self) -> list[str]:
         """Return all registered module names."""

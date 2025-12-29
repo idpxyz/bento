@@ -1,4 +1,22 @@
-"""全局异常处理器 - 提供友好的错误响应"""
+"""全局异常处理器 - 提供友好的错误响应
+
+这个模块定义了应用层的异常处理策略，遵循 DDD 原则：
+- ValidationException (400) - 请求数据格式错误
+- ApplicationException (400/404) - 业务规则验证失败
+- ValueError (400) - 领域模型验证失败
+- 其他异常 (500) - 未预期的系统错误
+
+使用方式：
+    from shared.exceptions import (
+        validation_exception_handler,
+        response_validation_exception_handler,
+        generic_exception_handler,
+    )
+
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(ResponseValidationError, response_validation_exception_handler)
+    app.add_exception_handler(Exception, generic_exception_handler)
+"""
 
 import logging
 

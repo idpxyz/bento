@@ -107,6 +107,76 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=exc.to_dict(),
         )
 
+    # Import and handle IdempotencyConflictError
+    from bento.application.decorators import IdempotencyConflictError
+    from bento.persistence.interceptor import OptimisticLockException
+
+    @app.exception_handler(OptimisticLockException)
+    async def handle_optimistic_lock(  # type: ignore[reportUnknownReturnType]
+        request: Request,
+        exc: OptimisticLockException,
+    ) -> JSONResponse:
+        """Handle optimistic lock conflicts (custom exception)."""
+        logger.warning(
+            f"Optimistic lock conflict: {exc}",
+            extra={"path": request.url.path, "method": request.method},
+        )
+        return JSONResponse(
+            status_code=409,
+            content={
+                "reason_code": "OPTIMISTIC_LOCK_CONFLICT",
+                "message": "Resource was modified by another request. Please retry.",
+                "category": "infrastructure",
+                "details": {},
+            },
+        )
+
+    # Handle SQLAlchemy native StaleDataError (version_id_col)
+    from sqlalchemy.orm.exc import StaleDataError
+
+    @app.exception_handler(StaleDataError)
+    async def handle_stale_data(  # type: ignore[reportUnknownReturnType]
+        request: Request,
+        exc: StaleDataError,
+    ) -> JSONResponse:
+        """Handle SQLAlchemy native optimistic lock conflicts."""
+        logger.warning(
+            f"Stale data error (optimistic lock): {exc}",
+            extra={"path": request.url.path, "method": request.method},
+        )
+        return JSONResponse(
+            status_code=409,
+            content={
+                "reason_code": "OPTIMISTIC_LOCK_CONFLICT",
+                "message": "Resource was modified by another request. Please retry.",
+                "category": "infrastructure",
+                "details": {},
+            },
+        )
+
+    @app.exception_handler(IdempotencyConflictError)
+    async def handle_idempotency_conflict(  # type: ignore[reportUnknownReturnType]
+        request: Request,
+        exc: IdempotencyConflictError,
+    ) -> JSONResponse:
+        """Handle idempotency conflict errors.
+
+        Returns 409 Conflict when same idempotency key is used with different data.
+        """
+        logger.warning(
+            f"Idempotency conflict: {exc}",
+            extra={"path": request.url.path, "method": request.method},
+        )
+        return JSONResponse(
+            status_code=409,
+            content={
+                "reason_code": "IDEMPOTENCY_CONFLICT",
+                "message": str(exc),
+                "category": "application",
+                "details": {"idempotency_key": exc.key},
+            },
+        )
+
     @app.exception_handler(Exception)
     async def handle_unexpected_exception(  # type: ignore[reportUnknownReturnType]
         request: Request,

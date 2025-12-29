@@ -20,7 +20,8 @@
   ],
   "extraPaths": [
     ".",
-    "src"
+    "src",
+    "applications/contract-governance/src"
   ],
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",

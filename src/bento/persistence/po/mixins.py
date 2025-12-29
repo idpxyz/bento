@@ -88,7 +88,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import TIMESTAMP, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 if TYPE_CHECKING:
     pass  # 预留用于类型检查的导入
@@ -286,11 +286,18 @@ class OptimisticLockFieldMixin:
 
     __abstract__ = True
 
+    # Enable SQLAlchemy native optimistic locking
+    # This generates: UPDATE ... WHERE id = ? AND version = ?
+    # If no rows affected, raises StaleDataError
+    @declared_attr.directive
+    def __mapper_args__(cls) -> dict:  # type: ignore[misc]
+        return {"version_id_col": cls.__table__.c.version}  # type: ignore[attr-defined]
+
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=1,
-        doc="版本号（由 OptimisticLockInterceptor 自动管理）",
+        doc="版本号（由 SQLAlchemy version_id_col 自动管理）",
     )
 
 

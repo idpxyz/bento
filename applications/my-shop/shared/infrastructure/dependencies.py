@@ -1,45 +1,71 @@
-"""API Dependencies - Uses Bento Framework
+"""API Dependencies - Bento Framework Best Practice
 
-This module provides FastAPI dependencies using Bento's infrastructure:
-- Database session management
-- Unit of Work pattern
-- Repository access
-- Port access
+This module provides FastAPI dependencies using Bento's infrastructure.
+Follows Bento Framework best practice: all database resources come from
+BentoRuntime's container.
+
+Architecture:
+- Database engine and session_factory are managed by BentoRuntime
+- No duplicate resource creation
+- Single source of truth: BentoRuntime container
+
+Usage:
+    from shared.infrastructure.dependencies import get_uow
+
+    @router.post("/items")
+    async def create_item(
+        uow: SQLAlchemyUnitOfWork = Depends(get_uow)
+    ):
+        async with uow:
+            ...
 """
 
 from collections.abc import AsyncGenerator
 
-from bento.infrastructure.database import create_async_engine_from_config
 from bento.interfaces.fastapi import create_handler_dependency
 from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 
-# Create database engine using Bento's configuration
-db_config = settings.get_database_config()
-engine = create_async_engine_from_config(db_config)
+def _get_container():
+    """Get BentoRuntime container.
 
-# Create session factory
-session_factory = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
+    Returns:
+        BentoContainer instance
+
+    Raises:
+        RuntimeError: If runtime is not initialized
+    """
+    from runtime.bootstrap_v2 import get_runtime
+
+    runtime = get_runtime()
+    return runtime.container
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Get database session.
+    """Get database session from BentoRuntime container.
+
+    Best Practice: Uses session_factory from BentoRuntime container.
 
     Usage:
         @router.get("/items")
         async def get_items(session: AsyncSession = Depends(get_db_session)):
             ...
     """
+    container = _get_container()
+
+    # Get session_factory from container
+    # It's set by BentoRuntime's DatabaseManager during build_async()
+    try:
+        session_factory = container.get("db.session_factory")
+    except KeyError:
+        # Fallback: create standalone session factory if not in container
+        # This can happen if runtime hasn't fully initialized yet
+        from shared.infrastructure.standalone_db import get_standalone_session_factory
+        session_factory = get_standalone_session_factory()
+
     async with session_factory() as session:
         try:
             yield session
@@ -102,6 +128,33 @@ async def get_uow(
 handler_dependency = create_handler_dependency(get_uow)
 
 
+# ==================== Public API ====================
+# This module exports:
+# - get_db_session: Get database session
+# - get_uow: Get Unit of Work
+# - handler_dependency: Inject CQRS handlers
+#
+# Usage in FastAPI routes:
+#
+# 1. Direct database access:
+#    @router.get("/items")
+#    async def get_items(session: AsyncSession = Depends(get_db_session)):
+#        ...
+#
+# 2. Unit of Work pattern:
+#    @router.post("/items")
+#    async def create_item(uow: SQLAlchemyUnitOfWork = Depends(get_uow)):
+#        async with uow:
+#            ...
+#
+# 3. CQRS Handler injection (recommended):
+#    @router.post("/orders")
+#    async def create_order(
+#        handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)]
+#    ):
+#        return await handler.execute(command)
+
+
 # Legacy get_handler() function has been removed.
 # All APIs now use handler_dependency() for clean OpenAPI schemas.
 
@@ -146,7 +199,7 @@ handler_dependency = create_handler_dependency(get_uow)
 # New pattern (CORRECT - using universal handler factory):
 #     @router.post("/orders")
 #     async def create_order(
-#         handler: Annotated[CreateOrderHandler, Depends(get_handler)],
+#         handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
 #     ):
 #         return await handler.execute(command)  # Session managed by FastAPI
 # ===================================================

@@ -27,13 +27,17 @@ Example:
     ```
 """
 
-from bento.runtime.bootstrap import BentoRuntime, DatabaseConfig, RuntimeConfig
+from bento.runtime.bootstrap import BentoRuntime
+from bento.runtime.builder import RuntimeBuilder
+from bento.runtime.config import RuntimeConfig
 from bento.runtime.container import BentoContainer
 from bento.runtime.module import BentoModule
 from bento.runtime.registry import ModuleRegistry
+from bento.infrastructure.database.config import DatabaseConfig
 
 __all__ = [
     "BentoRuntime",
+    "RuntimeBuilder",
     "RuntimeConfig",
     "DatabaseConfig",
     "BentoContainer",

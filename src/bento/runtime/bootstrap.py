@@ -8,10 +8,9 @@ Example:
     from bento.runtime import BentoRuntime
 
     runtime = (
-        BentoRuntime()
-        .with_contracts("./contracts")
+        RuntimeBuilder()
         .with_modules(InfraModule(), CatalogModule(), OrderingModule())
-        .build()
+        .build_runtime()
     )
 
     app = runtime.create_fastapi_app(title="My Shop")
@@ -20,14 +19,25 @@ Example:
 
 from __future__ import annotations
 
+import asyncio
+import importlib
 import logging
-from contextlib import asynccontextmanager
+import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from bento.runtime.container import BentoContainer
+from bento.runtime.config import RuntimeConfig
+from bento.runtime.container.base import BentoContainer
+from bento.runtime.database import DatabaseManager
+from bento.runtime.integrations.di import DIIntegration
+from bento.runtime.integrations.fastapi import FastAPIIntegration
+from bento.runtime.integrations.modules import ModuleManager
+from bento.runtime.integrations.performance import PerformanceMonitor
+from bento.runtime.lifecycle import startup as lifecycle_startup
+from bento.runtime.lifecycle.manager import LifecycleManager
+from bento.runtime.ports import PortRegistry
 from bento.runtime.registry import ModuleRegistry
+from bento.runtime.repository import RepositoryRegistry
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -35,28 +45,6 @@ if TYPE_CHECKING:
     from bento.runtime.module import BentoModule
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class DatabaseConfig:
-    """Database configuration for BentoRuntime."""
-
-    url: str = ""
-    echo: bool = False
-    pool_size: int = 5
-    max_overflow: int = 10
-
-
-@dataclass
-class RuntimeConfig:
-    """Configuration for BentoRuntime."""
-
-    contracts_path: str | None = None
-    require_contracts: bool = False
-    environment: str = "local"
-    service_name: str = "bento-app"
-    skip_gates_in_local: bool = True
-    database: DatabaseConfig | None = None
 
 
 @dataclass
@@ -69,17 +57,11 @@ class BentoRuntime:
     Example:
         ```python
         runtime = (
-            BentoRuntime(service_name="my-shop")
-            .with_contracts("./contracts")
-            .with_modules(
-                InfraModule(),
-                CatalogModule(),
-                OrderingModule(),
-            )
-            .build()
+            RuntimeBuilder()
+            .with_modules(InfraModule(), CatalogModule(), OrderingModule())
+            .build_runtime()
         )
 
-        # Create FastAPI app
         app = runtime.create_fastapi_app(title="My Shop API")
         ```
     """
@@ -87,197 +69,65 @@ class BentoRuntime:
     config: RuntimeConfig = field(default_factory=RuntimeConfig)
     container: BentoContainer = field(default_factory=BentoContainer)
     registry: ModuleRegistry = field(default_factory=ModuleRegistry)
+    repository_registry: RepositoryRegistry = field(default_factory=RepositoryRegistry)
+    port_registry: PortRegistry = field(default_factory=PortRegistry)
     _built: bool = field(default=False, repr=False)
     _contracts: Any = field(default=None, repr=False)
     _session_factory: Any = field(default=None, repr=False)
     _get_uow_func: Any = field(default=None, repr=False)
     _handler_dependency_func: Any = field(default=None, repr=False)
+    _uow_factory: Any = field(default=None, repr=False)
+    _event_bus: Any = field(default=None, repr=False)
+    _startup_metrics: dict[str, float] = field(default_factory=dict, repr=False)
 
-    def with_config(
-        self,
-        service_name: str | None = None,
-        environment: str | None = None,
-        **kwargs: Any,
-    ) -> "BentoRuntime":
-        """Configure runtime settings.
+    # Integration managers (initialized in __post_init__)
+    _lifecycle_manager: LifecycleManager = field(init=False, repr=False)
+    _fastapi_integration: FastAPIIntegration = field(init=False, repr=False)
+    _performance_monitor: PerformanceMonitor = field(init=False, repr=False)
+    _module_manager: ModuleManager = field(init=False, repr=False)
+    _di_integration: DIIntegration = field(init=False, repr=False)
 
-        Args:
-            service_name: Service name for logging/tracing
-            environment: Environment (local/dev/stage/prod)
-            **kwargs: Additional config options
-
-        Returns:
-            Self for chaining
-        """
-        if service_name:
-            self.config.service_name = service_name
-        if environment:
-            self.config.environment = environment
-        for key, value in kwargs.items():
-            if hasattr(self.config, key):
-                setattr(self.config, key, value)
-        return self
-
-    def with_contracts(
-        self,
-        path: str,
-        require: bool = True,
-    ) -> "BentoRuntime":
-        """Enable contract validation.
-
-        Args:
-            path: Path to contracts directory
-            require: If True, fail if contracts are missing
-
-        Returns:
-            Self for chaining
-        """
-        self.config.contracts_path = path
-        self.config.require_contracts = require
-        return self
-
-    def with_modules(self, *modules: "BentoModule") -> "BentoRuntime":
-        """Register application modules.
-
-        Args:
-            *modules: BentoModule instances
-
-        Returns:
-            Self for chaining
-        """
-        self.registry.register_all(*modules)
-        return self
-
-    def with_service(self, key: str, value: Any) -> "BentoRuntime":
-        """Register a service in the container.
-
-        Args:
-            key: Service identifier
-            value: Service instance
-
-        Returns:
-            Self for chaining
-        """
-        self.container.set(key, value)
-        return self
-
-    def with_database(
-        self,
-        url: str | None = None,
-        config: DatabaseConfig | None = None,
-        **kwargs: Any,
-    ) -> "BentoRuntime":
-        """Configure database connection.
-
-        Args:
-            url: Database URL (shorthand)
-            config: Full DatabaseConfig object
-            **kwargs: Additional database config options
-
-        Returns:
-            Self for chaining
-
-        Example:
-            ```python
-            runtime.with_database(url="postgresql+asyncpg://...")
-            # or
-            runtime.with_database(config=DatabaseConfig(url="...", pool_size=10))
-            ```
-        """
-        if config:
-            self.config.database = config
-        elif url:
-            self.config.database = DatabaseConfig(url=url, **kwargs)
-        return self
-
-    async def _run_gates(self) -> None:
-        """Run startup gates (contract validation, etc.)."""
-        if self.config.skip_gates_in_local and self.config.environment == "local":
-            logger.debug("Skipping gates in local environment")
-            return
-
-        if not self.config.contracts_path:
-            return
-
-        contracts_dir = Path(self.config.contracts_path)
-        if not contracts_dir.exists():
-            if self.config.require_contracts:
-                raise RuntimeError(f"Contracts directory not found: {contracts_dir}")
-            return
-
-        try:
-            from bento.contracts import ContractLoader
-            from bento.contracts.gates import ContractGate
-
-            # Validate contracts
-            gate = ContractGate(
-                contracts_root=str(contracts_dir),
-                require_state_machines=False,
-                require_reason_codes=True,
-            )
-            gate.validate()
-
-            # Load contracts
-            self._contracts = ContractLoader.load_from_dir(str(contracts_dir.parent))
-
-            # Register globally
-            from bento.application.decorators import set_global_contracts
-            from bento.core.exceptions import set_global_catalog
-
-            if self._contracts.reason_codes:
-                set_global_catalog(self._contracts.reason_codes)
-            set_global_contracts(self._contracts)
-
-            self.container.set("contracts", self._contracts)
-            logger.info("Contracts loaded and validated")
-
-        except ImportError:
-            logger.warning("Contracts module not available, skipping validation")
-        except Exception as e:
-            if self.config.require_contracts:
-                raise RuntimeError(f"Contract validation failed: {e}") from e
-            logger.warning(f"Contract validation failed: {e}")
-
-    async def _register_modules(self) -> None:
-        """Register all modules in dependency order."""
-        modules = self.registry.resolve_order()
-        logger.info(f"Registering {len(modules)} modules: {[m.name for m in modules]}")
-
-        for module in modules:
-            logger.debug(f"Registering module: {module.name}")
-
-            # Auto-scan packages to trigger @repository_for decorators
-            self._scan_module_packages(module)
-
-            await module.on_register(self.container)
+    def __post_init__(self) -> None:
+        """Initialize all integration managers after dataclass init."""
+        object.__setattr__(self, "_lifecycle_manager", LifecycleManager(self))
+        object.__setattr__(self, "_fastapi_integration", FastAPIIntegration(self))
+        object.__setattr__(self, "_performance_monitor", PerformanceMonitor(self))
+        object.__setattr__(self, "_module_manager", ModuleManager(self))
+        object.__setattr__(self, "_di_integration", DIIntegration(self))
 
     def _scan_module_packages(self, module: "BentoModule") -> None:
-        """Scan module's declared packages to trigger decorator registration."""
-        import importlib
+        """Scan module packages for decorator registrations.
+
+        This imports all packages listed in module.scan_packages to trigger
+        decorator registrations (like @repository_for) and auto-discovers
+        repositories.
+
+        Args:
+            module: Module to scan
+        """
+        if not module.scan_packages:
+            return
+
+        logger.debug(f"Scanning packages for module {module.name}: {module.scan_packages}")
+
+        # Auto-discover repositories
+        self.repository_registry.auto_discover(list(module.scan_packages))
 
         for package_name in module.scan_packages:
             try:
                 importlib.import_module(package_name)
-                logger.debug(f"Scanned package: {package_name}")
-            except ImportError as e:
-                logger.warning(f"Failed to scan package {package_name}: {e}")
-
-    async def _startup_modules(self) -> None:
-        """Run startup hooks for all modules."""
-        modules = self.registry.resolve_order()
-        for module in modules:
-            logger.debug(f"Starting module: {module.name}")
-            await module.on_startup(self.container)
-
-    async def _shutdown_modules(self) -> None:
-        """Run shutdown hooks for all modules (reverse order)."""
-        modules = list(reversed(self.registry.resolve_order()))
-        for module in modules:
-            logger.debug(f"Shutting down module: {module.name}")
-            try:
-                await module.on_shutdown(self.container)
+                logger.debug(f"Imported package: {package_name}")
             except Exception as e:
-                logger.error(f"Error shutting down {module.name}: {e}")
+                error_msg = (
+                    f"Failed to import package {package_name} for module {module.name}: {e}\n"
+                    f"This may cause Repository decorators (@repository_for) to not be registered.\n"
+                    f"Ensure the package exists and is properly installed."
+                )
+
+                if self.config.environment != "local":
+                    raise RuntimeError(error_msg) from e
+
+                logger.warning(error_msg)
 
     async def build_async(self) -> "BentoRuntime":
         """Build the runtime (async version).
@@ -288,21 +138,52 @@ class BentoRuntime:
             Self for chaining
         """
         if self._built:
+            logger.debug("Runtime already built, skipping")
             return self
 
-        logger.info(f"Building runtime: {self.config.service_name}")
+        start_time = time.time()
+
+        logger.info(
+            f"Building runtime: {self.config.service_name} "
+            f"(env={self.config.environment})"
+        )
 
         # Store config in container
         self.container.set("config", self.config)
 
-        # Run startup gates
-        await self._run_gates()
+        # Run startup phases via lifecycle startup module
+        gate_start = time.time()
+        await lifecycle_startup.run_gates(self)
+        gate_elapsed = time.time() - gate_start
+        logger.debug(f"Gates validation completed in {gate_elapsed:.3f}s")
 
-        # Register modules
-        await self._register_modules()
+        register_start = time.time()
+        await lifecycle_startup.register_modules(self)
+        register_elapsed = time.time() - register_start
+        logger.debug(f"Module registration completed in {register_elapsed:.3f}s")
+
+        db_start = time.time()
+        self._setup_database()
+        db_elapsed = time.time() - db_start
+        logger.debug(f"Database setup completed in {db_elapsed:.3f}s")
 
         self._built = True
-        logger.info("Runtime built successfully")
+
+        total_elapsed = time.time() - start_time
+
+        # Store startup metrics for performance monitoring
+        self._startup_metrics = {
+            "total_time": total_elapsed,
+            "gates_time": gate_elapsed,
+            "register_time": register_elapsed,
+            "database_time": db_elapsed,
+        }
+
+        logger.info(
+            f"Runtime built successfully in {total_elapsed:.2f}s "
+            f"with {len(self.registry)} modules: {self.registry.names()}"
+        )
+
         return self
 
     def build(self) -> "BentoRuntime":
@@ -313,16 +194,14 @@ class BentoRuntime:
         Returns:
             Self for chaining
         """
-        import asyncio
-
         try:
             asyncio.get_running_loop()
-            # If we're in an async context, we can't use run()
             raise RuntimeError(
                 "Cannot use build() in async context. Use 'await runtime.build_async()'"
             )
-        except RuntimeError:
-            # No running loop, safe to create one
+        except RuntimeError as e:
+            if "Cannot use build()" in str(e):
+                raise
             asyncio.run(self.build_async())
 
         return self
@@ -347,164 +226,173 @@ class BentoRuntime:
         Returns:
             Configured FastAPI application
         """
-        from fastapi import FastAPI
-
-        @asynccontextmanager
-        async def lifespan(app: FastAPI):
-            # Build runtime if not already built
-            if not self._built:
-                await self.build_async()
-
-            # Run module startup hooks
-            await self._startup_modules()
-
-            # Store runtime in app state
-            app.state.runtime = self
-            app.state.container = self.container
-
-            logger.info(f"Application started: {title}")
-
-            try:
-                yield
-            finally:
-                # Run module shutdown hooks
-                await self._shutdown_modules()
-                logger.info(f"Application shutdown: {title}")
-
-        app = FastAPI(
+        return self._fastapi_integration.create_app(
             title=title,
             description=description,
             version=version,
             docs_url=docs_url,
-            lifespan=lifespan,
             **fastapi_kwargs,
         )
 
-        # Collect and register routers from all modules
-        for module in self.registry.resolve_order():
-            for router in module.get_routers():
-                app.include_router(router)
-
-        # Add default health endpoint
-        @app.get("/health")
-        async def health():  # pyright: ignore[reportUnusedFunction]
-            return {
-                "status": "healthy",
-                "service": self.config.service_name,
-                "modules": self.registry.names(),
-            }
-
-        return app
-
     def _setup_database(self) -> None:
-        """Setup database session factory."""
-        if self._session_factory is not None:
-            return
+        """Setup database session factory using DatabaseManager.
 
-        if not self.config.database or not self.config.database.url:
-            logger.warning("No database configured, DI functions won't be available")
-            return
+        Raises:
+            RuntimeError: If database is required but not configured
+        """
+        db_manager = DatabaseManager(self)
+        db_manager.setup()
 
-        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    # Performance monitoring delegation
+    def get_startup_metrics(self) -> dict[str, float]:
+        """Get startup performance metrics."""
+        return self._performance_monitor.get_metrics()
 
-        engine = create_async_engine(
-            self.config.database.url,
-            echo=self.config.database.echo,
-            pool_size=self.config.database.pool_size,
-            max_overflow=self.config.database.max_overflow,
-        )
-        self._session_factory = async_sessionmaker(
-            engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-            autoflush=False,
-        )
-        self.container.set("db.engine", engine)
-        self.container.set("db.session_factory", self._session_factory)
-        logger.info("Database configured")
+    def log_startup_metrics(self) -> None:
+        """Log startup performance metrics to logger."""
+        self._performance_monitor.log_metrics()
 
+    # Module management delegation
+    async def reload_module(self, name: str) -> "BentoRuntime":
+        """Reload a module at runtime (hot reload)."""
+        return await self._module_manager.reload(name)
+
+    async def unload_module(self, name: str) -> "BentoRuntime":
+        """Unload a module at runtime."""
+        return await self._module_manager.unload(name)
+
+    async def load_module(self, module: "BentoModule") -> "BentoRuntime":
+        """Load a module at runtime."""
+        return await self._module_manager.load(module)
+
+    # Dependency injection delegation
     @property
     def get_uow(self):
-        """Get the UnitOfWork dependency function for FastAPI.
-
-        Returns:
-            FastAPI Depends-compatible async generator function
-
-        Example:
-            ```python
-            @router.post("/products")
-            async def create_product(uow: UnitOfWork = Depends(runtime.get_uow)):
-                ...
-            ```
-        """
-        if self._get_uow_func is not None:
-            return self._get_uow_func
-
-        self._setup_database()
-
-        if not self._session_factory:
-            raise RuntimeError("Database not configured. Call with_database() first.")
-
-        from collections.abc import AsyncGenerator
-
-        from fastapi import Depends
-
-        from bento.infrastructure.ports import get_port_registry
-        from bento.infrastructure.repository import get_repository_registry
-        from bento.persistence.outbox.record import SqlAlchemyOutbox
-        from bento.persistence.uow import SQLAlchemyUnitOfWork
-
-        session_factory = self._session_factory
-
-        async def get_db_session() -> AsyncGenerator:
-            async with session_factory() as session:
-                try:
-                    yield session
-                finally:
-                    await session.close()
-
-        async def get_uow(
-            session=Depends(get_db_session),
-        ) -> AsyncGenerator[SQLAlchemyUnitOfWork, None]:
-            outbox = SqlAlchemyOutbox(session)
-            uow = SQLAlchemyUnitOfWork(session, outbox)
-
-            # Auto-register all discovered repositories
-            for ar_type, repo_cls in get_repository_registry().items():
-                uow.register_repository(ar_type, lambda s, cls=repo_cls: cls(s))
-
-            # Auto-register all discovered ports
-            for port_type, adapter_cls in get_port_registry().items():
-                uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
-
-            try:
-                yield uow
-            finally:
-                pass
-
-        self._get_uow_func = get_uow
-        return self._get_uow_func
+        """Get the UnitOfWork dependency function for FastAPI."""
+        return self._di_integration.get_uow()
 
     @property
     def handler_dependency(self):
-        """Get the handler dependency factory for FastAPI.
+        """Get the handler dependency function for FastAPI."""
+        return self._di_integration.get_handler_dependency()
+
+    # Test support methods
+    def with_test_mode(self, enabled: bool = True) -> "BentoRuntime":
+        """Enable test mode for the runtime.
+
+        Args:
+            enabled: Whether to enable test mode (default: True)
 
         Returns:
-            Handler dependency factory function
-
-        Example:
-            ```python
-            @router.post("/products")
-            async def create_product(
-                handler: Annotated[CreateProductHandler, runtime.handler_dependency(CreateProductHandler)],
-            ):
-                ...
-            ```
+            Self for chaining
         """
-        if self._handler_dependency_func is not None:
-            return self._handler_dependency_func
+        self.config.test_mode = enabled
+        logger.debug(f"Test mode: {enabled}")
+        return self
 
-        from bento.interfaces.fastapi import create_handler_dependency
+    def with_mock_module(
+        self,
+        name: str,
+        services: dict[str, Any] | None = None,
+        on_register_fn: Any = None,
+    ) -> "BentoRuntime":
+        """Register a mock module for testing.
 
-        self._handler_dependency_func = create_handler_dependency(self.get_uow)
-        return self._handler_dependency_func
+        Args:
+            name: Module name
+            services: Dictionary of services to register
+            on_register_fn: Optional async function to call on registration
+
+        Returns:
+            Self for chaining
+        """
+        from bento.runtime.module import BentoModule
+
+        class MockModule(BentoModule):
+            pass
+
+        mock = MockModule()
+        mock.name = name
+
+        async def on_register(container):
+            if services:
+                for key, value in services.items():
+                    container.set(key, value)
+            if on_register_fn:
+                await on_register_fn(container)
+
+        mock.on_register = on_register
+
+        self.registry.register(mock)
+        logger.debug(f"Mock module registered: {name}")
+        return self
+
+    # OpenTelemetry integration
+    def with_otel_tracing(
+        self,
+        service_name: str | None = None,
+        trace_exporter: str = "console",
+        **exporter_kwargs: Any,
+    ) -> "BentoRuntime":
+        """Enable OpenTelemetry tracing for the runtime."""
+        from bento.runtime.observability import otel
+
+        service_name = service_name or self.config.service_name
+        tracer_provider = otel.setup_tracing(service_name, trace_exporter, **exporter_kwargs)
+
+        if tracer_provider:
+            self.container.set("otel.tracer_provider", tracer_provider)
+            from opentelemetry import trace
+            self.container.set("otel.tracer", trace.get_tracer(__name__))
+
+        return self
+
+    def with_otel_metrics(
+        self,
+        metrics_exporter: str = "console",
+        **exporter_kwargs: Any,
+    ) -> "BentoRuntime":
+        """Enable OpenTelemetry metrics for the runtime."""
+        from bento.runtime.observability import otel
+
+        meter_provider = otel.setup_metrics(metrics_exporter, **exporter_kwargs)
+
+        if meter_provider:
+            self.container.set("otel.meter_provider", meter_provider)
+            from opentelemetry import metrics
+            self.container.set("otel.meter", metrics.get_meter(__name__))
+
+        return self
+
+    # Module assertion methods
+    def assert_module_loaded(self, name: str) -> bool:
+        """Assert that a module is loaded.
+
+        Args:
+            name: Module name
+
+        Returns:
+            True if module is loaded
+
+        Raises:
+            AssertionError: If module is not loaded
+        """
+        if not self.registry.has(name):
+            raise AssertionError(f"Module not loaded: {name}")
+        return True
+
+    def assert_service_registered(self, key: str) -> bool:
+        """Assert that a service is registered in the container.
+
+        Args:
+            key: Service key
+
+        Returns:
+            True if service is registered
+
+        Raises:
+            AssertionError: If service is not registered
+        """
+        if not self.container.has(key):
+            raise AssertionError(f"Service not registered: {key}")
+        return True

@@ -220,8 +220,14 @@ class SqlAlchemyIdempotency:
         # Check if expired
         if record and record.expires_at:
             from bento.core.clock import now_utc
+            from datetime import timezone
 
-            if record.expires_at < now_utc():
+            now = now_utc()
+            expires = record.expires_at
+            # Ensure both are timezone-aware for comparison
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires < now:
                 return None  # Expired
 
         return record

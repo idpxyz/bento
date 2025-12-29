@@ -24,7 +24,7 @@ try:
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
-    Draft202012Validator = None
+    Draft202012Validator = None  # type: ignore[assignment]
 
 
 class EventSchemaRegistry:
@@ -62,6 +62,7 @@ class EventSchemaRegistry:
                 "Install with: pip install jsonschema"
             )
 
+        assert Draft202012Validator is not None
         self._envelope = Draft202012Validator(envelope_schema)
         self._events = {
             k: Draft202012Validator(v) for k, v in event_schemas.items()

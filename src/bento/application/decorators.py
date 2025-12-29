@@ -376,3 +376,125 @@ def _get_aggregate_class(handler: Any, aggregate_name: str) -> type | None:
                 return getattr(handler_module, name)
 
     return None
+
+
+# =============================================================================
+# Idempotency Decorator
+# =============================================================================
+
+
+class IdempotencyConflictError(Exception):
+    """Raised when idempotency key conflicts with different request hash."""
+
+    def __init__(self, key: str, message: str = "Idempotency key mismatch"):
+        self.key = key
+        self.message = message
+        super().__init__(f"{message}: {key}")
+
+
+def idempotent(
+    key_field: str = "idempotency_key",
+    hash_fields: list[str] | None = None,
+) -> Callable[[type[TCommandHandler]], type[TCommandHandler]]:
+    """Decorator for automatic idempotency handling in CommandHandlers.
+
+    This decorator wraps the handle() method to:
+    1. Check if response is cached for the idempotency key
+    2. Validate request hash matches (detect conflicting requests)
+    3. Execute handler if not cached
+    4. Store response in idempotency store
+
+    Args:
+        key_field: Field name on command that holds the idempotency key
+        hash_fields: List of field names to include in request hash.
+                    If None, all command fields except key_field are used.
+
+    Example:
+        ```python
+        @idempotent(key_field="idempotency_key", hash_fields=["amount", "currency"])
+        @command_handler
+        class CreatePaymentHandler(CommandHandler[CreatePaymentCommand, dict]):
+            async def handle(self, command: CreatePaymentCommand) -> dict:
+                # Only business logic here - idempotency is automatic
+                payment = Payment.create(command.amount, command.currency)
+                await self.uow.repository(Payment).save(payment)
+                return {"id": payment.id, "status": "created"}
+        ```
+
+    Note:
+        - The UoW must have an `idempotency` store configured
+        - This decorator should be applied BEFORE @command_handler
+        - Works with @state_transition decorator
+    """
+    import hashlib
+    import json
+    from dataclasses import fields, is_dataclass
+
+    def _compute_hash(data: dict) -> str:
+        """Compute canonical hash of request data."""
+        canonical = json.dumps(data, sort_keys=True, default=str)
+        return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+    def _extract_hash_data(cmd: Any, hash_field_names: list[str] | None) -> dict:
+        """Extract fields to hash from command."""
+        if hash_field_names:
+            return {f: getattr(cmd, f, None) for f in hash_field_names}
+
+        # Auto-extract all fields except key_field
+        if is_dataclass(cmd):
+            return {
+                f.name: getattr(cmd, f.name)
+                for f in fields(cmd)
+                if f.name != key_field
+            }
+        elif hasattr(cmd, "__dict__"):
+            return {k: v for k, v in cmd.__dict__.items() if k != key_field}
+        return {}
+
+    def decorator(cls: type[TCommandHandler]) -> type[TCommandHandler]:
+        # Store metadata
+        cls.__idempotent__ = {  # type: ignore[attr-defined]
+            "key_field": key_field,
+            "hash_fields": hash_fields,
+        }
+
+        original_handle = cls.handle
+
+        @functools.wraps(original_handle)
+        async def wrapped_handle(self: Any, cmd: Any) -> Any:
+            # Get idempotency key from command
+            idem_key = getattr(cmd, key_field, None)
+            if not idem_key:
+                # No idempotency key - execute normally
+                return await original_handle(self, cmd)
+
+            # Compute request hash
+            hash_data = _extract_hash_data(cmd, hash_fields)
+            req_hash = _compute_hash(hash_data)
+
+            # Check cache
+            cached = await self.uow.idempotency.get_response(idem_key)
+            if cached:
+                if cached.request_hash != req_hash:
+                    raise IdempotencyConflictError(
+                        idem_key,
+                        "Same idempotency key used with different request data",
+                    )
+                return cached.response
+
+            # Execute original handler
+            result = await original_handle(self, cmd)
+
+            # Store in idempotency cache
+            await self.uow.idempotency.store_response(
+                idem_key,
+                result,
+                request_hash=req_hash,
+            )
+
+            return result
+
+        cls.handle = wrapped_handle  # type: ignore[method-assign]
+        return cls
+
+    return decorator

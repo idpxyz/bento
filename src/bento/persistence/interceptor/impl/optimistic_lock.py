@@ -169,6 +169,29 @@ class OptimisticLockInterceptor(Interceptor[T]):
 
         return "version"  # Default field name
 
+    def _has_sqlalchemy_version_id_col(self, entity_type: type) -> bool:
+        """Check if entity uses SQLAlchemy's native version_id_col.
+
+        When version_id_col is configured, SQLAlchemy automatically handles
+        version increment and conflict detection, so we should not manually
+        increment the version.
+
+        Args:
+            entity_type: The entity/model type to check
+
+        Returns:
+            True if version_id_col is configured
+        """
+        try:
+            # Check if this is a SQLAlchemy model with a mapper
+            mapper = getattr(entity_type, "__mapper__", None)
+            if mapper is not None:
+                # SQLAlchemy stores version_id_col in mapper.version_id_col
+                return mapper.version_id_col is not None
+        except Exception:
+            pass
+        return False
+
     def _should_check_version(self, context: InterceptorContext[T]) -> bool:
         """Check if version should be checked.
 
@@ -262,13 +285,19 @@ class OptimisticLockInterceptor(Interceptor[T]):
                     self.set_field_value(context.entity, version_field, 1)
 
                 elif context.operation == OperationType.UPDATE:
-                    # Increment version for update
-                    current_version = self.get_field_value(context.entity, version_field, 0)
-                    new_version = current_version + 1
-                    self.set_field_value(context.entity, version_field, new_version)
+                    # Check if SQLAlchemy's version_id_col is configured
+                    # If configured, SQLAlchemy handles version increment automatically
+                    # We detect this by checking the mapper's version_id_col property
+                    has_sqlalchemy_version = self._has_sqlalchemy_version_id_col(context.entity_type)
 
-                    # Store old version for event notification
+                    current_version = self.get_field_value(context.entity, version_field, 0)
                     context.set_context_value("_old_version", current_version)
+
+                    if not has_sqlalchemy_version:
+                        # Only increment version manually if not using SQLAlchemy's version_id_col
+                        new_version = current_version + 1
+                        self.set_field_value(context.entity, version_field, new_version)
+                    # else: SQLAlchemy handles version increment via version_id_col
 
         return await next_interceptor(context)
 

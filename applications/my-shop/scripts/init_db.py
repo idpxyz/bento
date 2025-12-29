@@ -59,8 +59,10 @@ async def main():
     print(f"📊 Registered tables: {len(Base.metadata.tables)}")
     print(f"   Tables: {list(Base.metadata.tables.keys())}")
 
-    # Get database config
-    from shared.infrastructure.dependencies import engine
+    # Get database config (standalone mode for scripts)
+    from shared.infrastructure.standalone_db import get_standalone_engine
+
+    engine = get_standalone_engine()
 
     try:
         # Create all tables

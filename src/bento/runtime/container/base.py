@@ -27,6 +27,15 @@ class BentoContainer:
 
     Provides service registration and retrieval with optional type hints.
     Thread-safe for read operations after initial registration.
+
+    Type-safe retrieval with overloads:
+        ```python
+        # Returns Any (no default)
+        value = container.get("key")
+
+        # Returns T | Any (with default)
+        value = container.get("key", default=some_default)
+        ```
     """
 
     def __init__(self) -> None:
@@ -55,7 +64,7 @@ class BentoContainer:
     def get(self, key: str) -> Any: ...
 
     @overload
-    def get(self, key: str, default: T) -> T: ...
+    def get(self, key: str, default: T) -> T | Any: ...
 
     def get(self, key: str, default: Any = None) -> Any:
         """Retrieve a service by key.
@@ -66,6 +75,9 @@ class BentoContainer:
 
         Returns:
             Service instance or default
+
+        Raises:
+            KeyError: If service not found and no default provided
         """
         if key in self._services:
             return self._services[key]

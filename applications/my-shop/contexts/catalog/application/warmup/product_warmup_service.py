@@ -58,7 +58,7 @@ class HotProductsWarmupStrategy:
             # 生成缓存键
             cache_keys = [f"Product:id:{product.id}" for product in products]
 
-            logger.info(f"Catalog BC - 准备预热 {len(cache_keys)} 个商品")
+            logger.info(f"Catalog BC - Preparing to warm up {len(cache_keys)} products")
             return cache_keys
 
         except Exception as e:

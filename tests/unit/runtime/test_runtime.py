@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from bento.runtime import BentoContainer, BentoModule, BentoRuntime, ModuleRegistry
+from bento.runtime import BentoContainer, BentoModule, ModuleRegistry, RuntimeBuilder
 
 pytestmark = pytest.mark.asyncio
 
@@ -216,7 +216,11 @@ class TestBentoRuntime:
             async def on_register(self, container):
                 registered.append("b")
 
-        runtime = BentoRuntime().with_modules(ModuleA(), ModuleB())
+        runtime = (
+            RuntimeBuilder()
+            .with_modules(ModuleA(), ModuleB())
+            .build_runtime()
+        )
         await runtime.build_async()
 
         # Should be registered in dependency order
@@ -229,15 +233,20 @@ class TestBentoRuntime:
             async def on_register(self, container):
                 container.set("test.value", 42)
 
-        runtime = BentoRuntime().with_modules(TestModule())
+        runtime = (
+            RuntimeBuilder()
+            .with_modules(TestModule())
+            .build_runtime()
+        )
         await runtime.build_async()
 
         assert runtime.container.get("test.value") == 42
 
     async def test_with_service(self):
         runtime = (
-            BentoRuntime()
+            RuntimeBuilder()
             .with_service("my.service", "my_value")
+            .build_runtime()
         )
         await runtime.build_async()
 
@@ -245,8 +254,9 @@ class TestBentoRuntime:
 
     async def test_with_config(self):
         runtime = (
-            BentoRuntime()
+            RuntimeBuilder()
             .with_config(service_name="my-app", environment="test")
+            .build_runtime()
         )
         await runtime.build_async()
 
@@ -268,7 +278,11 @@ class TestBentoRuntime:
 
                 return [router]
 
-        runtime = BentoRuntime().with_modules(TestModule())
+        runtime = (
+            RuntimeBuilder()
+            .with_modules(TestModule())
+            .build_runtime()
+        )
         app = runtime.create_fastapi_app(title="Test API")
 
         assert app.title == "Test API"

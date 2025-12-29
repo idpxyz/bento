@@ -142,7 +142,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
     async def get(self, id: ID) -> AR | None:
         """Get aggregate root by ID.
 
-        Flow: Database �?PO �?AR
+        Flow: Database → PO → AR
 
         Args:
             id: Entity ID
@@ -160,12 +160,16 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
         po = await self._repository.get_po_by_id(id)
         if po is None:
             return None
-        return self._mapper.map_reverse(po)  # PO �?AR
+        ar = self._mapper.map_reverse(po)  # PO → AR
+        # Validate tenant ownership (TenantFilterMixin)
+        if not self._validate_tenant_ownership(ar):
+            return None  # Entity belongs to different tenant
+        return ar
 
     async def save(self, aggregate: AR) -> AR:
         """Save aggregate root (create or update).
 
-        Flow: AR �?PO �?Database
+        Flow: AR → PO → Database
 
         The adapter determines whether to create or update based on
         whether the aggregate has an ID.
@@ -182,7 +186,10 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             saved_user = await repo.save(user)  # Creates or updates
             ```
         """
-        # Convert AR �?PO
+        # Inject tenant_id if not set (TenantFilterMixin)
+        self._inject_tenant_id(aggregate)
+
+        # Convert AR → PO
         po = self._mapper.map(aggregate)
 
         # Check if aggregate exists (has ID)
@@ -190,23 +197,47 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
 
         if aggregate_id is None:
             # Create new
-            await self._repository.create_po(po)
+            created_po = await self._repository.create_po(po)
+            if hasattr(created_po, "version") and hasattr(aggregate, "version"):
+                setattr(aggregate, "version", created_po.version)
         else:
             # Check if exists in database
             existing = await self._repository.get_po_by_id(aggregate_id)
             if existing is None:
                 # Create
-                await self._repository.create_po(po)
+                created_po = await self._repository.create_po(po)
+                if hasattr(created_po, "version") and hasattr(aggregate, "version"):
+                    setattr(aggregate, "version", created_po.version)
             else:
-                # Propagate current version to transient PO to satisfy optimistic lock interceptor
+                # Validate tenant ownership before update (TenantFilterMixin)
+                existing_ar = None
+                if hasattr(existing, "id"):
+                    try:
+                        existing_ar = self._mapper.map_reverse(existing)
+                    except Exception:
+                        # Best-effort: skip tenant validation if mapping fails
+                        existing_ar = None
+
+                if existing_ar is not None and not self._validate_tenant_ownership(existing_ar):
+                    from bento.core.exceptions import DomainException
+                    raise DomainException(
+                        reason_code="TENANT_CONFLICT",
+                        message=f"Entity with ID {aggregate_id} belongs to another tenant",
+                        http_status=409,
+                    )
+                # Copy version from existing PO to the transient PO
+                # This ensures optimistic locking works correctly
                 try:
-                    if isinstance(existing, HasVersion) and isinstance(po, HasVersion):
-                        if po.version in (None, 0):
-                            po.version = existing.version
+                    if hasattr(existing, "version") and hasattr(po, "version"):
+                        po.version = existing.version
                 except Exception:
+                    # Swallow assignment failures (e.g., read-only properties)
                     pass
                 # Update
-                await self._repository.update_po(po)
+                updated_po = await self._repository.update_po(po)
+                # Sync version back to aggregate
+                if hasattr(updated_po, "version") and hasattr(aggregate, "version"):
+                    setattr(aggregate, "version", updated_po.version)
 
         # Ensure the current UoW can collect domain events from this aggregate
         try:
@@ -246,12 +277,15 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             active_users = await repo.find_all(spec)
             ```
         """
-        if specification is None:
+        # Apply tenant filter (TenantFilterMixin)
+        filtered_spec = self._apply_tenant_filter(specification)
+
+        if filtered_spec is None:
             # Query all
             pos = await self._repository.query_po_by_spec(None)  # type: ignore[arg-type]
         else:
             # Convert specification AR → PO
-            po_spec = self._convert_spec_to_po(specification)
+            po_spec = self._convert_spec_to_po(filtered_spec)
             pos = await self._repository.query_po_by_spec(po_spec)
 
         # Batch convert PO → AR
@@ -285,9 +319,14 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             user = await repo.find_one(spec)
             ```
         """
+        # Apply tenant filter (TenantFilterMixin)
+        filtered_spec = self._apply_tenant_filter(specification)
+        if filtered_spec is None:
+            filtered_spec = specification
+
         # Add limit 1 to specification
         page_params = PageParams(page=1, size=1)
-        limited_spec = specification.with_page(page_params)
+        limited_spec = filtered_spec.with_page(page_params)
         po_spec = self._convert_spec_to_po(limited_spec)
 
         pos = await self._repository.query_po_by_spec(po_spec)
@@ -321,18 +360,23 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
                 print(user.name)
             ```
         """
+        # Apply tenant filter (TenantFilterMixin)
+        filtered_spec = self._apply_tenant_filter(specification)
+        if filtered_spec is None:
+            filtered_spec = specification
+
         # 1. Count total (without pagination)
-        total = await self.count(specification)
+        total = await self.count(filtered_spec)
 
         if total == 0:
             return Page.create(items=[], total=0, page=1, size=page_params.size)
 
         # 2. Query page of results
-        paged_spec = specification.with_page(page_params)
+        paged_spec = filtered_spec.with_page(page_params)
         po_spec = self._convert_spec_to_po(paged_spec)
         pos = await self._repository.query_po_by_spec(po_spec)
 
-        # 3. Convert PO �?AR (batch)
+        # 3. Convert PO → AR (batch)
         items = self._mapper.map_reverse_list(pos)
 
         return Page.create(
@@ -361,7 +405,10 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             active_count = await repo.count(spec)
             ```
         """
-        if specification is None:
+        # Apply tenant filter (TenantFilterMixin)
+        filtered_spec = self._apply_tenant_filter(specification)
+
+        if filtered_spec is None:
             # 使用空 specification 计算所有项目
             from bento.persistence.specification import CompositeSpecification
 
@@ -369,7 +416,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             po_spec = self._convert_spec_to_po(empty_spec)
             return await self._repository.count_po_by_spec(po_spec)
 
-        po_spec = self._convert_spec_to_po(specification)
+        po_spec = self._convert_spec_to_po(filtered_spec)
         return await self._repository.count_po_by_spec(po_spec)
 
     async def exists(self, specification: CompositeSpecification[AR]) -> bool:
@@ -440,7 +487,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
     async def delete(self, aggregate: AR) -> None:
         """Delete aggregate root.
 
-        Flow: AR �?PO �?Database (soft delete via interceptor)
+        Flow: AR → PO → Database (soft delete via interceptor)
 
         Args:
             aggregate: Aggregate root to delete
@@ -456,7 +503,16 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             await repo.delete(user)  # Soft deleted
             ```
         """
-        po = self._mapper.map(aggregate)  # AR �?PO
+        # Validate tenant ownership before delete (TenantFilterMixin)
+        if not self._validate_tenant_ownership(aggregate):
+            from bento.core.exceptions import DomainException
+            raise DomainException(
+                reason_code="TENANT_CONFLICT",
+                message="Cannot delete entity belonging to another tenant",
+                http_status=403,
+            )
+
+        po = self._mapper.map(aggregate)  # AR → PO
         await self._repository.delete_po(po)
 
     # ==================== Batch Operations ====================

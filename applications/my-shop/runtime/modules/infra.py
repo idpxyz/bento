@@ -19,8 +19,6 @@ from bento.adapters.messaging.inprocess import InProcessMessageBus
 from bento.infrastructure.projection.projector import OutboxProjector
 from bento.runtime import BentoModule
 
-from shared.infrastructure.dependencies import session_factory
-
 if TYPE_CHECKING:
     from bento.runtime import BentoContainer
 
@@ -39,8 +37,9 @@ class InfraModule(BentoModule):
 
     async def on_register(self, container: "BentoContainer") -> None:
         """Register infrastructure services."""
-        # Database
-        container.set("db.session_factory", session_factory)
+        # Note: db.session_factory is set by BentoRuntime's database manager
+        # during build_async(), so we don't try to access it here.
+        # It will be available during on_startup().
 
         # Message bus
         bus = InProcessMessageBus(source="my-shop")
@@ -60,6 +59,7 @@ class InfraModule(BentoModule):
     async def on_startup(self, container: "BentoContainer") -> None:
         """Start infrastructure services."""
         bus: InProcessMessageBus = container.get("messaging.bus")
+        session_factory = container.get("db.session_factory")
 
         # Create projector
         projector = OutboxProjector(
