@@ -24,7 +24,12 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
-from bento.runtime.middleware import IdempotencyMiddleware
+from bento.runtime.middleware import (
+    IdempotencyMiddleware,
+    RequestIDMiddleware,
+    StructuredLoggingMiddleware,
+    RateLimitingMiddleware,
+)
 
 from config import settings
 from runtime.modules.catalog import CatalogModule
@@ -124,17 +129,47 @@ def create_app() -> FastAPI:
     )
     logger.debug("FastAPI app created with BentoRuntime's built-in lifespan")
 
-    # Add idempotency middleware (must be before CORS)
-    # Uses framework's IdempotencyMiddleware with database session injection
+    # ========================================
+    # Middleware Stack (Order Matters!)
+    # ========================================
+
+    # 1. Request ID - Generate unique ID for each request (for tracing)
+    app.add_middleware(
+        RequestIDMiddleware,
+        header_name="X-Request-ID",
+    )
+    logger.debug("RequestID middleware registered")
+
+    # 2. Structured Logging - Log all requests with structured data
+    app.add_middleware(
+        StructuredLoggingMiddleware,
+        logger_name="my-shop",
+        log_request_body=False,  # Disable in production for performance
+        log_response_body=False,  # Disable in production for security
+        skip_paths={"/health", "/ping", "/metrics"},
+    )
+    logger.debug("StructuredLogging middleware registered")
+
+    # 3. Rate Limiting - Protect API from abuse (60 req/min per IP)
+    app.add_middleware(
+        RateLimitingMiddleware,
+        requests_per_minute=60,
+        requests_per_hour=1000,
+        key_func=lambda req: req.client.host if req.client else "unknown",
+        skip_paths={"/health", "/ping"},
+    )
+    logger.debug("RateLimiting middleware registered (60 req/min per IP)")
+
+    # 4. Idempotency - Prevent duplicate operations
     app.add_middleware(
         IdempotencyMiddleware,
         header_name="x-idempotency-key",
         ttl_seconds=86400,  # 24 hours
         tenant_id="default",
     )
-    logger.debug("Idempotency middleware registered (framework implementation)")
+    logger.debug("Idempotency middleware registered")
 
-    # Add CORS middleware
+    # 5. CORS - Cross-Origin Resource Sharing
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
