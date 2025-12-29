@@ -15,15 +15,15 @@ ORDER_IDEM_KEY="order-${TIMESTAMP}"
 PAYMENT_IDEM_KEY="payment-${TIMESTAMP}"
 SHIPMENT_IDEM_KEY="shipment-${TIMESTAMP}"
 
-# 1. 创建分类（带 idempotency_key）
+# 1. 创建分类（带 idempotency_key in Header）
 echo "📦 Step 1: Create Category with Idempotency Key..."
 echo "   Idempotency Key: $CATEGORY_IDEM_KEY"
 CATEGORY_RESPONSE=$(curl -s -X POST "$BASE_URL/categories/" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $CATEGORY_IDEM_KEY" \
   -d "{
     \"name\": \"电子产品\",
-    \"description\": \"各类电子产品\",
-    \"idempotency_key\": \"$CATEGORY_IDEM_KEY\"
+    \"description\": \"各类电子产品\"
   }")
 CATEGORY_ID=$(echo $CATEGORY_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
 echo "✅ Category created: $CATEGORY_ID"
@@ -45,17 +45,17 @@ else
 fi
 echo ""
 
-# 2. 创建产品（带 idempotency_key）
+# 2. 创建产品（带 idempotency_key in Header）
 echo "📱 Step 2: Create Product with Idempotency Key..."
 echo "   Idempotency Key: $PRODUCT_IDEM_KEY"
 PRODUCT_RESPONSE=$(curl -s -X POST "$BASE_URL/products/" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $PRODUCT_IDEM_KEY" \
   -d "{
     \"name\": \"iPhone 15 Pro\",
     \"description\": \"最新款 iPhone\",
     \"price\": 999.99,
-    \"category_id\": \"$CATEGORY_ID\",
-    \"idempotency_key\": \"$PRODUCT_IDEM_KEY\"
+    \"category_id\": \"$CATEGORY_ID\"
   }")
 PRODUCT_ID=$(echo $PRODUCT_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
 PRODUCT_NAME=$(echo $PRODUCT_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['name'])")
@@ -63,11 +63,12 @@ PRODUCT_PRICE=$(echo $PRODUCT_RESPONSE | python3 -c "import sys, json; print(jso
 echo "✅ Product created: $PRODUCT_ID - $PRODUCT_NAME ($PRODUCT_PRICE)"
 echo ""
 
-# 3. 创建订单（带 idempotency_key）
+# 3. 创建订单（带 idempotency_key in Header）
 echo "🛒 Step 3: Create Order with Idempotency Key..."
 echo "   Idempotency Key: $ORDER_IDEM_KEY"
 ORDER_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $ORDER_IDEM_KEY" \
   -d "{
     \"customer_id\": \"customer-001\",
     \"items\": [
@@ -77,8 +78,7 @@ ORDER_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/" \
         \"quantity\": 2,
         \"unit_price\": $PRODUCT_PRICE
       }
-    ],
-    \"idempotency_key\": \"$ORDER_IDEM_KEY\"
+    ]
   }")
 ORDER_ID=$(echo $ORDER_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
 ORDER_STATUS=$(echo $ORDER_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['status'])")
@@ -96,14 +96,13 @@ echo "   Request ID: $REQUEST_ID"
 echo "$ORDER_DETAIL_RESPONSE" | tail -n +$(echo "$ORDER_DETAIL_RESPONSE" | grep -n '^{' | cut -d: -f1) | python3 -m json.tool
 echo ""
 
-# 5. 确认支付（带 idempotency_key）
+# 5. 确认支付（带 idempotency_key in Header）
 echo "💳 Step 5: Pay Order with Idempotency Key..."
 echo "   Idempotency Key: $PAYMENT_IDEM_KEY"
 PAY_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/$ORDER_ID/pay" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"idempotency_key\": \"$PAYMENT_IDEM_KEY\"
-  }")
+  -H "x-idempotency-key: $PAYMENT_IDEM_KEY" \
+  -d "{}")
 PAY_STATUS=$(echo $PAY_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['status'])")
 echo "✅ Payment confirmed"
 echo "   Status: $PAY_STATUS"
@@ -113,9 +112,8 @@ echo ""
 echo "🔁 Step 5.1: Test Payment Idempotency (duplicate payment)..."
 PAY_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/orders/$ORDER_ID/pay" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"idempotency_key\": \"$PAYMENT_IDEM_KEY\"
-  }")
+  -H "x-idempotency-key: $PAYMENT_IDEM_KEY" \
+  -d "{}")
 if echo "$PAY_RESPONSE2" | grep -q "X-Idempotent-Replay: 1"; then
   echo "✅ Payment idempotency working: Duplicate prevented"
 else
@@ -123,14 +121,14 @@ else
 fi
 echo ""
 
-# 6. 发货（带 idempotency_key）
+# 6. 发货（带 idempotency_key in Header）
 echo "🚚 Step 6: Ship Order with Idempotency Key..."
 echo "   Idempotency Key: $SHIPMENT_IDEM_KEY"
 SHIP_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/$ORDER_ID/ship" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $SHIPMENT_IDEM_KEY" \
   -d "{
-    \"tracking_number\": \"SF1234567890\",
-    \"idempotency_key\": \"$SHIPMENT_IDEM_KEY\"
+    \"tracking_number\": \"SF1234567890\"
   }")
 SHIP_STATUS=$(echo $SHIP_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['status'])")
 echo "✅ Order shipped"
@@ -141,9 +139,9 @@ echo ""
 echo "🔁 Step 6.1: Test Shipment Idempotency (duplicate shipment)..."
 SHIP_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/orders/$ORDER_ID/ship" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $SHIPMENT_IDEM_KEY" \
   -d "{
-    \"tracking_number\": \"SF1234567890\",
-    \"idempotency_key\": \"$SHIPMENT_IDEM_KEY\"
+    \"tracking_number\": \"SF1234567890\"
   }")
 if echo "$SHIP_RESPONSE2" | grep -q "X-Idempotent-Replay: 1"; then
   echo "✅ Shipment idempotency working: Duplicate prevented"
