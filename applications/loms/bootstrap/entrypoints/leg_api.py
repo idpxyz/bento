@@ -3,50 +3,35 @@ Leg BC - Standalone API Entrypoint.
 
 Run independently: uv run uvicorn loms.bootstrap.entrypoints.leg_api:app --port 8002
 """
+import os
 
-from fastapi import FastAPI
+from bento.runtime import BentoRuntime
 
-from loms.bootstrap.registry import ModuleSpec, ModuleRegistry
-from loms.bootstrap.wiring import build_runtime
+from loms.contexts.leg.module import LegModule
+from loms.shared.infra.module import InfraModule
 
 
-def create_leg_app() -> FastAPI:
+def create_leg_app():
     """Create FastAPI app for Leg BC only."""
-    from loms.shared.infra.module import InfraModule
-    from loms.contexts.leg.module import LegModule
+    database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./loms.db")
 
-    # Only register infra + leg modules
-    registry = ModuleRegistry([
-        ModuleSpec(name="infra", factory=lambda: InfraModule(), requires=()),
-        ModuleSpec(name="leg", factory=lambda: LegModule(), requires=("infra",)),
-    ])
+    runtime = (
+        BentoRuntime()
+        .with_config(
+            service_name="loms-leg",
+            environment=os.getenv("ENVIRONMENT", "local"),
+        )
+        .with_database(url=database_url)
+        .with_modules(InfraModule(), LegModule())
+    )
 
-    runtime = build_runtime(registry=registry)
-
-    app = FastAPI(
+    app = runtime.create_fastapi_app(
         title="LOMS Leg Service",
         version="1.0.0",
         description="Leg Bounded Context - Standalone",
     )
 
-    container = runtime.container
-
-    # Register leg router
-    try:
-        leg_router = container.get("leg.router")
-        app.include_router(leg_router, prefix="/api/v1", tags=["leg"])
-    except KeyError:
-        pass
-
-    # Health endpoints
-    from loms.shared.platform.runtime.health.router import router as health_router
-    app.include_router(health_router)
-
-    # App state
-    app.state.container = container
     app.state.runtime = runtime
-    app.state.service_name = "loms-leg"
-
     return app
 
 

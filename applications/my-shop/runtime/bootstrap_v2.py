@@ -35,6 +35,7 @@ from shared.exceptions import (
     response_validation_exception_handler,
     validation_exception_handler,
 )
+from shared.infrastructure.idempotency_middleware import idempotency_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -121,6 +122,10 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
     logger.debug("FastAPI app created with BentoRuntime's built-in lifespan")
+
+    # Add idempotency middleware (must be before CORS)
+    app.middleware("http")(idempotency_middleware)
+    logger.debug("Idempotency middleware registered")
 
     # Add CORS middleware
     app.add_middleware(

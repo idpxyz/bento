@@ -1,105 +1,94 @@
+"""PlaceHold command handler using Bento's CQRS pattern.
+
+Uses:
+- Bento CommandHandler base class
+- @idempotent decorator for automatic idempotency handling
+- @state_transition decorator for Contract-as-Code validation
+- @command_handler decorator for DI registration
+"""
 from dataclasses import dataclass
-from loms.contexts.shipment.application.common import canonical_hash, now_iso
-from loms.contexts.shipment.domain.errors import ContractError
-from loms.contexts.shipment.domain.vo.ids import TenantId, ShipmentId
-from loms.contexts.shipment.domain.vo.codes import HoldTypeCode, ShipmentStatus
+
+from bento.application.cqrs.command_handler import CommandHandler
+from bento.application.decorators import command_handler, idempotent, state_transition
+from bento.core.exceptions import DomainException
+
+from bento.core.ids import ID
+
 from loms.contexts.shipment.domain.model.shipment import Shipment
+from loms.contexts.shipment.domain.vo.codes import HoldTypeCode, ShipmentStatus
+
 
 @dataclass(frozen=True)
 class PlaceHoldCommand:
+    """Command to place a hold on a shipment."""
+
     tenant_id: str
     idempotency_key: str
-    method: str
-    path: str
     shipment_id: str
     hold_type_code: str
     reason: str | None
 
-class PlaceHoldHandler:
-    def __init__(self, uow, *, service_name: str, contracts: dict):
-        self.uow = uow
-        self.service_name = service_name
-        self.contracts = contracts
+
+@idempotent(key_field="idempotency_key", hash_fields=["hold_type_code", "reason"])
+@state_transition(aggregate="Shipment", command="PlaceHold", state_field="status")
+@command_handler
+class PlaceHoldHandler(CommandHandler[PlaceHoldCommand, dict]):
+    """Handler for PlaceHold command using Bento CQRS.
+
+    Features:
+    - Automatic idempotency via @idempotent
+    - Automatic state machine validation via @state_transition
+    - Automatic DI registration via @command_handler
+    - Event tracking and outbox
+    """
 
     async def handle(self, cmd: PlaceHoldCommand) -> dict:
-        body_for_hash = {"hold_type_code": cmd.hold_type_code, "reason": cmd.reason}
-        req_hash = canonical_hash(body_for_hash)
+        """Execute PlaceHold command - only business logic here."""
+        # Set tenant for multi-tenant operations
+        self.uow.set_tenant_id(cmd.tenant_id)
 
-        existing = await self.uow.idempotency.get(cmd.tenant_id, cmd.idempotency_key, cmd.method, cmd.path)
-        if existing:
-            if existing.request_hash != req_hash:
-                raise ContractError.state_conflict("IDEMPOTENCY_KEY_MISMATCH", reason_code="IDEMPOTENCY_KEY_MISMATCH", details={"path": cmd.path})
-            return existing.response_body
+        # Set TenantContext for repository filtering
+        from bento.multitenancy import TenantContext
+        TenantContext.set(cmd.tenant_id)
 
-        tenant = TenantId(cmd.tenant_id)
-        sid = ShipmentId(cmd.shipment_id)
+        tenant = ID(cmd.tenant_id)
+        sid = ID(cmd.shipment_id)
 
-        # transaction boundary handled by UoW
-        async with self.uow:
-            shipment = await self.uow.shipments.get(tenant, sid)
-            if shipment is None:
-                shipment = Shipment(
-                    tenant_id=tenant,
-                    shipment_id=sid,
-                    shipment_code=f"SHP-{sid.value}",
-                    status=ShipmentStatus("DRAFT"),
-                    version=0,
-                )
+        # Get repository via Bento UoW
+        shipment_repo = self.uow.repository(Shipment)
+        shipment = await shipment_repo.get(sid)
 
-            # contract state machine gate (optional but recommended)
-            self.contracts["state_machines"].validate("Shipment", shipment.status.value, "PlaceHold")
-
-            try:
-                shipment.place_hold(HoldTypeCode(cmd.hold_type_code), cmd.reason)
-            except ValueError as e:
-                if str(e) == "STATE_CONFLICT":
-                    raise ContractError.state_conflict(details={"shipment_id": sid.value, "state": shipment.status.value})
-                raise
-
-            await self.uow.shipments.save(shipment)
-
-            # translate domain events -> outbox envelope(s)
-            for ev in shipment.pull_events():
-                envelope = {
-                    "specversion": "1.0",
-                    "event_id": ev.event_id,
-                    "event_type": ev.__class__.__name__,
-                    "event_version": 1,
-                    "occurred_at": ev.occurred_at,
-                    "tenant_id": cmd.tenant_id,
-                    "producer": self.service_name,
-                    "aggregate": {"type": "Shipment", "id": sid.value, "version": shipment.version},
-                    "data": {
-                        "shipment_id": sid.value,
-                        "hold_type_code": cmd.hold_type_code,
-                        "placed_at": now_iso(),
-                        "reason": cmd.reason,
-                    },
-                }
-
-                # schema gate (if event schemas exist in contracts)
-                try:
-                    self.contracts["schemas"].validate_envelope(envelope)
-                except Exception:
-                    # allow running without full schemas in early dev
-                    pass
-
-                await self.uow.outbox.append(
-                    tenant_id=cmd.tenant_id,
-                    aggregate_type="Shipment",
-                    aggregate_id=sid.value,
-                    aggregate_version=shipment.version,
-                    event_type=envelope["event_type"],
-                    event_version=envelope["event_version"],
-                    payload=envelope,
-                    headers=None,
-                )
-
-            resp = {"id": sid.value, "shipment_code": shipment.shipment_code, "status_code": shipment.status.value, "version": shipment.version}
-            await self.uow.idempotency.upsert(
-                tenant_id=cmd.tenant_id, key=cmd.idempotency_key, method=cmd.method, path=cmd.path,
-                request_hash=req_hash, status_code=200, response_body=resp
+        if shipment is None:
+            shipment = Shipment(
+                id=sid,
+                tenant_id=tenant,
+                shipment_code=f"SHP-{sid}",
+                status=ShipmentStatus("DRAFT"),
+                version=0,
             )
 
-            await self.uow.commit()
-            return resp
+        # Execute domain logic
+        try:
+            shipment.place_hold(HoldTypeCode(cmd.hold_type_code), cmd.reason)
+        except ValueError as e:
+            if str(e) == "STATE_CONFLICT":
+                raise DomainException(
+                    reason_code="STATE_CONFLICT",
+                    message="State conflict",
+                    http_status=409,
+                    details={"shipment_id": str(sid), "state": shipment.status.value},
+                )
+            raise
+
+        await shipment_repo.save(shipment)
+
+        # Track aggregate for event collection
+        self.uow.track(shipment)
+
+        # Build and return response (idempotency handled by decorator)
+        return {
+            "id": str(sid),
+            "shipment_code": shipment.shipment_code,
+            "status_code": shipment.status.value,
+            "version": shipment.version,
+        }

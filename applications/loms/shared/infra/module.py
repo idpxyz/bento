@@ -7,23 +7,16 @@ Registers:
 - Outbox uses Bento's implementation (bento.persistence.outbox)
 """
 
-from collections.abc import Sequence
-
-from loms.bootstrap.registry import Container, Module
+from bento.runtime import BentoModule
 
 
-class InfraModule:
-    """Infrastructure module implementing the Module protocol."""
+class InfraModule(BentoModule):
+    """Infrastructure module using BentoModule."""
 
-    @property
-    def name(self) -> str:
-        return "infra"
+    name = "infra"
+    requires = ()
 
-    @property
-    def requires(self) -> Sequence[str]:
-        return ()
-
-    def register(self, container: Container) -> None:
+    async def on_register(self, container) -> None:
         """Register infrastructure components into the container."""
         # Database session
         from loms.shared.infra.db.session import AsyncSessionMaker

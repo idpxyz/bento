@@ -12,7 +12,8 @@ def register_all_models() -> None:
     # Platform Core models
     from loms.shared.infra.idempotency.models import IdempotencyRecord  # noqa: F401
     from loms.shared.infra.inbox.models import InboxEvent  # noqa: F401
-    # Outbox uses Bento's OutboxRecord (bento.persistence.outbox)
+    # Outbox uses Bento's OutboxRecord (now shares same Base)
+    from bento.persistence.outbox import OutboxRecord  # noqa: F401
 
     # Future: BC models
     # from loms.contexts.fulfillment.infra.models import ...  # noqa: F401

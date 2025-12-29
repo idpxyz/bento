@@ -2,35 +2,33 @@
 Shipment Bounded Context Module.
 
 Registers:
-- Shipment repositories
+- Shipment repositories (via Bento's @repository_for decorator pattern)
 - Shipment command/query handlers
 - Shipment HTTP routers
 """
 
-from collections.abc import Sequence
-
-from loms.bootstrap.registry import Container, Module
+from bento.runtime import BentoModule
 
 
-class ShipmentModule:
-    """Shipment bounded context module implementing the Module protocol."""
+class ShipmentModule(BentoModule):
+    """Shipment bounded context module using BentoModule."""
 
-    @property
-    def name(self) -> str:
-        return "shipment"
+    name = "shipment"
+    requires = ("infra",)
+    # Scan packages to trigger @repository_for decorators
+    scan_packages = (
+        "loms.contexts.shipment.infra.persistence.repositories",
+    )
 
-    @property
-    def requires(self) -> Sequence[str]:
-        return ("infra",)
+    async def on_register(self, container) -> None:
+        """Register shipment context components into the container.
 
-    def register(self, container: Container) -> None:
-        """Register shipment context components into the container."""
-        # Repository implementations
-        from loms.contexts.shipment.infra.persistence.repositories.shipment_repo import (
-            ShipmentRepositoryImpl,
-        )
-        container.set("shipment.repository_class", ShipmentRepositoryImpl)
+        Note: ShipmentRepository is auto-registered via @repository_for decorator
+        when scan_packages imports the module.
+        """
 
-        # HTTP routers
+    def get_routers(self):
+        """Return shipment API routers."""
         from loms.contexts.shipment.interfaces.http.v1.shipments import router
-        container.set("shipment.router", router)
+
+        return [router]

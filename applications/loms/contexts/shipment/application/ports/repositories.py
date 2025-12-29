@@ -1,9 +1,11 @@
 from typing import Protocol
+
+from bento.core.ids import ID
+
 from loms.contexts.shipment.domain.model.shipment import Shipment
-from loms.contexts.shipment.domain.vo.ids import TenantId, ShipmentId
 
 class ShipmentRepository(Protocol):
-    async def get(self, tenant_id: TenantId, shipment_id: ShipmentId) -> Shipment | None: ...
+    async def get(self, shipment_id: ID) -> Shipment | None: ...
     async def save(self, shipment: Shipment) -> None: ...
 
 class IdempotencyRepository(Protocol):

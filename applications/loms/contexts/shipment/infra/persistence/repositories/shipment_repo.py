@@ -1,27 +1,46 @@
+"""Shipment Repository using Bento's RepositoryAdapter."""
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from loms.contexts.shipment.domain.vo.ids import TenantId, ShipmentId
+
+from bento.infrastructure.repository import RepositoryAdapter, repository_for
+from bento.persistence.interceptor import create_default_chain
+from bento.persistence.repository import BaseRepository
+
 from loms.contexts.shipment.domain.model.shipment import Shipment
-from loms.contexts.shipment.infra.persistence.mappers.shipment_mapper import ShipmentMapper, ShipmentORM
+from bento.core.ids import ID
+from loms.contexts.shipment.infra.persistence.mappers.shipment_mapper import (
+    ShipmentMapper,
+)
+from loms.contexts.shipment.infra.persistence.models import ShipmentORM
 
-class ShipmentRepositoryImpl:
+
+@repository_for(Shipment)
+class ShipmentRepository(RepositoryAdapter[Shipment, ShipmentORM, ID]):
+    """Shipment Repository using Bento's RepositoryAdapter.
+
+    Provides:
+    - AR <-> PO mapping via ShipmentMapper
+    - TenantFilterMixin for multi-tenant queries
+    - Specification pattern support
+    - Pagination support
+    """
+
+    # Enable multi-tenant filtering
+    tenant_enabled = True
+
     def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def get(self, tenant_id: TenantId, shipment_id: ShipmentId) -> Shipment | None:
-        stmt = select(ShipmentORM).where(
-            ShipmentORM.tenant_id == tenant_id.value,
-            ShipmentORM.id == shipment_id.value,
+        base_repo: BaseRepository[ShipmentORM, ID] = BaseRepository(
+            session=session,
+            po_type=ShipmentORM,
+            actor="system",
+            interceptor_chain=create_default_chain("system"),
         )
-        row = (await self.session.execute(stmt)).scalars().first()
-        return ShipmentMapper.to_domain(row) if row else None
+        mapper = ShipmentMapper()
+        super().__init__(repository=base_repo, mapper=mapper)
 
-    async def save(self, shipment: Shipment) -> None:
-        # upsert-like behavior
-        existing = await self.session.get(ShipmentORM, shipment.shipment_id.value)
-        if existing and existing.tenant_id == shipment.tenant_id.value:
-            existing.shipment_code = shipment.shipment_code
-            existing.status_code = shipment.status.value
-            existing.version = shipment.version
-        else:
-            self.session.add(ShipmentMapper.from_domain(shipment))
+    # Note: get(), save(), find_all(), etc. now automatically support
+    # multi-tenant filtering via RepositoryAdapter base class when
+    # tenant_enabled = True
+
+
+# Backwards compatibility alias
+ShipmentRepositoryImpl = ShipmentRepository

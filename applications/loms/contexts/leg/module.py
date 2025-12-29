@@ -7,24 +7,16 @@ Registers:
 - Leg HTTP routers
 """
 
-from collections.abc import Sequence
-
-from loms.bootstrap.registry import Container, Module
+from bento.runtime import BentoModule
 
 
-class LegModule:
-    """Leg bounded context module implementing the Module protocol."""
+class LegModule(BentoModule):
+    """Leg bounded context module using BentoModule."""
 
-    @property
-    def name(self) -> str:
-        return "leg"
+    name = "leg"
+    requires = ("infra",)
 
-    @property
-    def requires(self) -> Sequence[str]:
-        return ("infra",)
-
-    def register(self, container: Container) -> None:
-        """Register leg context components into the container."""
-        # HTTP routers
+    def get_routers(self):
+        """Return leg API routers."""
         from loms.contexts.leg.interfaces.http.v1.router import router
-        container.set("leg.router", router)
+        return [router]
