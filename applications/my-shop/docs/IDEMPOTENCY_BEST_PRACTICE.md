@@ -35,7 +35,7 @@ class CreateOrderRequest(BaseModel):
 class CreateOrderRequest(BaseModel):
     """Create order request model.
 
-    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    Note: For idempotency, pass X-Idempotency-Key in HTTP Header.
     """
     customer_id: str
     items: list[OrderItemRequest]
@@ -99,7 +99,7 @@ app.add_middleware(
 # 创建订单
 curl -X POST http://localhost:8000/api/v1/orders/ \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: order-20251229-001" \
+  -H "X-Idempotency-Key: order-20251229-001" \
   -d '{
     "customer_id": "cust-001",
     "items": [
@@ -114,12 +114,12 @@ curl -X POST http://localhost:8000/api/v1/orders/ \
 
 # 支付订单
 curl -X POST http://localhost:8000/api/v1/orders/{order_id}/pay \
-  -H "x-idempotency-key: payment-{order_id}-001" \
+  -H "X-Idempotency-Key: payment-{order_id}-001" \
   -d '{}'
 
 # 发货订单
 curl -X POST http://localhost:8000/api/v1/orders/{order_id}/ship \
-  -H "x-idempotency-key: shipment-{order_id}-001" \
+  -H "X-Idempotency-Key: shipment-{order_id}-001" \
   -d '{
     "tracking_number": "SF123456"
   }'
@@ -136,7 +136,7 @@ session_factory = runtime.container.get("db.session_factory")
 # 注册 IdempotencyMiddleware（注入 session_factory）
 app.add_middleware(
     IdempotencyMiddleware,
-    header_name="x-idempotency-key",
+    header_name="X-Idempotency-Key",
     ttl_seconds=86400,  # 24 hours
     tenant_id="default",
     session_factory=session_factory,  # ✅ 注入依赖
@@ -149,14 +149,14 @@ app.add_middleware(
 ┌─────────────────────────────────────────────────────────┐
 │                      HTTP Request                        │
 │  POST /api/v1/orders/                                   │
-│  Header: x-idempotency-key: order-20251229-001         │
+│  Header: X-Idempotency-Key: order-20251229-001         │
 │  Body: {"customer_id": "cust-001", "items": [...]}     │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
 │              IdempotencyMiddleware                       │
-│  1. 读取 x-idempotency-key header                       │
+│  1. 读取 X-Idempotency-Key header                       │
 │  2. 计算 request body hash                              │
 │  3. 检查数据库中是否有相同 key 的请求                    │
 │  4. 如果存在且已完成，返回缓存的响应                      │
@@ -270,7 +270,7 @@ async function createOrder(orderData: OrderData, idempotencyKey: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-idempotency-key': idempotencyKey,  // ✅ 在 Header 中
+      'X-Idempotency-Key': idempotencyKey,  // ✅ 在 Header 中
     },
     body: JSON.stringify(orderData),  // ✅ Body 中不包含 idempotency_key
   });
@@ -299,7 +299,7 @@ def create_order(order_data: dict, idempotency_key: str):
         'http://localhost:8000/api/v1/orders/',
         headers={
             'Content-Type': 'application/json',
-            'x-idempotency-key': idempotency_key,  # ✅ 在 Header 中
+            'X-Idempotency-Key': idempotency_key,  # ✅ 在 Header 中
         },
         json=order_data,  # ✅ Body 中不包含 idempotency_key
     )

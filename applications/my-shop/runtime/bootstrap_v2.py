@@ -185,11 +185,11 @@ def create_app() -> FastAPI:
     # Note: session_factory will be retrieved from runtime container at request time
     app.add_middleware(
         IdempotencyMiddleware,
-        header_name="x-idempotency-key",
+        header_name="X-Idempotency-Key",
         ttl_seconds=86400,  # 24 hours
         tenant_id="default",
     )
-    logger.info("✅ Idempotency middleware registered (TTL: 24h, header: x-idempotency-key)")
+    logger.info("✅ Idempotency middleware registered (TTL: 24h, header: X-Idempotency-Key)")
 
     # 5. CORS - Cross-Origin Resource Sharing
     app.add_middleware(

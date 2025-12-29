@@ -208,7 +208,7 @@ async def create_order(command: CreateOrderCommand) -> Order:
 # Idempotency 使用默认租户
 app.add_middleware(
     IdempotencyMiddleware,
-    header_name="x-idempotency-key",
+    header_name="X-Idempotency-Key",
     ttl_seconds=86400,
     tenant_id="default",  # 保持默认
 )

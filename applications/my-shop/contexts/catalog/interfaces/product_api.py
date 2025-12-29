@@ -31,7 +31,7 @@ router = APIRouter()
 class CreateProductRequest(BaseModel):
     """Create product request model.
 
-    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    Note: For idempotency, pass X-Idempotency-Key in HTTP Header.
     """
 
     name: str

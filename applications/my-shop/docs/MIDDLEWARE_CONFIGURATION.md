@@ -117,7 +117,7 @@ X-RateLimit-Reset: 1735459200
 ```python
 app.add_middleware(
     IdempotencyMiddleware,
-    header_name="x-idempotency-key",
+    header_name="X-Idempotency-Key",
     ttl_seconds=86400,  # 24 hours
     tenant_id="default",
 )
@@ -127,14 +127,14 @@ app.add_middleware(
 ```bash
 # 第一次请求
 curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "x-idempotency-key: order-12345" \
+  -H "X-Idempotency-Key: order-12345" \
   -H "Content-Type: application/json" \
   -d '{"customer_id": "cust-001", "items": [...]}'
 # Response: 201 Created
 
 # 重复请求（返回缓存结果）
 curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "x-idempotency-key: order-12345" \
+  -H "X-Idempotency-Key: order-12345" \
   -H "Content-Type: application/json" \
   -d '{"customer_id": "cust-001", "items": [...]}'
 # Response: 201 Created (same result)
@@ -145,7 +145,7 @@ curl -X POST http://localhost:8000/api/v1/orders/ \
 ```bash
 # 相同 key，不同参数
 curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "x-idempotency-key: order-12345" \
+  -H "X-Idempotency-Key: order-12345" \
   -H "Content-Type: application/json" \
   -d '{"customer_id": "cust-002", "items": [...]}'
 # Response: 409 Conflict

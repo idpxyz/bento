@@ -10,7 +10,7 @@ Usage:
     app = FastAPI()
     app.add_middleware(
         IdempotencyMiddleware,
-        header_name="x-idempotency-key",
+        header_name="X-Idempotency-Key",
         ttl_seconds=86400,
     )
     ```
@@ -69,7 +69,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
     Args:
         app: FastAPI application
-        header_name: Name of the idempotency key header (default: x-idempotency-key)
+        header_name: Name of the idempotency key header (default: X-Idempotency-Key)
         ttl_seconds: Time-to-live for cached responses in seconds (default: 86400 = 24h)
         tenant_id: Default tenant ID (default: "default")
     """
@@ -77,13 +77,13 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        header_name: str = "x-idempotency-key",
+        header_name: str = "X-Idempotency-Key",
         ttl_seconds: int = 86400,
         tenant_id: str = "default",
         session_factory=None,
     ):
         super().__init__(app)
-        self.header_name = header_name.lower()
+        self.header_name = header_name
         self.ttl_seconds = ttl_seconds
         self.tenant_id = tenant_id
         self.session_factory = session_factory

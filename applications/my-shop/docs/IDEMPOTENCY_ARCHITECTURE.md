@@ -43,7 +43,7 @@ class IdempotencyMiddleware:
 
     def __init__(
         self,
-        header_name: str = "x-idempotency-key",
+        header_name: str = "X-Idempotency-Key",
         ttl_seconds: int = 86400,  # 24 hours
         storage: IdempotencyStorage | None = None,
     ):
@@ -88,7 +88,7 @@ def create_app() -> FastAPI:
         storage = DatabaseStorage(session_factory)
         app.middleware("http")(
             IdempotencyMiddleware(
-                header_name="x-idempotency-key",
+                header_name="X-Idempotency-Key",
                 ttl_seconds=86400,
                 storage=storage,
             )
@@ -104,7 +104,7 @@ def create_app() -> FastAPI:
 class Settings(BaseSettings):
     # Idempotency settings
     enable_idempotency: bool = True
-    idempotency_header: str = "x-idempotency-key"
+    idempotency_header: str = "X-Idempotency-Key"
     idempotency_ttl: int = 86400  # 24 hours
 ```
 

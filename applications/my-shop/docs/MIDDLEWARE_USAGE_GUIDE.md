@@ -124,7 +124,7 @@ X-RateLimit-Reset: 1735459200
 ```bash
 # 订单创建（幂等）
 curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "x-idempotency-key: order-20251229-001" \
+  -H "X-Idempotency-Key: order-20251229-001" \
   -H "Content-Type: application/json" \
   -d '{
     "customer_id": "cust-001",
@@ -133,7 +133,7 @@ curl -X POST http://localhost:8000/api/v1/orders/ \
 
 # 重复请求返回相同结果
 curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "x-idempotency-key: order-20251229-001" \
+  -H "X-Idempotency-Key: order-20251229-001" \
   -H "Content-Type: application/json" \
   -d '{
     "customer_id": "cust-001",
@@ -236,7 +236,7 @@ async function apiRequest(method, url, data = null) {
 async function idempotentRequest(method, url, data, idempotencyKey) {
     const headers = {
         'Content-Type': 'application/json',
-        'x-idempotency-key': idempotencyKey,
+        'X-Idempotency-Key': idempotencyKey,
     };
 
     const response = await fetch(url, {
@@ -326,7 +326,7 @@ async function placeOrder(customerId, items) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-idempotency-key': idempotencyKey,
+                'X-Idempotency-Key': idempotencyKey,
             },
             body: JSON.stringify(orderData),
         });
@@ -488,7 +488,7 @@ grep "X-Idempotent-Replay" /var/log/my-shop.log
 **症状**: 重复请求创建了多个订单
 
 **排查**:
-1. 检查客户端是否发送 `x-idempotency-key` header
+1. 检查客户端是否发送 `X-Idempotency-Key` header
 2. 检查数据库 `idempotency` 表
 3. 检查 IdempotencyMiddleware 配置
 

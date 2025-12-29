@@ -13,7 +13,7 @@ my-shop 使用 Bento Framework 的 `IdempotencyMiddleware` 来防止重复请求
 ```bash
 curl -X POST http://localhost:8000/api/v1/orders/ \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: order-20251229-001" \
+  -H "X-Idempotency-Key: order-20251229-001" \
   -d '{
     "customer_id": "cust-001",
     "items": [...]
@@ -38,7 +38,7 @@ curl -X POST http://localhost:8000/api/v1/orders/ \
 ### 1. Middleware 层（自动处理）
 
 `IdempotencyMiddleware` 在请求到达应用层之前：
-1. 从 HTTP Header 中读取 `x-idempotency-key`
+1. 从 HTTP Header 中读取 `X-Idempotency-Key`
 2. 计算请求体的哈希值
 3. 检查数据库中是否有相同 key 的请求
 4. 如果存在且已完成，返回缓存的响应
@@ -60,7 +60,7 @@ API 中的 `idempotency_key` 字段是**可选的**，用于：
 ```python
 app.add_middleware(
     IdempotencyMiddleware,
-    header_name="x-idempotency-key",  # Header 名称
+    header_name="X-Idempotency-Key",  # Header 名称
     ttl_seconds=86400,                 # 24 小时缓存
     tenant_id="default",               # 租户 ID
 )
@@ -68,7 +68,7 @@ app.add_middleware(
 
 ### 参数说明
 
-- **header_name**: HTTP Header 名称（默认：`x-idempotency-key`）
+- **header_name**: HTTP Header 名称（默认：`X-Idempotency-Key`）
 - **ttl_seconds**: 缓存过期时间（默认：86400 秒 = 24 小时）
 - **tenant_id**: 租户 ID（用于多租户隔离）
 
@@ -79,7 +79,7 @@ app.add_middleware(
 ```bash
 curl -X POST http://localhost:8000/api/v1/orders/ \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: order-cust001-20251229-001" \
+  -H "X-Idempotency-Key: order-cust001-20251229-001" \
   -d '{
     "customer_id": "cust-001",
     "items": [
@@ -118,7 +118,7 @@ curl -X POST http://localhost:8000/api/v1/orders/ \
 ```bash
 curl -X POST http://localhost:8000/api/v1/orders/order-123/pay \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: payment-order123-20251229-001" \
+  -H "X-Idempotency-Key: payment-order123-20251229-001" \
   -d '{}'
 ```
 
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8000/api/v1/orders/order-123/pay \
 ```bash
 curl -X POST http://localhost:8000/api/v1/orders/order-123/ship \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: shipment-order123-20251229-001" \
+  -H "X-Idempotency-Key: shipment-order123-20251229-001" \
   -d '{
     "tracking_number": "SF1234567890"
   }'
@@ -176,7 +176,7 @@ async function createOrderWithRetry(orderData, maxRetries = 3) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-idempotency-key': idempotencyKey,  // ✅ 在 Header 中
+          'X-Idempotency-Key': idempotencyKey,  // ✅ 在 Header 中
         },
         body: JSON.stringify(orderData),
       });
@@ -209,7 +209,7 @@ async function createOrderWithRetry(orderData, maxRetries = 3) {
 
 **A**: 检查以下几点：
 1. ✅ idempotency_key 在 **HTTP Header** 中，而不是 Body 中
-2. ✅ Header 名称是 `x-idempotency-key`（小写）
+2. ✅ Header 名称是 `X-Idempotency-Key`（小写）
 3. ✅ 两次请求的 idempotency_key 完全相同
 4. ✅ 缓存没有过期（默认 24 小时）
 
@@ -258,7 +258,7 @@ grep "550e8400-e29b-41d4-a716-446655440000" /var/log/my-shop.log
 
 | 方面 | 说明 |
 |------|------|
-| **传递方式** | HTTP Header: `x-idempotency-key` |
+| **传递方式** | HTTP Header: `X-Idempotency-Key` |
 | **缓存时间** | 24 小时（可配置） |
 | **适用操作** | POST, PUT, PATCH, DELETE |
 | **冲突处理** | 参数不同返回 409 |

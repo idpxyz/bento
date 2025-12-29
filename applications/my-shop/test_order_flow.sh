@@ -20,7 +20,7 @@ echo "📦 Step 1: Create Category with Idempotency Key..."
 echo "   Idempotency Key: $CATEGORY_IDEM_KEY"
 CATEGORY_RESPONSE=$(curl -s -X POST "$BASE_URL/categories/" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $CATEGORY_IDEM_KEY" \
+  -H "X-Idempotency-Key: $CATEGORY_IDEM_KEY" \
   -d "{
     \"name\": \"电子产品\",
     \"description\": \"各类电子产品\"
@@ -33,7 +33,7 @@ echo ""
 echo "🔁 Step 1.1: Test Category Idempotency (duplicate request)..."
 CATEGORY_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/categories/" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $CATEGORY_IDEM_KEY" \
+  -H "X-Idempotency-Key: $CATEGORY_IDEM_KEY" \
   -d "{
     \"name\": \"电子产品\",
     \"description\": \"各类电子产品\"
@@ -50,7 +50,7 @@ echo "📱 Step 2: Create Product with Idempotency Key..."
 echo "   Idempotency Key: $PRODUCT_IDEM_KEY"
 PRODUCT_RESPONSE=$(curl -s -X POST "$BASE_URL/products/" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $PRODUCT_IDEM_KEY" \
+  -H "X-Idempotency-Key: $PRODUCT_IDEM_KEY" \
   -d "{
     \"name\": \"iPhone 15 Pro\",
     \"description\": \"最新款 iPhone\",
@@ -68,7 +68,7 @@ echo "🛒 Step 3: Create Order with Idempotency Key..."
 echo "   Idempotency Key: $ORDER_IDEM_KEY"
 ORDER_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $ORDER_IDEM_KEY" \
+  -H "X-Idempotency-Key: $ORDER_IDEM_KEY" \
   -d "{
     \"customer_id\": \"customer-001\",
     \"items\": [
@@ -101,7 +101,7 @@ echo "💳 Step 5: Pay Order with Idempotency Key..."
 echo "   Idempotency Key: $PAYMENT_IDEM_KEY"
 PAY_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/$ORDER_ID/pay" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $PAYMENT_IDEM_KEY" \
+  -H "X-Idempotency-Key: $PAYMENT_IDEM_KEY" \
   -d "{}")
 PAY_STATUS=$(echo $PAY_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['status'])")
 echo "✅ Payment confirmed"
@@ -112,7 +112,7 @@ echo ""
 echo "🔁 Step 5.1: Test Payment Idempotency (duplicate payment)..."
 PAY_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/orders/$ORDER_ID/pay" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $PAYMENT_IDEM_KEY" \
+  -H "X-Idempotency-Key: $PAYMENT_IDEM_KEY" \
   -d "{}")
 if echo "$PAY_RESPONSE2" | grep -q "X-Idempotent-Replay: 1"; then
   echo "✅ Payment idempotency working: Duplicate prevented"
@@ -126,7 +126,7 @@ echo "🚚 Step 6: Ship Order with Idempotency Key..."
 echo "   Idempotency Key: $SHIPMENT_IDEM_KEY"
 SHIP_RESPONSE=$(curl -s -X POST "$BASE_URL/orders/$ORDER_ID/ship" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $SHIPMENT_IDEM_KEY" \
+  -H "X-Idempotency-Key: $SHIPMENT_IDEM_KEY" \
   -d "{
     \"tracking_number\": \"SF1234567890\"
   }")
@@ -139,7 +139,7 @@ echo ""
 echo "🔁 Step 6.1: Test Shipment Idempotency (duplicate shipment)..."
 SHIP_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/orders/$ORDER_ID/ship" \
   -H "Content-Type: application/json" \
-  -H "x-idempotency-key: $SHIPMENT_IDEM_KEY" \
+  -H "X-Idempotency-Key: $SHIPMENT_IDEM_KEY" \
   -d "{
     \"tracking_number\": \"SF1234567890\"
   }")

@@ -82,7 +82,7 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
         """Handle command execution.
 
         Note: Idempotency is handled by IdempotencyMiddleware at HTTP layer.
-        The middleware checks x-idempotency-key header and caches responses.
+        The middleware checks X-Idempotency-Key header and caches responses.
         """
 
         # 通过 UoW Port 容器获取跨BC服务（运行时解析）
