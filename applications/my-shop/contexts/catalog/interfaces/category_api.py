@@ -37,7 +37,6 @@ class CreateCategoryRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Category name")
     description: str = Field(..., min_length=1, max_length=500, description="Category description")
     parent_id: str | None = Field(None, description="Parent category ID (UUID format)")
-    idempotency_key: str | None = None  # For idempotent category creation
 
 
 class UpdateCategoryRequest(BaseModel):

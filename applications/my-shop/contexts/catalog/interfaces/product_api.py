@@ -29,7 +29,10 @@ router = APIRouter()
 
 
 class CreateProductRequest(BaseModel):
-    """Create product request model."""
+    """Create product request model.
+
+    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    """
 
     name: str
     description: str
@@ -39,7 +42,6 @@ class CreateProductRequest(BaseModel):
     brand: str | None = None
     is_active: bool = True
     category_id: str | None = None  # 可选的分类ID
-    idempotency_key: str | None = None  # For idempotent product creation
 
 
 class UpdateProductRequest(BaseModel):

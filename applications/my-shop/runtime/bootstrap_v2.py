@@ -133,6 +133,10 @@ def create_app() -> FastAPI:
     )
     logger.debug("FastAPI app created with BentoRuntime's built-in lifespan")
 
+    # Store runtime in app.state for middleware access
+    app.state.bento_runtime = runtime
+    logger.debug("BentoRuntime stored in app.state for middleware access")
+
     # ========================================
     # Middleware Stack (Order Matters!)
     # ========================================
@@ -178,6 +182,7 @@ def create_app() -> FastAPI:
     logger.info("✅ RateLimiting middleware registered (60 req/min, 1000 req/hour per IP)")
 
     # 4. Idempotency - Prevent duplicate operations
+    # Note: session_factory will be retrieved from runtime container at request time
     app.add_middleware(
         IdempotencyMiddleware,
         header_name="x-idempotency-key",

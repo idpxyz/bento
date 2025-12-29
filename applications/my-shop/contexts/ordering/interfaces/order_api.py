@@ -50,24 +50,31 @@ class OrderItemRequest(BaseModel):
 
 
 class CreateOrderRequest(BaseModel):
-    """Create order request model."""
+    """Create order request model.
+
+    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    """
 
     customer_id: str
     items: list[OrderItemRequest]
-    idempotency_key: str | None = None  # For idempotent order creation
 
 
 class PayOrderRequest(BaseModel):
-    """Pay order request model."""
+    """Pay order request model.
 
-    idempotency_key: str | None = None  # For idempotent payment processing
+    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    """
+
+    pass  # Empty body, idempotency handled via Header
 
 
 class ShipOrderRequest(BaseModel):
-    """Ship order request model."""
+    """Ship order request model.
+
+    Note: For idempotency, pass x-idempotency-key in HTTP Header.
+    """
 
     tracking_number: str | None = None
-    idempotency_key: str | None = None  # For idempotent shipping
 
 
 class CancelOrderRequest(BaseModel):
@@ -124,9 +131,14 @@ async def create_order(
 ) -> dict[str, Any]:
     """Create a new order with items.
 
-    Supports idempotency via idempotency_key field.
-    If the same idempotency_key is sent twice, the second request will return
-    the same order that was created by the first request.
+    Supports idempotency via x-idempotency-key HTTP Header.
+    If the same key is sent twice, the second request will return
+    the cached response from the first request.
+
+    Example:
+        curl -X POST /api/v1/orders/ \\
+          -H "x-idempotency-key: order-20251229-001" \\
+          -d '{"customer_id": "cust-001", "items": [...]}'
     """
     # Request → Command
     items = [
@@ -142,7 +154,6 @@ async def create_order(
     command = CreateOrderCommand(
         customer_id=request.customer_id,
         items=items,
-        idempotency_key=request.idempotency_key,
     )
 
     # Execute Use Case
@@ -199,11 +210,14 @@ async def pay_order(
 ) -> dict[str, Any]:
     """Confirm payment for an order.
 
-    Supports idempotency via idempotency_key field to prevent duplicate payments.
+    Supports idempotency via x-idempotency-key HTTP Header to prevent duplicate payments.
+
+    Example:
+        curl -X POST /api/v1/orders/{order_id}/pay \\
+          -H "x-idempotency-key: payment-{order_id}-001"
     """
     command = PayOrderCommand(
         order_id=order_id,
-        idempotency_key=request.idempotency_key,
     )
     order = await handler.execute(command)
     return order_to_dict(order)
@@ -221,7 +235,12 @@ async def ship_order(
 ) -> dict[str, Any]:
     """Ship an order.
 
-    Supports idempotency via idempotency_key field to prevent duplicate shipments.
+    Supports idempotency via x-idempotency-key HTTP Header to prevent duplicate shipments.
+
+    Example:
+        curl -X POST /api/v1/orders/{order_id}/ship \\
+          -H "x-idempotency-key: shipment-{order_id}-001" \\
+          -d '{"tracking_number": "SF123456"}'
     """
     from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
@@ -230,7 +249,6 @@ async def ship_order(
         command = ShipOrderCommand(
             order_id=order_id,
             tracking_number=request.tracking_number,
-            idempotency_key=request.idempotency_key,
         )
         order = await handler.execute(command)
         return order_to_dict(order)

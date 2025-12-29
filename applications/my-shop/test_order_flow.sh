@@ -33,10 +33,10 @@ echo ""
 echo "🔁 Step 1.1: Test Category Idempotency (duplicate request)..."
 CATEGORY_RESPONSE2=$(curl -s -i -X POST "$BASE_URL/categories/" \
   -H "Content-Type: application/json" \
+  -H "x-idempotency-key: $CATEGORY_IDEM_KEY" \
   -d "{
     \"name\": \"电子产品\",
-    \"description\": \"各类电子产品\",
-    \"idempotency_key\": \"$CATEGORY_IDEM_KEY\"
+    \"description\": \"各类电子产品\"
   }")
 if echo "$CATEGORY_RESPONSE2" | grep -q "X-Idempotent-Replay: 1"; then
   echo "✅ Idempotency working: Got cached response"

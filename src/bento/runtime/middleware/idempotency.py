@@ -80,11 +80,13 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         header_name: str = "x-idempotency-key",
         ttl_seconds: int = 86400,
         tenant_id: str = "default",
+        session_factory=None,
     ):
         super().__init__(app)
         self.header_name = header_name.lower()
         self.ttl_seconds = ttl_seconds
         self.tenant_id = tenant_id
+        self.session_factory = session_factory
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -118,15 +120,21 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         # Hash request for duplicate detection
         request_hash = _hash_request(body_obj)
 
-        # Get database session from BentoRuntime container
-        try:
-            # Import here to avoid circular dependency
-            from runtime.bootstrap_v2 import get_runtime
-            runtime = get_runtime()
-            session_factory = runtime.container.get("db.session_factory")
-        except Exception:
-            # No runtime or session factory available, skip idempotency check
-            return await call_next(request)
+        # Get database session factory
+        if self.session_factory is None:
+            # Try to get from app.state.bento_runtime (preferred)
+            try:
+                runtime = getattr(request.app.state, "bento_runtime", None)
+                if runtime is None:
+                    # Fallback: try to get from bootstrap module
+                    from runtime.bootstrap_v2 import get_runtime
+                    runtime = get_runtime()
+                session_factory = runtime.container.get("db.session_factory")
+            except Exception:
+                # No runtime or session factory available, skip idempotency check
+                return await call_next(request)
+        else:
+            session_factory = self.session_factory
 
         # Get tenant ID from request state (if available)
         tenant_id = getattr(request.state, "tenant_id", self.tenant_id)

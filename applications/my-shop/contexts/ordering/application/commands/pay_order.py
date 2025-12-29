@@ -12,10 +12,12 @@ from contexts.ordering.domain.models.order import Order
 
 @dataclass
 class PayOrderCommand:
-    """Pay order command."""
+    """Pay order command.
+
+    Note: Idempotency is handled by IdempotencyMiddleware at HTTP layer.
+    """
 
     order_id: str
-    idempotency_key: str | None = None  # For idempotent payment processing
 
 
 @command_handler

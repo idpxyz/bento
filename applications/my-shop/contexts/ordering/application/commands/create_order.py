@@ -28,7 +28,6 @@ class CreateOrderCommand:
 
     customer_id: str
     items: list[OrderItemInput]
-    idempotency_key: str | None = None  # For idempotent order creation
 
 
 @command_handler
@@ -80,11 +79,11 @@ class CreateOrderHandler(CommandHandler[CreateOrderCommand, Order]):
                 )
 
     async def handle(self, command: CreateOrderCommand) -> Order:
-        """Handle command execution with idempotency support."""
-        # ✅ Idempotency support: if idempotency_key is provided, it can be used
-        # by the API layer to detect and prevent duplicate order creation
-        # The idempotency_key should be stored in the request header (Idempotency-Key)
-        # and the API layer should check for duplicate requests before calling this handler
+        """Handle command execution.
+
+        Note: Idempotency is handled by IdempotencyMiddleware at HTTP layer.
+        The middleware checks x-idempotency-key header and caches responses.
+        """
 
         # 通过 UoW Port 容器获取跨BC服务（运行时解析）
         from contexts.ordering.domain.ports.services.i_product_catalog_service import (

@@ -12,11 +12,13 @@ from contexts.ordering.domain.models.order import Order
 
 @dataclass
 class ShipOrderCommand:
-    """Ship order command."""
+    """Ship order command.
+
+    Note: Idempotency is handled by IdempotencyMiddleware at HTTP layer.
+    """
 
     order_id: str
     tracking_number: str | None = None
-    idempotency_key: str | None = None  # For idempotent shipping
 
 
 @command_handler
