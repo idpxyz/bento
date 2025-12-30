@@ -7,14 +7,14 @@ Provides in-memory test doubles for:
 """
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
 from collections.abc import Callable
+from typing import Any, TypeVar
 
 AR = TypeVar("AR")
 ID = TypeVar("ID")
 
 
-class InMemoryRepository(Generic[AR, ID]):
+class InMemoryRepository[AR, ID]:
     """In-memory repository for testing.
 
     Stores entities in a dictionary keyed by ID.
@@ -193,7 +193,7 @@ class FakeUnitOfWork:
         """Rollback (no-op for fake)."""
         pass
 
-    async def __aenter__(self) -> "FakeUnitOfWork":
+    async def __aenter__(self) -> FakeUnitOfWork:
         """Enter context."""
         return self
 

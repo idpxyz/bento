@@ -719,8 +719,8 @@ def run_validation(args):
 def run_contracts_command(args):
     """执行 Contract-as-Code 命令"""
     try:
-        from bento.contracts.gates import ContractGate
         from bento.contracts import ContractLoader
+        from bento.contracts.gates import ContractGate
 
         contracts_path = args.contracts_path
 
