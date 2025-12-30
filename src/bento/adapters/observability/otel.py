@@ -297,21 +297,28 @@ class OpenTelemetryProvider:
                     logger.info("Added console trace exporter")
 
                 elif exporter_type == "jaeger":
-                    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-                    jaeger_exporter = JaegerExporter(
-                        agent_host_name=self.exporter_kwargs.get("jaeger_host", "localhost"),
-                        agent_port=self.exporter_kwargs.get("jaeger_port", 6831),
-                    )
-                    tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
-                    logger.info(f"Added Jaeger trace exporter: {self.exporter_kwargs.get('jaeger_host')}:{self.exporter_kwargs.get('jaeger_port')}")
+                    try:
+                        from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+                        jaeger_host = self.exporter_kwargs.get("jaeger_host", "localhost")
+                        jaeger_port = self.exporter_kwargs.get("jaeger_port", 6831)
+                        jaeger_exporter = JaegerExporter(
+                            agent_host_name=jaeger_host,
+                            agent_port=jaeger_port,
+                        )
+                        tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+                        logger.info(f"Added Jaeger trace exporter: {jaeger_host}:{jaeger_port}")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize Jaeger exporter ({self.exporter_kwargs.get('jaeger_host')}:{self.exporter_kwargs.get('jaeger_port')}): {e}. Traces will not be exported to Jaeger.")
 
                 elif exporter_type == "otlp":
-                    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-                    otlp_exporter = OTLPSpanExporter(
-                        endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
-                    )
-                    tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-                    logger.info(f"Added OTLP trace exporter: {self.exporter_kwargs.get('otlp_endpoint')}")
+                    try:
+                        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                        otlp_endpoint = self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317")
+                        otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
+                        tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+                        logger.info(f"Added OTLP trace exporter: {otlp_endpoint}")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize OTLP trace exporter ({self.exporter_kwargs.get('otlp_endpoint')}): {e}. Traces will not be exported to OTLP.")
 
             trace.set_tracer_provider(tracer_provider)
             return tracer_provider
@@ -343,25 +350,30 @@ class OpenTelemetryProvider:
                     logger.info("Added console metrics exporter")
 
                 elif exporter_type == "prometheus":
-                    from opentelemetry.exporter.prometheus import PrometheusMetricReader
-                    prometheus_host = self.exporter_kwargs.get("prometheus_host", "0.0.0.0")
-                    prometheus_port = self.exporter_kwargs.get("prometheus_port", 9090)
-                    prometheus_prefix = self.exporter_kwargs.get("prometheus_prefix", "bento_")
+                    try:
+                        from opentelemetry.exporter.prometheus import PrometheusMetricReader
+                        prometheus_host = self.exporter_kwargs.get("prometheus_host", "0.0.0.0")
+                        prometheus_port = self.exporter_kwargs.get("prometheus_port", 9090)
+                        prometheus_prefix = self.exporter_kwargs.get("prometheus_prefix", "bento_")
 
-                    reader = PrometheusMetricReader(
-                        prefix=prometheus_prefix,
-                    )
-                    readers.append(reader)
-                    logger.info(f"Added Prometheus metrics exporter (host: {prometheus_host}, port: {prometheus_port}, prefix: {prometheus_prefix})")
+                        reader = PrometheusMetricReader(
+                            prefix=prometheus_prefix,
+                        )
+                        readers.append(reader)
+                        logger.info(f"Added Prometheus metrics exporter (host: {prometheus_host}, port: {prometheus_port}, prefix: {prometheus_prefix})")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize Prometheus metrics exporter: {e}. Metrics will not be exported to Prometheus.")
 
                 elif exporter_type == "otlp":
-                    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-                    otlp_exporter = OTLPMetricExporter(
-                        endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
-                    )
-                    reader = PeriodicExportingMetricReader(otlp_exporter)
-                    readers.append(reader)
-                    logger.info(f"Added OTLP metrics exporter: {self.exporter_kwargs.get('otlp_endpoint')}")
+                    try:
+                        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+                        otlp_endpoint = self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317")
+                        otlp_exporter = OTLPMetricExporter(endpoint=otlp_endpoint)
+                        reader = PeriodicExportingMetricReader(otlp_exporter)
+                        readers.append(reader)
+                        logger.info(f"Added OTLP metrics exporter: {otlp_endpoint}")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize OTLP metrics exporter ({self.exporter_kwargs.get('otlp_endpoint')}): {e}. Metrics will not be exported to OTLP.")
 
             meter_provider = MeterProvider(metric_readers=readers)
             metrics.set_meter_provider(meter_provider)
