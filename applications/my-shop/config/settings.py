@@ -60,11 +60,13 @@ class Settings(BaseSettings):
 
     # OpenTelemetry settings
     otel_service_name: str = "my-shop"
-    otel_trace_exporter: str = "console"  # console, jaeger, otlp - 使用控制台输出
+    otel_trace_exporter: str = "console,jaeger,otlp"  # 同时输出到 console、jaeger、otlp
     otel_jaeger_host: str = "localhost"
     otel_jaeger_port: int = 6831
-    otel_metrics_exporter: str = "console"  # console, prometheus, otlp - 使用控制台输出
+    otel_otlp_endpoint: str = "http://localhost:4317"  # OTLP 收集器端点
+    otel_metrics_exporter: str = "console,prometheus,otlp"  # 同时输出到 console、prometheus、otlp
     otel_prometheus_port: int = 9090
+    otel_prometheus_prefix: str = "myshop_"
 
     model_config = SettingsConfigDict(
         env_file=".env",

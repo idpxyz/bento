@@ -228,8 +228,10 @@ class OpenTelemetryProvider:
 
         Args:
             service_name: Service name for observability
-            trace_exporter: Trace exporter type (console, jaeger, otlp)
-            metrics_exporter: Metrics exporter type (console, prometheus, otlp)
+            trace_exporter: Trace exporter type (console, jaeger, otlp, or comma-separated list)
+                          Examples: "console", "jaeger", "otlp", "console,jaeger", "console,otlp,jaeger"
+            metrics_exporter: Metrics exporter type (console, prometheus, otlp, or comma-separated list)
+                            Examples: "console", "prometheus", "otlp", "console,prometheus"
             **exporter_kwargs: Additional exporter configuration
         """
         self.service_name = service_name
@@ -273,7 +275,10 @@ class OpenTelemetryProvider:
         logger.info("OpenTelemetry stopped")
 
     def _setup_tracing(self) -> Any:
-        """Setup OpenTelemetry tracing."""
+        """Setup OpenTelemetry tracing with support for multiple exporters.
+
+        Supports comma-separated exporters: "console,jaeger,otlp"
+        """
         try:
             from opentelemetry import trace
             from opentelemetry.sdk.trace import TracerProvider
@@ -281,25 +286,32 @@ class OpenTelemetryProvider:
 
             tracer_provider = TracerProvider()
 
-            if self.trace_exporter == "console":
-                from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
-                processor = SimpleSpanProcessor(ConsoleSpanExporter())
-                tracer_provider.add_span_processor(processor)
+            # Parse exporters (support comma-separated list)
+            exporters = [e.strip() for e in self.trace_exporter.split(",")]
 
-            elif self.trace_exporter == "jaeger":
-                from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-                jaeger_exporter = JaegerExporter(
-                    agent_host_name=self.exporter_kwargs.get("jaeger_host", "localhost"),
-                    agent_port=self.exporter_kwargs.get("jaeger_port", 6831),
-                )
-                tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+            for exporter_type in exporters:
+                if exporter_type == "console":
+                    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+                    processor = SimpleSpanProcessor(ConsoleSpanExporter())
+                    tracer_provider.add_span_processor(processor)
+                    logger.info("Added console trace exporter")
 
-            elif self.trace_exporter == "otlp":
-                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-                otlp_exporter = OTLPSpanExporter(
-                    endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
-                )
-                tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+                elif exporter_type == "jaeger":
+                    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+                    jaeger_exporter = JaegerExporter(
+                        agent_host_name=self.exporter_kwargs.get("jaeger_host", "localhost"),
+                        agent_port=self.exporter_kwargs.get("jaeger_port", 6831),
+                    )
+                    tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+                    logger.info(f"Added Jaeger trace exporter: {self.exporter_kwargs.get('jaeger_host')}:{self.exporter_kwargs.get('jaeger_port')}")
+
+                elif exporter_type == "otlp":
+                    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                    otlp_exporter = OTLPSpanExporter(
+                        endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
+                    )
+                    tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+                    logger.info(f"Added OTLP trace exporter: {self.exporter_kwargs.get('otlp_endpoint')}")
 
             trace.set_tracer_provider(tracer_provider)
             return tracer_provider
@@ -309,32 +321,45 @@ class OpenTelemetryProvider:
             return None
 
     def _setup_metrics(self) -> Any:
-        """Setup OpenTelemetry metrics."""
+        """Setup OpenTelemetry metrics with support for multiple exporters.
+
+        Supports comma-separated exporters: "console,prometheus,otlp"
+        """
         try:
             from opentelemetry import metrics
             from opentelemetry.sdk.metrics import MeterProvider
             from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-            if self.metrics_exporter == "prometheus":
-                from opentelemetry.exporter.prometheus import PrometheusMetricReader
-                reader = PrometheusMetricReader(
-                    prefix=self.exporter_kwargs.get("prometheus_prefix", "bento_"),
-                )
-                meter_provider = MeterProvider(metric_readers=[reader])
+            readers = []
 
-            elif self.metrics_exporter == "otlp":
-                from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-                otlp_exporter = OTLPMetricExporter(
-                    endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
-                )
-                reader = PeriodicExportingMetricReader(otlp_exporter)
-                meter_provider = MeterProvider(metric_readers=[reader])
+            # Parse exporters (support comma-separated list)
+            exporters = [e.strip() for e in self.metrics_exporter.split(",")]
 
-            else:  # console
-                from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
-                reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
-                meter_provider = MeterProvider(metric_readers=[reader])
+            for exporter_type in exporters:
+                if exporter_type == "console":
+                    from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
+                    reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+                    readers.append(reader)
+                    logger.info("Added console metrics exporter")
 
+                elif exporter_type == "prometheus":
+                    from opentelemetry.exporter.prometheus import PrometheusMetricReader
+                    reader = PrometheusMetricReader(
+                        prefix=self.exporter_kwargs.get("prometheus_prefix", "bento_"),
+                    )
+                    readers.append(reader)
+                    logger.info(f"Added Prometheus metrics exporter (prefix: {self.exporter_kwargs.get('prometheus_prefix', 'bento_')})")
+
+                elif exporter_type == "otlp":
+                    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+                    otlp_exporter = OTLPMetricExporter(
+                        endpoint=self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317"),
+                    )
+                    reader = PeriodicExportingMetricReader(otlp_exporter)
+                    readers.append(reader)
+                    logger.info(f"Added OTLP metrics exporter: {self.exporter_kwargs.get('otlp_endpoint')}")
+
+            meter_provider = MeterProvider(metric_readers=readers)
             metrics.set_meter_provider(meter_provider)
             return meter_provider
 
