@@ -156,12 +156,14 @@ class FakeUnitOfWork:
 
     def register_repository(
         self,
-        aggregate_type: type,
+        aggregate_type: type[AR],
         repo_factory: Callable[..., Any] | None = None,
     ) -> None:
         """Register a repository for an aggregate type."""
         if repo_factory is None:
-            repo_factory = lambda: InMemoryRepository()
+            def default_factory() -> InMemoryRepository:
+                return InMemoryRepository()
+            repo_factory = default_factory
 
         if callable(repo_factory) and not isinstance(repo_factory, type):
             self._repositories[aggregate_type] = repo_factory()
