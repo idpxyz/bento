@@ -65,8 +65,9 @@ class Settings(BaseSettings):
     otel_jaeger_port: int = 6831
     otel_otlp_endpoint: str = "http://localhost:4317"  # OTLP 收集器端点
     otel_metrics_exporter: str = "console,prometheus,otlp"  # 同时输出到 console、prometheus、otlp
-    otel_prometheus_port: int = 9090
-    otel_prometheus_prefix: str = "myshop_"
+    otel_prometheus_host: str = "0.0.0.0"  # Prometheus 绑定地址
+    otel_prometheus_port: int = 9090  # Prometheus 端口
+    otel_prometheus_prefix: str = "myshop_"  # Prometheus 指标前缀
 
     model_config = SettingsConfigDict(
         env_file=".env",

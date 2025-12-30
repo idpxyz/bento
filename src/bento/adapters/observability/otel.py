@@ -344,11 +344,15 @@ class OpenTelemetryProvider:
 
                 elif exporter_type == "prometheus":
                     from opentelemetry.exporter.prometheus import PrometheusMetricReader
+                    prometheus_host = self.exporter_kwargs.get("prometheus_host", "0.0.0.0")
+                    prometheus_port = self.exporter_kwargs.get("prometheus_port", 9090)
+                    prometheus_prefix = self.exporter_kwargs.get("prometheus_prefix", "bento_")
+
                     reader = PrometheusMetricReader(
-                        prefix=self.exporter_kwargs.get("prometheus_prefix", "bento_"),
+                        prefix=prometheus_prefix,
                     )
                     readers.append(reader)
-                    logger.info(f"Added Prometheus metrics exporter (prefix: {self.exporter_kwargs.get('prometheus_prefix', 'bento_')})")
+                    logger.info(f"Added Prometheus metrics exporter (host: {prometheus_host}, port: {prometheus_port}, prefix: {prometheus_prefix})")
 
                 elif exporter_type == "otlp":
                     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
