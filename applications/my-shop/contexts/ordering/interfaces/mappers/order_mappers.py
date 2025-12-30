@@ -1,91 +1,49 @@
 """Order mappers for Domain → DTO → Response conversion.
 
-This module provides conversion functions for the complete transformation chain:
-1. Domain objects (Order, OrderItem) → Application DTOs (using AutoMapper)
-2. Application DTOs → Interface Response models (using PydanticResponseMapper)
+Ultra-simplified implementation using Bento's AutoMapper and PydanticResponseMapper.
+Only 20 lines of code for complete Domain → DTO → Response chain! 🎉
 
-Performance: Uses Bento's AutoMapper for Domain→DTO, and PydanticResponseMapper for DTO→Response.
+Architecture:
+    Domain Order → (AutoMapper) → OrderDTO → (PydanticResponseMapper) → OrderResponse
 """
+
+from functools import lru_cache
 
 from bento.application.dto import AutoMapper, PydanticResponseMapper
 
 from contexts.ordering.application.dto.order_dto import OrderDTO, OrderItemDTO
 from contexts.ordering.domain.models.order import Order, OrderItem
-from contexts.ordering.interfaces.dto.order_responses import OrderItemResponse, OrderResponse
+from contexts.ordering.interfaces.dto.order_responses import OrderResponse
 
 
-# ==================== Domain → DTO (using AutoMapper) ====================
+# ==================== Lazy Singleton Mappers ====================
 
 
-class OrderItemDTOMapper(AutoMapper[OrderItem, OrderItemDTO]):
-    """OrderItem Domain → DTO Mapper - Zero Configuration! 🤖"""
-
-    def __init__(self):
-        super().__init__(OrderItem, OrderItemDTO)
-
-
-class OrderDTOMapper(AutoMapper[Order, OrderDTO]):
-    """Order Domain → DTO Mapper - Smart Automation! 🤖"""
-
-    def __init__(self):
-        super().__init__(Order, OrderDTO)
-        self.item_mapper = OrderItemDTOMapper()
-
-        self.field_mappings = {
-            "items": lambda order: self.item_mapper.to_dto_list(order.items),
-        }
+@lru_cache(maxsize=1)
+def _get_dto_mapper() -> AutoMapper[Order, OrderDTO]:
+    """Get or create OrderDTOMapper singleton."""
+    item_mapper = AutoMapper(OrderItem, OrderItemDTO)
+    mapper = AutoMapper(Order, OrderDTO)
+    mapper.field_mappings = {
+        "items": lambda order: item_mapper.to_dto_list(order.items),
+    }
+    return mapper
 
 
-# ==================== DTO → Response (using PydanticResponseMapper) ====================
+@lru_cache(maxsize=1)
+def _get_response_mapper() -> PydanticResponseMapper[OrderDTO, OrderResponse]:
+    """Get or create OrderResponseMapper singleton."""
+    return PydanticResponseMapper(OrderDTO, OrderResponse)
 
 
-class OrderItemResponseMapper(PydanticResponseMapper[OrderItemDTO, OrderItemResponse]):
-    """OrderItem DTO → Response Mapper - Zero Configuration! 🤖
-
-    Uses Bento's PydanticResponseMapper for automatic conversion.
-    """
-
-    def __init__(self):
-        super().__init__(OrderItemDTO, OrderItemResponse)
-
-
-class OrderResponseMapper(PydanticResponseMapper[OrderDTO, OrderResponse]):
-    """Order DTO → Response Mapper - Smart Automation! 🤖
-
-    Uses Bento's PydanticResponseMapper for automatic conversion.
-    """
-
-    def __init__(self):
-        super().__init__(OrderDTO, OrderResponse)
-
-
-# ==================== Singleton Instances ====================
-
-
-_order_item_dto_mapper = OrderItemDTOMapper()
-_order_dto_mapper = OrderDTOMapper()
-_order_item_response_mapper = OrderItemResponseMapper()
-_order_response_mapper = OrderResponseMapper()
-
-
-# ==================== Convenience Functions ====================
-
-
-def order_domain_to_dto(order: Order) -> OrderDTO:
-    """Convert Order domain object to OrderDTO using AutoMapper."""
-    return _order_dto_mapper.to_dto(order)
-
-
-def order_dto_to_response(dto: OrderDTO) -> OrderResponse:
-    """Convert OrderDTO to OrderResponse using PydanticResponseMapper."""
-    return _order_response_mapper.to_response(dto)
+# ==================== Public API ====================
 
 
 def order_to_response(order: Order | OrderDTO) -> OrderResponse:
     """Convert Order (domain or DTO) to OrderResponse.
 
-    This is a convenience function that handles both domain objects
-    and DTOs, automatically converting as needed.
+    Handles both domain objects and DTOs automatically.
+    Uses lazy-initialized singleton mappers for performance.
 
     Args:
         order: Either a domain Order or OrderDTO
@@ -95,8 +53,8 @@ def order_to_response(order: Order | OrderDTO) -> OrderResponse:
     """
     if isinstance(order, Order):
         # Domain → DTO → Response
-        dto = order_domain_to_dto(order)
-        return order_dto_to_response(dto)
+        dto = _get_dto_mapper().to_dto(order)
+        return _get_response_mapper().to_response(dto)
     else:
         # DTO → Response
-        return order_dto_to_response(order)
+        return _get_response_mapper().to_response(order)

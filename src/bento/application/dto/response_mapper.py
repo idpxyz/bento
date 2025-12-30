@@ -6,6 +6,17 @@ Uses Pydantic's model_validate for efficient, type-safe conversion.
 This is the standard pattern for all Bento applications:
 1. Domain → DTO (using AutoMapper in application layer)
 2. DTO → Response (using ResponseMapper in interface layer)
+
+Performance Notes:
+- Uses Pydantic's model_validate for type-safe conversion
+- Supports batch conversion with optimized list comprehension
+- Lazy initialization with @lru_cache for singleton pattern
+
+Design Philosophy:
+- Simple and focused: Only handles DTO → Response conversion
+- Type-safe: Full generic type support
+- Efficient: Uses Pydantic's optimized validation
+- Extensible: Easy to subclass for custom behavior
 """
 
 from typing import Generic, Protocol, TypeVar
