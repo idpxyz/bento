@@ -18,12 +18,13 @@ Example:
 """
 
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar, overload
 
 from bento.application.ports.uow import UnitOfWork
 
 if TYPE_CHECKING:
     from fastapi import Request
+    from bento.application.ports.observability import ObservabilityProvider
 
 
 THandler = TypeVar("THandler")
@@ -33,8 +34,13 @@ class HandlerProtocol(Protocol):
     """Protocol for Handler classes.
 
     Supports both standard handlers (UoW only) and observable handlers (UoW + ObservabilityProvider).
-    The actual __init__ signature is flexible and determined at runtime via reflection.
     """
+
+    @overload
+    def __init__(self, uow: UnitOfWork) -> None: ...
+
+    @overload
+    def __init__(self, uow: UnitOfWork, observability: "ObservabilityProvider") -> None: ...
 
     async def execute(self, command_or_query: Any) -> Any: ...
 
@@ -123,16 +129,16 @@ def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callabl
                 if runtime:
                     try:
                         observability = runtime.container.get('observability')
-                        return handler_cls(uow, observability)  # type: ignore
+                        return handler_cls(uow, observability)
                     except KeyError:
                         pass
                 # Fallback to NoOp if not available
                 from bento.adapters.observability.noop import NoOpObservabilityProvider
                 noop_observability = NoOpObservabilityProvider()
-                return handler_cls(uow, noop_observability)  # type: ignore
+                return handler_cls(uow, noop_observability)
             else:
                 # Standard handler with only uow
-                return handler_cls(uow)  # type: ignore
+                return handler_cls(uow)
         return Depends(factory)
 
     return handler_dependency
@@ -264,9 +270,9 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
                     # Fallback to NoOp if not available
                     from bento.adapters.observability.noop import NoOpObservabilityProvider
                     observability = NoOpObservabilityProvider()
-                yield handler_cls(uow, observability)  # type: ignore
+                yield handler_cls(uow, observability)
             else:
                 # Standard handler with only uow
-                yield handler_cls(uow)  # type: ignore
+                yield handler_cls(uow)
 
     return Depends(factory)
