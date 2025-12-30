@@ -3,6 +3,12 @@
 This module provides dependency injection helpers for integrating Bento's
 CQRS handlers with FastAPI routes.
 
+Performance Optimizations:
+    - Handler signature inspection is cached to avoid repeated reflection
+    - Module scanning is performed only once (on first request)
+    - Handler creation time is logged at DEBUG level for monitoring
+    - Observable Handler detection is automatic with zero configuration
+
 Example:
     ```python
     from bento.interfaces.fastapi import handler_dependency
@@ -10,15 +16,24 @@ Example:
     @router.post("/orders")
     async def create_order(
         request: CreateOrderRequest,
-        handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
+        handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),
     ):
         command = CreateOrderCommand(...)
         return await handler.execute(command)
+    ```
+
+Performance Monitoring:
+    Enable DEBUG logging to see handler creation times:
+    ```python
+    import logging
+    logging.getLogger('bento.interfaces.fastapi.dependencies').setLevel(logging.DEBUG)
     ```
 """
 
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar, overload
+import time
+import logging
 
 from bento.application.ports.uow import UnitOfWork
 
@@ -27,7 +42,94 @@ if TYPE_CHECKING:
     from bento.application.ports.observability import ObservabilityProvider
 
 
+logger = logging.getLogger(__name__)
+
 THandler = TypeVar("THandler")
+
+# Cache for handler signature inspection (避免每次请求都执行反射)
+_handler_signature_cache: dict[type, set[str]] = {}
+
+# Flag to track if modules have been scanned (避免每次请求都扫描模块)
+_modules_scanned: bool = False
+
+
+def _get_handler_params(handler_cls: type) -> set[str]:
+    """Get handler constructor parameters with caching.
+
+    Uses reflection to inspect handler __init__ signature, but caches
+    the result to avoid repeated reflection overhead.
+
+    Args:
+        handler_cls: Handler class to inspect
+
+    Returns:
+        Set of parameter names in the constructor
+    """
+    if handler_cls not in _handler_signature_cache:
+        import inspect
+        sig = inspect.signature(handler_cls.__init__)
+        _handler_signature_cache[handler_cls] = set(sig.parameters.keys())
+    return _handler_signature_cache[handler_cls]
+
+
+def _create_handler_with_dependencies(
+    handler_cls: type[THandler],
+    uow: UnitOfWork,
+    request: "Request",
+) -> THandler:
+    """Create handler instance with automatic dependency injection.
+
+    Automatically detects if handler needs observability parameter
+    and injects it from runtime.container, falling back to NoOp if unavailable.
+
+    Performance: Uses cached reflection results to minimize overhead.
+
+    Args:
+        handler_cls: Handler class to instantiate
+        uow: UnitOfWork instance
+        request: FastAPI Request (used to access runtime)
+
+    Returns:
+        Instantiated handler with all dependencies injected
+    """
+    start_time = time.perf_counter()
+
+    params = _get_handler_params(handler_cls)
+
+    if 'observability' in params:
+        # Get observability from runtime
+        runtime = getattr(request.app.state, 'bento_runtime', None)
+        if runtime:
+            try:
+                observability = runtime.container.get('observability')
+                handler = handler_cls(uow, observability)  # type: ignore[call-arg]
+
+                elapsed = (time.perf_counter() - start_time) * 1000
+                logger.debug(
+                    f"Created Observable Handler {handler_cls.__name__} in {elapsed:.2f}ms"
+                )
+                return handler
+            except (KeyError, AttributeError):
+                pass
+
+        # Fallback to NoOp if not available
+        from bento.adapters.observability.noop import NoOpObservabilityProvider
+        handler = handler_cls(uow, NoOpObservabilityProvider())  # type: ignore[call-arg]
+
+        elapsed = (time.perf_counter() - start_time) * 1000
+        logger.debug(
+            f"Created Observable Handler {handler_cls.__name__} with NoOp in {elapsed:.2f}ms"
+        )
+        return handler
+    else:
+        # Standard handler with only uow
+        handler = handler_cls(uow)  # type: ignore[call-arg]
+
+        elapsed = (time.perf_counter() - start_time) * 1000
+        logger.debug(
+            f"Created Standard Handler {handler_cls.__name__} in {elapsed:.2f}ms"
+        )
+        return handler
 
 
 class HandlerProtocol(Protocol):
@@ -118,27 +220,8 @@ def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callabl
             uow: Annotated[UnitOfWork, Depends(get_uow_dependency)],
             request: Request,
         ) -> THandler:
-            # Check if handler needs observability (Observable Handler pattern)
-            import inspect
-            sig = inspect.signature(handler_cls.__init__)
-            params = list(sig.parameters.keys())
+            return _create_handler_with_dependencies(handler_cls, uow, request)
 
-            if 'observability' in params:
-                # Get observability from runtime
-                runtime = getattr(request.app.state, 'bento_runtime', None)
-                if runtime:
-                    try:
-                        observability = runtime.container.get('observability')
-                        return handler_cls(uow, observability)
-                    except KeyError:
-                        pass
-                # Fallback to NoOp if not available
-                from bento.adapters.observability.noop import NoOpObservabilityProvider
-                noop_observability = NoOpObservabilityProvider()
-                return handler_cls(uow, noop_observability)
-            else:
-                # Standard handler with only uow
-                return handler_cls(uow)
         return Depends(factory)
 
     return handler_dependency
@@ -224,13 +307,22 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
         runtime = request.app.state.runtime
 
         # Ensure modules are scanned (triggers @repository_for decorators)
-        import importlib
-        for module in runtime.registry.resolve_order():
-            for pkg in module.scan_packages:
-                try:
-                    importlib.import_module(pkg)
-                except ImportError:
-                    pass
+        # Only scan once to avoid repeated overhead
+        global _modules_scanned
+        if not _modules_scanned:
+            import importlib
+            scan_start = time.perf_counter()
+
+            for module in runtime.registry.resolve_order():
+                for pkg in module.scan_packages:
+                    try:
+                        importlib.import_module(pkg)
+                    except ImportError:
+                        pass
+
+            scan_elapsed = (time.perf_counter() - scan_start) * 1000
+            logger.info(f"Module scanning completed in {scan_elapsed:.2f}ms")
+            _modules_scanned = True
 
         from bento.persistence.outbox.record import SqlAlchemyOutbox
         from bento.persistence.uow import SQLAlchemyUnitOfWork
@@ -257,22 +349,7 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
             for port_type, adapter_cls in get_port_registry().items():
                 uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
 
-            # Check if handler needs observability (Observable Handler pattern)
-            import inspect
-            sig = inspect.signature(handler_cls.__init__)
-            params = list(sig.parameters.keys())
-
-            if 'observability' in params:
-                # Get observability from runtime
-                try:
-                    observability = runtime.container.get('observability')
-                except (KeyError, AttributeError):
-                    # Fallback to NoOp if not available
-                    from bento.adapters.observability.noop import NoOpObservabilityProvider
-                    observability = NoOpObservabilityProvider()
-                yield handler_cls(uow, observability)
-            else:
-                # Standard handler with only uow
-                yield handler_cls(uow)
+            # Create handler with automatic dependency injection
+            yield _create_handler_with_dependencies(handler_cls, uow, request)
 
     return Depends(factory)
