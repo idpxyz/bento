@@ -85,24 +85,28 @@ class SDKGenerator:
                 lines.append(f"    {prop_name}: Optional[{type_hint}] = None")
 
         # Add methods
-        lines.extend([
-            "",
-            "    def to_dict(self) -> Dict[str, Any]:",
-            '        """Convert to dictionary."""',
-            "        return {",
-        ])
+        lines.extend(
+            [
+                "",
+                "    def to_dict(self) -> Dict[str, Any]:",
+                '        """Convert to dictionary."""',
+                "        return {",
+            ]
+        )
 
         for prop_name in properties:
             lines.append(f"            '{prop_name}': self.{prop_name},")
 
-        lines.extend([
-            "        }",
-            "",
-            "    @classmethod",
-            "    def from_dict(cls, data: Dict[str, Any]) -> 'User':",
-            '        """Create from dictionary."""',
-            "        return cls(**data)",
-        ])
+        lines.extend(
+            [
+                "        }",
+                "",
+                "    @classmethod",
+                "    def from_dict(cls, data: Dict[str, Any]) -> 'User':",
+                '        """Create from dictionary."""',
+                "        return cls(**data)",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -133,7 +137,8 @@ class SDKGenerator:
             class_code = self.generate_dataclass(class_name, schema)
             # Remove imports from individual classes
             class_lines = [
-                line for line in class_code.split("\n")
+                line
+                for line in class_code.split("\n")
                 if not line.startswith("from ") and not line.startswith("import ")
             ]
             lines.extend(class_lines)
@@ -191,14 +196,16 @@ class SDKGenerator:
             request_type = "Dict[str, Any]" if request_schema else "None"
             response_type = "Dict[str, Any]" if response_schema else "None"
 
-            lines.extend([
-                f"    def {method_name}(self, data: {request_type} = None) -> {response_type}:",
-                f'        """Call {endpoint_name} endpoint."""',
-                f'        response = self.client.request("{method}", "{path}", json=data)',
-                "        response.raise_for_status()",
-                "        return response.json()",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"    def {method_name}(self, data: {request_type} = None) -> {response_type}:",
+                    f'        """Call {endpoint_name} endpoint."""',
+                    f'        response = self.client.request("{method}", "{path}", json=data)',
+                    "        response.raise_for_status()",
+                    "        return response.json()",
+                    "",
+                ]
+            )
 
         return "\n".join(lines)
 

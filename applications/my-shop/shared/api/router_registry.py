@@ -55,7 +55,9 @@ def create_api_router() -> APIRouter:
     """
     api_router = APIRouter()
 
-    logger.info(f"Registering {len(REGISTERED_CONTEXTS)} bounded contexts: {', '.join(REGISTERED_CONTEXTS)}")
+    logger.info(
+        f"Registering {len(REGISTERED_CONTEXTS)} bounded contexts: {', '.join(REGISTERED_CONTEXTS)}"
+    )
 
     for context_name in REGISTERED_CONTEXTS:
         # Dynamically import the context's interfaces module

@@ -47,9 +47,7 @@ class ServiceDiscovery(ABC):
     """
 
     @abstractmethod
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover a service instance.
 
         Args:
@@ -95,9 +93,7 @@ class ServiceDiscovery(ABC):
         pass
 
     @abstractmethod
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Deregister a service instance.
 
         Args:
@@ -108,9 +104,7 @@ class ServiceDiscovery(ABC):
         pass
 
     @abstractmethod
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Check health of a service instance.
 
         Args:

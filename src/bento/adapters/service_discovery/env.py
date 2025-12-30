@@ -28,9 +28,7 @@ class EnvServiceDiscovery(ServiceDiscovery):
         ```
     """
 
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover service from environment variable."""
         normalized_name = re.sub(r"[^A-Z0-9]", "_", service_name.upper())
         env_var = f"SERVICE_{normalized_name}_URL"
@@ -38,8 +36,7 @@ class EnvServiceDiscovery(ServiceDiscovery):
 
         if not url:
             raise ServiceNotFoundError(
-                f"Service {service_name} not found. "
-                f"Set environment variable: {env_var}"
+                f"Service {service_name} not found. Set environment variable: {env_var}"
             )
 
         # Parse URL
@@ -66,14 +63,10 @@ class EnvServiceDiscovery(ServiceDiscovery):
         """Not supported in env mode."""
         raise NotImplementedError("Registration not supported in env mode")
 
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Not supported in env mode."""
         raise NotImplementedError("Deregistration not supported in env mode")
 
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Not supported in env mode."""
         return True

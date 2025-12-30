@@ -42,6 +42,7 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
         # If OpenAPI generation fails (e.g., due to Pydantic type issues),
         # return a minimal schema to allow the app to start
         import logging
+
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed to generate OpenAPI schema: {e}. Using minimal schema.")
         return {
@@ -65,8 +66,8 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
                 "example": "order-20251229-001",
             },
             "description": "Idempotency key for preventing duplicate operations. "
-                          "Use the same key to retry a request safely. "
-                          "The response will be cached for 24 hours.",
+            "Use the same key to retry a request safely. "
+            "The response will be cached for 24 hours.",
         },
         "X-Tenant-ID": {
             "name": "X-Tenant-ID",
@@ -77,7 +78,7 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
                 "example": "tenant-123",
             },
             "description": "Tenant ID for multi-tenant operations. "
-                          "Isolates data and operations by tenant.",
+            "Isolates data and operations by tenant.",
         },
         "X-Request-ID": {
             "name": "X-Request-ID",
@@ -87,8 +88,7 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
                 "type": "string",
                 "example": "req-abc123",
             },
-            "description": "Request ID for tracing and logging. "
-                          "Auto-generated if not provided.",
+            "description": "Request ID for tracing and logging. Auto-generated if not provided.",
         },
     }
 
@@ -110,19 +110,15 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
 
             # Add X-Idempotency-Key to write operations only
             if method_lower in write_methods:
-                operation["parameters"].append({
-                    "$ref": "#/components/parameters/X-Idempotency-Key"
-                })
+                operation["parameters"].append(
+                    {"$ref": "#/components/parameters/X-Idempotency-Key"}
+                )
 
             # Add X-Tenant-ID to all operations (for multi-tenant data isolation)
-            operation["parameters"].append({
-                "$ref": "#/components/parameters/X-Tenant-ID"
-            })
+            operation["parameters"].append({"$ref": "#/components/parameters/X-Tenant-ID"})
 
             # Add X-Request-ID to all operations (for request tracing)
-            operation["parameters"].append({
-                "$ref": "#/components/parameters/X-Request-ID"
-            })
+            operation["parameters"].append({"$ref": "#/components/parameters/X-Request-ID"})
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

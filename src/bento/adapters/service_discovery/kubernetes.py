@@ -43,9 +43,7 @@ class KubernetesServiceDiscovery(ServiceDiscovery):
         self.suffix = suffix
         self.default_port = default_port
 
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover service using Kubernetes DNS."""
         dns_name = f"{service_name}.{self.namespace}.{self.suffix}"
 
@@ -68,20 +66,12 @@ class KubernetesServiceDiscovery(ServiceDiscovery):
         metadata: dict | None = None,
     ) -> None:
         """Not needed in Kubernetes (automatic via Service)."""
-        logger.debug(
-            f"Service registration not needed in Kubernetes: {service_name}"
-        )
+        logger.debug(f"Service registration not needed in Kubernetes: {service_name}")
 
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Not needed in Kubernetes."""
-        logger.debug(
-            f"Service deregistration not needed in Kubernetes: {service_name}"
-        )
+        logger.debug(f"Service deregistration not needed in Kubernetes: {service_name}")
 
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Kubernetes handles health checks via liveness/readiness probes."""
         return True

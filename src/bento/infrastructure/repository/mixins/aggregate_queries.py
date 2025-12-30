@@ -20,7 +20,6 @@ class AggregateQueryMixin:
     - self._repository: BaseRepository instance
     """
 
-
     # Type hints for attributes provided by RepositoryAdapter
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance

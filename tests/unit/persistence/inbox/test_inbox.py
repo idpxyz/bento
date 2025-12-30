@@ -1,6 +1,5 @@
 """Tests for Inbox Pattern implementation."""
 
-
 from bento.persistence.inbox import InboxRecord, SqlAlchemyInbox
 
 

@@ -14,7 +14,7 @@ def test_builder_basic_chaining_and_build_page_conversion():
         .greater_than("score", 10)
         .less_than("score", 100)
         .between("created", 1, 2)
-        .in_list("tag", ["a", "b"]) 
+        .in_list("tag", ["a", "b"])
         .is_null("deleted_at")
         .is_not_null("updated_at")
         .contains("name", "foo")

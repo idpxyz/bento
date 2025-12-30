@@ -177,18 +177,20 @@ class StateTransitionException(DomainException):
     def __post_init__(self):
         # Set reason_code before calling parent
         if not self.reason_code:
-            object.__setattr__(self, 'reason_code', "STATE_TRANSITION_INVALID")
+            object.__setattr__(self, "reason_code", "STATE_TRANSITION_INVALID")
         # Build message
         msg = (
             f"{self.aggregate}: command '{self.command}' "
             f"not allowed in state '{self.current_state}'"
         )
         if not self.message:
-            object.__setattr__(self, 'message', msg)
+            object.__setattr__(self, "message", msg)
         # Add state details
-        self.details.update({
-            "aggregate": self.aggregate,
-            "current_state": self.current_state,
-            "command": self.command,
-        })
+        self.details.update(
+            {
+                "aggregate": self.aggregate,
+                "current_state": self.current_state,
+                "command": self.command,
+            }
+        )
         super().__post_init__()

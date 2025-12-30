@@ -45,6 +45,7 @@ def product_to_response(product: Product | ProductDTO) -> ProductResponse:
     else:
         return _get_response_mapper().to_response(product)
 
+
 def list_products_to_response(products: list[ProductDTO]) -> list[ProductResponse]:
     """Convert list of ProductDTO to list of ProductResponse."""
     return [_get_response_mapper().to_response(product) for product in products]

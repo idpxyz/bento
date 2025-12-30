@@ -74,7 +74,11 @@ class CancelOrderHandler(ObservableCommandHandler[CancelOrderCommand, Order]):
                     order.cancel(reason=command.reason)
                 except ValueError as e:
                     self._record_failure("cancel_order", "invalid_state", error=str(e))
-                    self.logger.error("Invalid order state for cancellation", order_id=command.order_id, error=str(e))
+                    self.logger.error(
+                        "Invalid order state for cancellation",
+                        order_id=command.order_id,
+                        error=str(e),
+                    )
                     raise ApplicationException(
                         reason_code="INVALID_PARAMS",
                         details={"reason": str(e)},
@@ -100,6 +104,10 @@ class CancelOrderHandler(ObservableCommandHandler[CancelOrderCommand, Order]):
             except Exception as e:
                 span.record_exception(e)
                 span.set_status("error", str(e))
-                self._record_failure("cancel_order", "unexpected_error", error_type=type(e).__name__)
-                self.logger.error("Unexpected error cancelling order", order_id=command.order_id, error=str(e))
+                self._record_failure(
+                    "cancel_order", "unexpected_error", error_type=type(e).__name__
+                )
+                self.logger.error(
+                    "Unexpected error cancelling order", order_id=command.order_id, error=str(e)
+                )
                 raise

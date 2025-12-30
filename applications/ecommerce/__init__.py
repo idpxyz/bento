@@ -9,4 +9,3 @@ This application demonstrates:
 - Event-Driven Architecture
 - Transactional Outbox pattern
 """
-

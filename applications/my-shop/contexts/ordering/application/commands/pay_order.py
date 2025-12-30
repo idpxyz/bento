@@ -70,7 +70,9 @@ class PayOrderHandler(ObservableCommandHandler):
                     order.confirm_payment()
                 except ValueError as e:
                     self._record_failure("pay_order", "invalid_state", reason=str(e))
-                    self.logger.error("Invalid order state for payment", order_id=command.order_id, reason=str(e))
+                    self.logger.error(
+                        "Invalid order state for payment", order_id=command.order_id, reason=str(e)
+                    )
                     raise ApplicationException(
                         reason_code="INVALID_PARAMS",
                         details={"reason": str(e)},
@@ -103,5 +105,7 @@ class PayOrderHandler(ObservableCommandHandler):
                 span.record_exception(e)
                 span.set_status("error", str(e))
                 self._record_failure("pay_order", "unexpected_error", error_type=type(e).__name__)
-                self.logger.error("Unexpected error processing payment", order_id=command.order_id, error=str(e))
+                self.logger.error(
+                    "Unexpected error processing payment", order_id=command.order_id, error=str(e)
+                )
                 raise

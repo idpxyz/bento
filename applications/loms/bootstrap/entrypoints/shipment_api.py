@@ -2,6 +2,7 @@
 
 Run independently: uv run uvicorn loms.bootstrap.entrypoints.shipment_api:app --port 8001
 """
+
 import os
 from pathlib import Path
 

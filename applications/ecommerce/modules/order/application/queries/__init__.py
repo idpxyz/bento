@@ -1,2 +1,1 @@
 """Order queries (read operations)."""
-

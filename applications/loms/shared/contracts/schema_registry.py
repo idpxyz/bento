@@ -3,6 +3,7 @@ Event Schema Registry - Contracts-as-Code.
 
 Validates event envelopes and payloads against JSON schemas.
 """
+
 import json
 import pathlib
 

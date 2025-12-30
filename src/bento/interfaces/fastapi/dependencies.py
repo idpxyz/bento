@@ -66,6 +66,7 @@ def _get_handler_params(handler_cls: type) -> set[str]:
     """
     if handler_cls not in _handler_signature_cache:
         import inspect
+
         sig = inspect.signature(handler_cls.__init__)
         _handler_signature_cache[handler_cls] = set(sig.parameters.keys())
     return _handler_signature_cache[handler_cls]
@@ -99,12 +100,12 @@ def _create_handler_with_dependencies[THandler](
 
     params = _get_handler_params(handler_cls)
 
-    if 'observability' in params:
+    if "observability" in params:
         # Get observability from runtime
-        runtime = getattr(request.app.state, 'bento_runtime', None)
+        runtime = getattr(request.app.state, "bento_runtime", None)
         if runtime:
             try:
-                observability = runtime.container.get('observability')
+                observability = runtime.container.get("observability")
                 handler = handler_cls(uow, observability)  # type: ignore[call-arg]
 
                 elapsed = (time.perf_counter() - start_time) * 1000
@@ -117,6 +118,7 @@ def _create_handler_with_dependencies[THandler](
 
         # Fallback to NoOp if not available
         from bento.adapters.observability.noop import NoOpObservabilityProvider
+
         handler = handler_cls(uow, NoOpObservabilityProvider())  # type: ignore[call-arg]
 
         elapsed = (time.perf_counter() - start_time) * 1000
@@ -129,9 +131,7 @@ def _create_handler_with_dependencies[THandler](
         handler = handler_cls(uow)  # type: ignore[call-arg]
 
         elapsed = (time.perf_counter() - start_time) * 1000
-        logger.debug(
-            f"Created Standard Handler {handler_cls.__name__} in {elapsed:.2f}ms"
-        )
+        logger.debug(f"Created Standard Handler {handler_cls.__name__} in {elapsed:.2f}ms")
         return handler
 
 
@@ -300,8 +300,7 @@ def handler_dependency[THandler: HandlerProtocol](handler_cls: type[THandler]) -
         from fastapi import Depends, Request
     except ImportError as e:
         raise ImportError(
-            "FastAPI is required for handler_dependency. "
-            "Install it with: pip install fastapi"
+            "FastAPI is required for handler_dependency. Install it with: pip install fastapi"
         ) from e
 
     async def factory(request: Request):
@@ -313,6 +312,7 @@ def handler_dependency[THandler: HandlerProtocol](handler_cls: type[THandler]) -
         global _modules_scanned
         if not _modules_scanned:
             import importlib
+
             scan_start = time.perf_counter()
 
             for module in runtime.registry.resolve_order():

@@ -16,6 +16,7 @@ from bento.security import (
 @dataclass
 class Order:
     """Test resource."""
+
     id: str
     created_by: str
 

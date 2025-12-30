@@ -29,6 +29,7 @@ from typing import Any
 
 try:
     import yaml
+
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
@@ -49,6 +50,7 @@ class ContractConfig:
         routing_pattern: Glob pattern for routing matrix YAML
         events_dir: Subdirectory for event schemas
     """
+
     contracts_root: str = "contracts"
     state_machines_dir: str = "state-machines"
     reason_codes_pattern: str = "reason-codes/reason_codes*.json"
@@ -71,6 +73,7 @@ class Contracts:
         routing: Event routing matrix
         schemas: Event schema registry (optional)
     """
+
     state_machines: StateMachineEngine
     reason_codes: ReasonCodeCatalog
     routing: RoutingMatrix
@@ -107,8 +110,7 @@ class ContractLoader:
         """
         if not HAS_YAML:
             raise ImportError(
-                "PyYAML is required for contract loading. "
-                "Install with: pip install pyyaml"
+                "PyYAML is required for contract loading. Install with: pip install pyyaml"
             )
 
         root = pathlib.Path(config.contracts_root)
@@ -205,6 +207,7 @@ class ContractLoader:
         if events_dir.exists() and envelope_path.exists():
             try:
                 from bento.contracts.schema_registry import EventSchemaRegistry
+
                 return EventSchemaRegistry.from_dir(events_dir)
             except ImportError:
                 # jsonschema not installed

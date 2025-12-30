@@ -12,5 +12,6 @@ async def db_check(session: AsyncSession) -> bool:
     except Exception:
         return False
 
+
 def contracts_check() -> bool:
     return Path(settings.contracts.root_dir).exists()

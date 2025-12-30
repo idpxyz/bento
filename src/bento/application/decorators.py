@@ -332,6 +332,7 @@ def state_transition(
             except Exception as e:
                 # Re-raise StateTransitionException, let others pass through
                 from bento.contracts import StateTransitionException
+
                 if isinstance(e, StateTransitionException):
                     raise
                 # Other exceptions (e.g., aggregate not found) - continue to handler
@@ -442,11 +443,7 @@ def idempotent(
 
         # Auto-extract all fields except key_field
         if is_dataclass(cmd):
-            return {
-                f.name: getattr(cmd, f.name)
-                for f in fields(cmd)
-                if f.name != key_field
-            }
+            return {f.name: getattr(cmd, f.name) for f in fields(cmd) if f.name != key_field}
         elif hasattr(cmd, "__dict__"):
             return {k: v for k, v in cmd.__dict__.items() if k != key_field}
         return {}

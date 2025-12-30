@@ -7,6 +7,7 @@ def _best_locale(request: Request) -> str | None:
     header = request.headers.get("accept-language")
     return header.split(",")[0].strip() if header else None
 
+
 def install_error_handlers(app, error_mapper):
     @app.exception_handler(AppError)
     async def _handle_app_error(request: Request, exc: AppError):

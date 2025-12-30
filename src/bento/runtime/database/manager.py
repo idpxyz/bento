@@ -45,8 +45,7 @@ class DatabaseManager:
                     )
 
                 logger.warning(
-                    "No database configured. "
-                    "Database-dependent features will not be available."
+                    "No database configured. Database-dependent features will not be available."
                 )
                 return
 
@@ -64,9 +63,7 @@ class DatabaseManager:
             self.runtime._session_factory = create_async_session_factory(engine)
 
             self.runtime.container.set("db.engine", engine)
-            self.runtime.container.set(
-                "db.session_factory", self.runtime._session_factory
-            )
+            self.runtime.container.set("db.session_factory", self.runtime._session_factory)
 
             db_url = self.runtime.config.database.url
             masked_url = db_url.split("@")[-1] if "@" in db_url else db_url[:50]

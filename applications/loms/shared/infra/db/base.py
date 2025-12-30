@@ -1,4 +1,5 @@
 """Re-export Bento's persistence base classes."""
+
 from bento.persistence.po import (
     AuditFieldsMixin,
     Base,

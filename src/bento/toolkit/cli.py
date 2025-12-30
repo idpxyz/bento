@@ -163,8 +163,6 @@ def generate_query(name: str, action: str, output_dir: pathlib.Path, context: st
     )
 
 
-
-
 def generate_event(name: str, output_dir: pathlib.Path, context: str = "shared"):
     """生成领域事件
 
@@ -180,7 +178,7 @@ def generate_event(name: str, output_dir: pathlib.Path, context: str = "shared")
     # 尝试提取实体名称（例如：ProductCreated -> Product）
     for suffix in ["Created", "Updated", "Deleted", "Changed"]:
         if name.endswith(suffix):
-            entity_name = name[:-len(suffix)]
+            entity_name = name[: -len(suffix)]
             break
 
     return generate_file(
@@ -1115,7 +1113,7 @@ Example:
                     # Format: "CreateProduct"
                     for action in ["Create", "Update", "Delete"]:
                         if name.startswith(action):
-                            entity_name = name[len(action):]
+                            entity_name = name[len(action) :]
                             break
                 else:
                     # Default: treat whole name as entity, action = Create
@@ -1137,7 +1135,7 @@ Example:
                     # Format: "GetProduct"
                     for action in ["Get", "List", "Search", "Find"]:
                         if name.startswith(action):
-                            entity_name = name[len(action):]
+                            entity_name = name[len(action) :]
                             break
                 else:
                     # Default: treat whole name as entity, action = Get

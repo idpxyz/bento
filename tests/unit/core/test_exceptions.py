@@ -1,6 +1,7 @@
 """
 Unit tests for Bento Exception system with Contracts-as-Code.
 """
+
 import pytest
 
 from bento.contracts import ReasonCodeCatalog
@@ -69,8 +70,7 @@ class TestBentoExceptionWithContracts:
     def test_exception_with_details(self):
         """Should include custom details."""
         exc = DomainException(
-            reason_code="STATE_CONFLICT",
-            details={"order_id": "123", "current_state": "DRAFT"}
+            reason_code="STATE_CONFLICT", details={"order_id": "123", "current_state": "DRAFT"}
         )
 
         assert exc.details["order_id"] == "123"
@@ -138,10 +138,7 @@ class TestBentoExceptionWithContracts:
 
     def test_to_dict(self):
         """Should convert to dictionary."""
-        exc = DomainException(
-            reason_code="STATE_CONFLICT",
-            details={"order_id": "123"}
-        )
+        exc = DomainException(reason_code="STATE_CONFLICT", details={"order_id": "123"})
 
         result = exc.to_dict()
 

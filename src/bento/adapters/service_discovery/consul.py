@@ -31,16 +31,12 @@ class ConsulServiceDiscovery(ServiceDiscovery):
         """
         self.consul_url = consul_url
 
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover service from Consul."""
         instances = await self.discover_all(service_name)
 
         if not instances:
-            raise ServiceNotFoundError(
-                f"Service {service_name} not found in Consul"
-            )
+            raise ServiceNotFoundError(f"Service {service_name} not found in Consul")
 
         # Apply load balancing strategy
         if strategy == "round_robin":
@@ -106,15 +102,11 @@ class ConsulServiceDiscovery(ServiceDiscovery):
                 url = f"{self.consul_url}/v1/agent/service/register"
                 async with session.put(url, json=payload) as resp:
                     if resp.status not in (200, 201):
-                        logger.error(
-                            f"Failed to register {service_name} in Consul: {resp.status}"
-                        )
+                        logger.error(f"Failed to register {service_name} in Consul: {resp.status}")
         except Exception as e:
             logger.error(f"Error registering {service_name} in Consul: {e}")
 
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Deregister service from Consul."""
         try:
             import aiohttp
@@ -131,9 +123,7 @@ class ConsulServiceDiscovery(ServiceDiscovery):
         except Exception as e:
             logger.error(f"Error deregistering {service_name} from Consul: {e}")
 
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Check service health in Consul."""
         try:
             instances = await self.discover_all(service_name)

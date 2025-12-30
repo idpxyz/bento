@@ -143,10 +143,7 @@ class BentoRuntime:
 
         start_time = time.time()
 
-        logger.info(
-            f"Building runtime: {self.config.service_name} "
-            f"(env={self.config.environment})"
-        )
+        logger.info(f"Building runtime: {self.config.service_name} (env={self.config.environment})")
 
         # Store config in container
         self.container.set("config", self.config)
@@ -326,7 +323,6 @@ class BentoRuntime:
         self.registry.register(mock)
         logger.debug(f"Mock module registered: {name}")
         return self
-
 
     # Module assertion methods
     def assert_module_loaded(self, name: str) -> bool:

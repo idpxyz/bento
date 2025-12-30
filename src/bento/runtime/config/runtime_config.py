@@ -39,9 +39,7 @@ class RuntimeConfig:
         if not self.service_name:
             raise ValueError("service_name cannot be empty")
 
-        valid_chars = set(
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
-        )
+        valid_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
         if not all(c in valid_chars for c in self.service_name):
             raise ValueError(
                 f"Invalid service name: {self.service_name}. "
@@ -53,8 +51,7 @@ class RuntimeConfig:
         valid_envs = ("local", "dev", "stage", "prod")
         if self.environment not in valid_envs:
             raise ValueError(
-                f"Invalid environment: {self.environment}. "
-                f"Must be one of {valid_envs}."
+                f"Invalid environment: {self.environment}. Must be one of {valid_envs}."
             )
 
     def _validate_contracts_path(self) -> None:

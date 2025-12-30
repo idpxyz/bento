@@ -1,1 +1,2 @@
-def transactional(fn): return fn
+def transactional(fn):
+    return fn

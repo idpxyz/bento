@@ -76,9 +76,7 @@ def test_release_contract_version():
     }
     client.post("/api/v1/contract-versions", json=data)
 
-    response = client.post(
-        "/api/v1/contract-versions/test-contract-4/1.0.0/release"
-    )
+    response = client.post("/api/v1/contract-versions/test-contract-4/1.0.0/release")
     assert response.status_code == 200
     assert response.json()["status"] == "released"
 
@@ -105,9 +103,7 @@ def test_approve():
     approval_response = client.post("/api/v1/approvals", json=approval_data)
     approval_id = approval_response.json()["id"]
 
-    response = client.post(
-        f"/api/v1/approvals/{approval_id}/approve?approver=alice@example.com"
-    )
+    response = client.post(f"/api/v1/approvals/{approval_id}/approve?approver=alice@example.com")
     assert response.status_code == 200
     assert response.json()["status"] == "approved"
 

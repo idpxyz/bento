@@ -3,6 +3,7 @@
 This is the main entry point for the HTTP API server.
 It uses BentoRuntime for consistent application bootstrap.
 """
+
 import os
 from pathlib import Path
 

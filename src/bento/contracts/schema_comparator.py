@@ -38,6 +38,7 @@ class SchemaDiff:
         modified_keys: Keys with different values
         all_changes: All changes (added + removed + modified)
     """
+
     old_schema: dict[str, Any]
     new_schema: dict[str, Any]
     added_keys: dict[str, Any] = field(default_factory=dict)

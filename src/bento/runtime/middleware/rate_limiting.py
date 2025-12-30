@@ -110,10 +110,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         """Remove entries older than the time window."""
         now = time.time()
         cutoff = now - window_seconds
-        self._storage[key] = [
-            (ts, count) for ts, count in self._storage[key]
-            if ts > cutoff
-        ]
+        self._storage[key] = [(ts, count) for ts, count in self._storage[key] if ts > cutoff]
 
     def _get_request_count(self, key: str, window_seconds: int) -> int:
         """Get total request count in the time window."""
@@ -186,9 +183,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _rate_limit_exceeded_response(
-        self, limit: int, remaining: int, reset: int
-    ) -> JSONResponse:
+    def _rate_limit_exceeded_response(self, limit: int, remaining: int, reset: int) -> JSONResponse:
         """Return 429 Too Many Requests response."""
         return JSONResponse(
             content={

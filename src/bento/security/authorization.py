@@ -207,7 +207,7 @@ async def check_resource_access(
                     "resource_id": resource_id,
                     "authorized": False,
                     "authorizer": type(authorizer).__name__,
-                }
+                },
             )
         elif AUDIT_LOG_SUCCESS:
             # Only log successful access if explicitly enabled
@@ -220,7 +220,7 @@ async def check_resource_access(
                     "resource_id": resource_id,
                     "authorized": True,
                     "authorizer": type(authorizer).__name__,
-                }
+                },
             )
         elif logger.isEnabledFor(logging.DEBUG):
             # Log at DEBUG level if logger is in debug mode

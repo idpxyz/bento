@@ -1,6 +1,7 @@
 """
 Unit tests for Bento Contracts module.
 """
+
 import json
 
 import pytest
@@ -31,7 +32,7 @@ class TestStateMachineEngine:
                 {"from": "SUBMITTED", "command": "Complete", "to": "COMPLETED"},
                 {"from": ["DRAFT", "SUBMITTED"], "command": "Cancel", "to": "CANCELLED"},
                 {"from": None, "command": "Audit", "to": None},
-            ]
+            ],
         }
 
     @pytest.fixture
@@ -119,7 +120,11 @@ class TestRoutingMatrix:
     def matrix(self):
         doc = {
             "routes": [
-                {"event_type": "OrderCreated", "topic": "order.events", "produced_by": "order-service"},
+                {
+                    "event_type": "OrderCreated",
+                    "topic": "order.events",
+                    "produced_by": "order-service",
+                },
                 {"event_type": "OrderUpdated", "topic": "order.events"},
             ]
         }
@@ -154,25 +159,29 @@ class TestContractLoader:
         # Reason codes
         rc_dir = contracts / "reason-codes"
         rc_dir.mkdir(parents=True)
-        (rc_dir / "reason_codes.full.v1_0.json").write_text(json.dumps({
-            "reason_codes": [{"reason_code": "TEST", "http_status": 400}]
-        }))
+        (rc_dir / "reason_codes.full.v1_0.json").write_text(
+            json.dumps({"reason_codes": [{"reason_code": "TEST", "http_status": 400}]})
+        )
 
         # Routing
         routing_dir = contracts / "routing"
         routing_dir.mkdir(parents=True)
-        (routing_dir / "event_routing_matrix.full.v1_0.yaml").write_text(yaml.dump({
-            "routes": [{"event_type": "TestEvent", "topic": "test.events"}]
-        }))
+        (routing_dir / "event_routing_matrix.full.v1_0.yaml").write_text(
+            yaml.dump({"routes": [{"event_type": "TestEvent", "topic": "test.events"}]})
+        )
 
         # State machines
         sm_dir = contracts / "state-machines"
         sm_dir.mkdir(parents=True)
-        (sm_dir / "order.state-machine.yaml").write_text(yaml.dump({
-            "aggregate": "Order",
-            "states": ["DRAFT", "DONE"],
-            "transitions": [{"from": "DRAFT", "command": "Complete", "to": "DONE"}]
-        }))
+        (sm_dir / "order.state-machine.yaml").write_text(
+            yaml.dump(
+                {
+                    "aggregate": "Order",
+                    "states": ["DRAFT", "DONE"],
+                    "transitions": [{"from": "DRAFT", "command": "Complete", "to": "DONE"}],
+                }
+            )
+        )
 
         return tmp_path
 

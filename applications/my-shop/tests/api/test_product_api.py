@@ -248,7 +248,9 @@ class TestOrderAPI:
             ],
         }
         create_response = test_app.post("/api/v1/orders", json=order_data)
-        assert create_response.status_code == 201, f"Failed to create order: {create_response.json()}"
+        assert create_response.status_code == 201, (
+            f"Failed to create order: {create_response.json()}"
+        )
         order_data_resp = create_response.json()
         order_id = order_data_resp.get("id")
         assert order_id is not None, f"No order ID in response: {order_data_resp}"
@@ -292,7 +294,9 @@ class TestOrderAPI:
             ],
         }
         create_response = test_app.post("/api/v1/orders", json=order_data)
-        assert create_response.status_code == 201, f"Failed to create order: {create_response.json()}"
+        assert create_response.status_code == 201, (
+            f"Failed to create order: {create_response.json()}"
+        )
         order_data_resp = create_response.json()
         order_id = order_data_resp.get("id")
         assert order_id is not None, f"No order ID in response: {order_data_resp}"
@@ -300,7 +304,9 @@ class TestOrderAPI:
         # Cancel order
         cancel_data = {"reason": "Customer requested cancellation"}
         cancel_response = test_app.post(f"/api/v1/orders/{order_id}/cancel", json=cancel_data)
-        assert cancel_response.status_code == 200, f"Expected 200, got {cancel_response.status_code}: {cancel_response.json()}"
+        assert cancel_response.status_code == 200, (
+            f"Expected 200, got {cancel_response.status_code}: {cancel_response.json()}"
+        )
         assert cancel_response.json()["status"] == "cancelled"
 
     def test_cannot_ship_unpaid_order(self, test_app):
@@ -331,7 +337,9 @@ class TestOrderAPI:
             ],
         }
         create_response = test_app.post("/api/v1/orders", json=order_data)
-        assert create_response.status_code == 201, f"Failed to create order: {create_response.json()}"
+        assert create_response.status_code == 201, (
+            f"Failed to create order: {create_response.json()}"
+        )
         order_data_resp = create_response.json()
         order_id = order_data_resp.get("id")
         assert order_id is not None, f"No order ID in response: {order_data_resp}"

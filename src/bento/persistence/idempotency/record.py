@@ -59,9 +59,7 @@ class IdempotencyRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now()
     )
-    expires_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
+    expires_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     # Processing state: COMPLETED or FAILED (no PENDING needed)
     # Simplified: we don't track "processing" state, just final results
@@ -136,10 +134,12 @@ class IdempotencyConflictException(DomainException):
     def __post_init__(self):
         # Set reason_code before calling parent
         if not self.reason_code:
-            object.__setattr__(self, 'reason_code', "IDEMPOTENCY_CONFLICT")
+            object.__setattr__(self, "reason_code", "IDEMPOTENCY_CONFLICT")
         # Build message
         if not self.message:
-            object.__setattr__(self, 'message', f"Idempotency conflict for key: {self.idempotency_key}")
+            object.__setattr__(
+                self, "message", f"Idempotency conflict for key: {self.idempotency_key}"
+            )
         # Add details
         self.details.update({"idempotency_key": self.idempotency_key})
         super().__post_init__()
@@ -219,7 +219,6 @@ class SqlAlchemyIdempotency:
 
         # Check if expired
         if record and record.expires_at:
-
             from bento.core.clock import now_utc
 
             now = now_utc()

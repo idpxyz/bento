@@ -73,9 +73,7 @@ class ContractsAdapter(ContractsPort):
         Returns:
             List of allowed command names
         """
-        return self._contracts.state_machines.get_allowed_commands(
-            aggregate, current_state
-        )
+        return self._contracts.state_machines.get_allowed_commands(aggregate, current_state)
 
     def get_reason_code(self, code: str) -> ReasonCodeInfo | None:
         """Get reason code information.

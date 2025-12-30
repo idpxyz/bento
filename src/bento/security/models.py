@@ -105,7 +105,7 @@ class CurrentUser:
             user.set_cache(cache)
             ```
         """
-        object.__setattr__(self, '_cache', cache)
+        object.__setattr__(self, "_cache", cache)
 
     @staticmethod
     def _is_valid_permission(perm: str) -> bool:
@@ -117,12 +117,7 @@ class CurrentUser:
         Returns:
             True if valid, False otherwise
         """
-        return (
-            isinstance(perm, str) and
-            len(perm) > 0 and
-            len(perm) <= 256 and
-            not perm.isspace()
-        )
+        return isinstance(perm, str) and len(perm) > 0 and len(perm) <= 256 and not perm.isspace()
 
     @staticmethod
     def _is_valid_role(role: str) -> bool:
@@ -134,12 +129,7 @@ class CurrentUser:
         Returns:
             True if valid, False otherwise
         """
-        return (
-            isinstance(role, str) and
-            len(role) > 0 and
-            len(role) <= 128 and
-            not role.isspace()
-        )
+        return isinstance(role, str) and len(role) > 0 and len(role) <= 128 and not role.isspace()
 
     def has_permission(self, permission: str) -> bool:
         """Check if user has a specific permission.

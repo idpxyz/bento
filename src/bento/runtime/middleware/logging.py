@@ -98,9 +98,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         self.logger = logging.getLogger(logger_name)
         self.log_request_body = log_request_body
         self.log_response_body = log_response_body
-        self.sensitive_headers = (
-            sensitive_headers or self.DEFAULT_SENSITIVE_HEADERS
-        )
+        self.sensitive_headers = sensitive_headers or self.DEFAULT_SENSITIVE_HEADERS
         self.skip_paths = skip_paths or self.DEFAULT_SKIP_PATHS
 
     def _filter_headers(self, headers: dict) -> dict:
@@ -149,9 +147,11 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 body = await request.body()
                 if body:
                     log_data["request_body"] = json.loads(body.decode("utf-8"))
+
                 # Restore body for downstream handlers
                 async def receive():
                     return {"type": "http.request", "body": body, "more_body": False}
+
                 request._receive = receive  # type: ignore[attr-defined]
             except Exception:
                 log_data["request_body"] = "<unable to parse>"
@@ -164,20 +164,20 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.time() - start_time) * 1000
 
             # Prepare response log data
-            log_data.update({
-                "event": "http_response",
-                "status_code": response.status_code,
-                "duration_ms": round(duration_ms, 2),
-            })
+            log_data.update(
+                {
+                    "event": "http_response",
+                    "status_code": response.status_code,
+                    "duration_ms": round(duration_ms, 2),
+                }
+            )
 
             # Optionally log response body
             if self.log_response_body and hasattr(response, "body"):
                 try:
                     body_content = response.body
                     if isinstance(body_content, (bytes, bytearray)):
-                        log_data["response_body"] = json.loads(
-                            body_content.decode("utf-8")
-                        )
+                        log_data["response_body"] = json.loads(body_content.decode("utf-8"))
                     else:
                         log_data["response_body"] = str(body_content)
                 except Exception:
@@ -196,11 +196,13 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             # Log exception
             duration_ms = (time.time() - start_time) * 1000
-            log_data.update({
-                "event": "http_error",
-                "error": str(e),
-                "error_type": type(e).__name__,
-                "duration_ms": round(duration_ms, 2),
-            })
+            log_data.update(
+                {
+                    "event": "http_error",
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "duration_ms": round(duration_ms, 2),
+                }
+            )
             self.logger.error(json.dumps(log_data), exc_info=True)
             raise

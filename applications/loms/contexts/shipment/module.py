@@ -16,9 +16,7 @@ class ShipmentModule(BentoModule):
     name = "shipment"
     requires = ("infra",)
     # Scan packages to trigger @repository_for decorators
-    scan_packages = (
-        "loms.contexts.shipment.infra.persistence.repositories",
-    )
+    scan_packages = ("loms.contexts.shipment.infra.persistence.repositories",)
 
     async def on_register(self, container) -> None:
         """Register shipment context components into the container.

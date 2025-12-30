@@ -20,7 +20,6 @@ class SortingLimitingMixin:
     - self._mapper: Mapper instance for AR <-> PO transformation
     """
 
-
     # Type hints for attributes provided by RepositoryAdapter
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance

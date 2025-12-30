@@ -13,9 +13,9 @@ def main():
     app = create_app()
     client = TestClient(app)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🔐 My-Shop Security Middleware Integration Demo")
-    print("="*70)
+    print("=" * 70)
 
     # Test 1: Health check (excluded from auth)
     print("\n1️⃣  Testing /health endpoint (excluded from auth):")
@@ -51,9 +51,9 @@ def main():
     print(f"   Title: {schema.get('info', {}).get('title')}")
     print(f"   Version: {schema.get('info', {}).get('version')}")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("✅ Security Middleware Integration Demo Completed!")
-    print("="*70)
+    print("=" * 70)
 
     print("\n📊 Summary:")
     print("   ✅ StubAuthenticator is active")

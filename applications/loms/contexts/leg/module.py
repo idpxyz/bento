@@ -19,4 +19,5 @@ class LegModule(BentoModule):
     def get_routers(self):
         """Return leg API routers."""
         from loms.contexts.leg.interfaces.http.v1.router import router
+
         return [router]

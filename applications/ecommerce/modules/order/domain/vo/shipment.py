@@ -11,9 +11,7 @@ class ShipmentFedex(Shipment):
         self.service = service
 
     def __repr__(self) -> str:
-        return (
-            f"ShipmentFedex(tracking_no={self.tracking_no!r}, service={self.service!r})"
-        )
+        return f"ShipmentFedex(tracking_no={self.tracking_no!r}, service={self.service!r})"
 
 
 class ShipmentLocal(Shipment):
@@ -23,6 +21,4 @@ class ShipmentLocal(Shipment):
         self.service = service
 
     def __repr__(self) -> str:
-        return (
-            f"ShipmentLocal(tracking_no={self.tracking_no!r}, service={self.service!r})"
-        )
+        return f"ShipmentLocal(tracking_no={self.tracking_no!r}, service={self.service!r})"

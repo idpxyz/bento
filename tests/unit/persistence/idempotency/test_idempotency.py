@@ -1,6 +1,5 @@
 """Tests for Idempotency Pattern implementation."""
 
-
 from bento.persistence.idempotency import IdempotencyRecord, SqlAlchemyIdempotency
 from bento.persistence.idempotency.record import IdempotencyConflictException
 

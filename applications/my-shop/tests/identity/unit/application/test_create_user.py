@@ -1,4 +1,5 @@
 """CreateUser 用例单元测试"""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -71,9 +72,7 @@ class TestCreateUserHandler:
         pass
 
     @pytest.mark.asyncio
-    async def test_create_user_transaction_rollback(
-        self, usecase, mock_uow
-    ):
+    async def test_create_user_transaction_rollback(self, usecase, mock_uow):
         """测试事务回滚"""
         # TODO: 测试异常时事务回滚
         # 模拟仓储抛出异常，验证工作单元回滚

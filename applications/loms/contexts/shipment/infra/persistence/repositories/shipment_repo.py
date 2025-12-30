@@ -1,4 +1,5 @@
 """Shipment Repository using Bento's RepositoryAdapter."""
+
 from loms.contexts.shipment.domain.model.shipment import Shipment
 from loms.contexts.shipment.infra.persistence.mappers.shipment_mapper import (
     ShipmentMapper,

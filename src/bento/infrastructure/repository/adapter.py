@@ -220,6 +220,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
 
                 if existing_ar is not None and not self._validate_tenant_ownership(existing_ar):
                     from bento.core.exceptions import DomainException
+
                     raise DomainException(
                         reason_code="TENANT_CONFLICT",
                         message=f"Entity with ID {aggregate_id} belongs to another tenant",
@@ -506,6 +507,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
         # Validate tenant ownership before delete (TenantFilterMixin)
         if not self._validate_tenant_ownership(aggregate):
             from bento.core.exceptions import DomainException
+
             raise DomainException(
                 reason_code="TENANT_CONFLICT",
                 message="Cannot delete entity belonging to another tenant",

@@ -78,9 +78,7 @@ def _dependency_to_mapping(dependency: ContractDependency) -> dict:
 
 
 @router.post("/contract-versions", response_model=ContractVersionResponse)
-async def create_contract_version(
-    data: ContractVersionCreate, db: Session = Depends(get_db)
-):
+async def create_contract_version(data: ContractVersionCreate, db: Session = Depends(get_db)):
     version = ContractVersion(
         id=str(uuid4()),
         contract_id=data.contract_id,
@@ -97,36 +95,41 @@ async def create_contract_version(
 
 
 @router.get("/contract-versions/{contract_id}/{version}", response_model=ContractVersionResponse)
-async def get_contract_version(
-    contract_id: str, version: str, db: Session = Depends(get_db)
-):
-    cv = db.query(ContractVersion).filter(
-        ContractVersion.contract_id == contract_id,
-        ContractVersion.version == version,
-    ).first()
+async def get_contract_version(contract_id: str, version: str, db: Session = Depends(get_db)):
+    cv = (
+        db.query(ContractVersion)
+        .filter(
+            ContractVersion.contract_id == contract_id,
+            ContractVersion.version == version,
+        )
+        .first()
+    )
     if not cv:
         raise HTTPException(status_code=404, detail="Contract version not found")
     return cv
 
 
 @router.get("/contract-versions/{contract_id}", response_model=list[ContractVersionResponse])
-async def list_contract_versions(
-    contract_id: str, db: Session = Depends(get_db)
-):
-    versions = db.query(ContractVersion).filter(
-        ContractVersion.contract_id == contract_id
-    ).order_by(ContractVersion.created_at.desc()).all()
+async def list_contract_versions(contract_id: str, db: Session = Depends(get_db)):
+    versions = (
+        db.query(ContractVersion)
+        .filter(ContractVersion.contract_id == contract_id)
+        .order_by(ContractVersion.created_at.desc())
+        .all()
+    )
     return versions
 
 
 @router.post("/contract-versions/{contract_id}/{version}/release")
-async def release_contract_version(
-    contract_id: str, version: str, db: Session = Depends(get_db)
-):
-    cv = db.query(ContractVersion).filter(
-        ContractVersion.contract_id == contract_id,
-        ContractVersion.version == version,
-    ).first()
+async def release_contract_version(contract_id: str, version: str, db: Session = Depends(get_db)):
+    cv = (
+        db.query(ContractVersion)
+        .filter(
+            ContractVersion.contract_id == contract_id,
+            ContractVersion.version == version,
+        )
+        .first()
+    )
     if not cv:
         raise HTTPException(status_code=404, detail="Contract version not found")
     if cv.status == "released":
@@ -139,13 +142,15 @@ async def release_contract_version(
 
 
 @router.post("/contract-versions/{contract_id}/{version}/deprecate")
-async def deprecate_contract_version(
-    contract_id: str, version: str, db: Session = Depends(get_db)
-):
-    cv = db.query(ContractVersion).filter(
-        ContractVersion.contract_id == contract_id,
-        ContractVersion.version == version,
-    ).first()
+async def deprecate_contract_version(contract_id: str, version: str, db: Session = Depends(get_db)):
+    cv = (
+        db.query(ContractVersion)
+        .filter(
+            ContractVersion.contract_id == contract_id,
+            ContractVersion.version == version,
+        )
+        .first()
+    )
     if not cv:
         raise HTTPException(status_code=404, detail="Contract version not found")
 
@@ -156,9 +161,7 @@ async def deprecate_contract_version(
 
 
 @router.post("/approvals", response_model=ContractApprovalResponse)
-async def create_approval(
-    data: ContractApprovalCreate, db: Session = Depends(get_db)
-):
+async def create_approval(data: ContractApprovalCreate, db: Session = Depends(get_db)):
     approval = ContractApproval(
         id=str(uuid4()),
         contract_id=data.contract_id,
@@ -174,9 +177,7 @@ async def create_approval(
 
 @router.get("/approvals/{approval_id}", response_model=ContractApprovalResponse)
 async def get_approval(approval_id: str, db: Session = Depends(get_db)):
-    approval = db.query(ContractApproval).filter(
-        ContractApproval.id == approval_id
-    ).first()
+    approval = db.query(ContractApproval).filter(ContractApproval.id == approval_id).first()
     if not approval:
         raise HTTPException(status_code=404, detail="Approval not found")
     return approval
@@ -184,9 +185,7 @@ async def get_approval(approval_id: str, db: Session = Depends(get_db)):
 
 @router.post("/approvals/{approval_id}/approve")
 async def approve(approval_id: str, approver: str, db: Session = Depends(get_db)):
-    approval = db.query(ContractApproval).filter(
-        ContractApproval.id == approval_id
-    ).first()
+    approval = db.query(ContractApproval).filter(ContractApproval.id == approval_id).first()
     if not approval:
         raise HTTPException(status_code=404, detail="Approval not found")
 
@@ -203,9 +202,7 @@ async def approve(approval_id: str, approver: str, db: Session = Depends(get_db)
 
 
 @router.post("/changes", response_model=ContractChangeResponse)
-async def create_change(
-    data: ContractChangeCreate, db: Session = Depends(get_db)
-):
+async def create_change(data: ContractChangeCreate, db: Session = Depends(get_db)):
     change = ContractChange(
         id=str(uuid4()),
         contract_id=data.contract_id,
@@ -224,16 +221,17 @@ async def create_change(
 
 @router.get("/changes/{contract_id}", response_model=list[ContractChangeResponse])
 async def list_changes(contract_id: str, db: Session = Depends(get_db)):
-    changes = db.query(ContractChange).filter(
-        ContractChange.contract_id == contract_id
-    ).order_by(ContractChange.created_at.desc()).all()
+    changes = (
+        db.query(ContractChange)
+        .filter(ContractChange.contract_id == contract_id)
+        .order_by(ContractChange.created_at.desc())
+        .all()
+    )
     return changes
 
 
 @router.post("/dependencies", response_model=ContractDependencyResponse)
-async def create_dependency(
-    data: ContractDependencyCreate, db: Session = Depends(get_db)
-):
+async def create_dependency(data: ContractDependencyCreate, db: Session = Depends(get_db)):
     dependency = ContractDependency(
         id=str(uuid4()),
         contract_id=data.contract_id,
@@ -250,28 +248,40 @@ async def create_dependency(
 
 @router.get("/dependencies/{contract_id}", response_model=list[ContractDependencyResponse])
 async def list_dependencies(contract_id: str, db: Session = Depends(get_db)):
-    dependencies = db.query(ContractDependency).filter(
-        ContractDependency.contract_id == contract_id,
-        ContractDependency.status == "active",
-    ).all()
+    dependencies = (
+        db.query(ContractDependency)
+        .filter(
+            ContractDependency.contract_id == contract_id,
+            ContractDependency.status == "active",
+        )
+        .all()
+    )
     return dependencies
 
 
 @router.get("/dependencies/service/{service_id}", response_model=list[ContractDependencyResponse])
 async def list_service_dependencies(service_id: str, db: Session = Depends(get_db)):
-    dependencies = db.query(ContractDependency).filter(
-        ContractDependency.service_id == service_id,
-        ContractDependency.status == "active",
-    ).all()
+    dependencies = (
+        db.query(ContractDependency)
+        .filter(
+            ContractDependency.service_id == service_id,
+            ContractDependency.status == "active",
+        )
+        .all()
+    )
     return dependencies
 
 
 @router.get("/contract-versions/{contract_id}/{version}/insights")
 async def get_contract_insights(contract_id: str, version: str, db: Session = Depends(get_db)):
-    version_obj = db.query(ContractVersion).filter(
-        ContractVersion.contract_id == contract_id,
-        ContractVersion.version == version,
-    ).first()
+    version_obj = (
+        db.query(ContractVersion)
+        .filter(
+            ContractVersion.contract_id == contract_id,
+            ContractVersion.version == version,
+        )
+        .first()
+    )
     if not version_obj:
         raise HTTPException(status_code=404, detail="Contract version not found")
 

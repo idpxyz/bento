@@ -53,6 +53,4 @@ class StateTransitionError(Exception):
         self.aggregate = aggregate
         self.current_state = current_state
         self.command = command
-        super().__init__(
-            f"{aggregate}: command '{command}' not allowed in state '{current_state}'"
-        )
+        super().__init__(f"{aggregate}: command '{command}' not allowed in state '{current_state}'")

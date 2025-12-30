@@ -47,6 +47,7 @@ class ReasonCode:
         retryable: Whether the operation can be retried
         message: Human-readable message
     """
+
     code: str
     http_status: int
     category: str = "UNKNOWN"
@@ -151,6 +152,7 @@ class Route:
         produced_by: Service that produces this event
         consumers: List of consumer configurations
     """
+
     event_type: str
     topic: str
     produced_by: str = ""

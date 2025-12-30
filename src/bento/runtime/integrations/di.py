@@ -54,7 +54,7 @@ class DIIntegration:
 
                 # Get repository factories if available
                 repo_factories = {}
-                if hasattr(self.runtime, 'repository_registry'):
+                if hasattr(self.runtime, "repository_registry"):
                     repo_factories = self.runtime.repository_registry._factories
 
                 # Create UoW with proper implementation
@@ -66,7 +66,7 @@ class DIIntegration:
                 )
 
                 # Register ports if available
-                if hasattr(self.runtime, 'port_registry'):
+                if hasattr(self.runtime, "port_registry"):
                     for port_type, factory in self.runtime.port_registry._factories.items():
                         uow.register_port(port_type, factory)
 
@@ -97,6 +97,7 @@ class DIIntegration:
                 return product
             ```
         """
+
         async def get_repository_impl():
             from bento.persistence.outbox import SqlAlchemyOutbox
             from bento.persistence.uow import SQLAlchemyUnitOfWork
@@ -105,7 +106,7 @@ class DIIntegration:
             try:
                 outbox = SqlAlchemyOutbox(session)
                 repo_factories = {}
-                if hasattr(self.runtime, 'repository_registry'):
+                if hasattr(self.runtime, "repository_registry"):
                     repo_factories = self.runtime.repository_registry._factories
 
                 uow = SQLAlchemyUnitOfWork(
@@ -137,6 +138,7 @@ class DIIntegration:
                 await event_bus.publish(event)
             ```
         """
+
         def get_event_bus_impl() -> Any:
             if not self.runtime._event_bus:
                 logger.warning("EventBus not configured, returning None")
@@ -208,6 +210,7 @@ class DIIntegration:
                 return config
             ```
         """
+
         def get_container_impl():
             return self.runtime.container
 

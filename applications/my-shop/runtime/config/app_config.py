@@ -42,6 +42,7 @@ def configure_routes(app: FastAPI) -> None:
     Args:
         app: FastAPI application instance
     """
+
     # Add custom routes
     @app.get("/")
     async def root():  # pyright: ignore[reportUnusedFunction]
@@ -71,6 +72,7 @@ def configure_routes(app: FastAPI) -> None:
 
     # Register auth routes
     from shared.api.auth_routes import router as auth_router
+
     app.include_router(auth_router, prefix="/api/v1")
     logger.info("✅ Auth routes registered (GET /api/v1/auth/me, GET /api/v1/auth/me/context)")
 
@@ -82,4 +84,6 @@ def configure_openapi(app: FastAPI) -> None:
         app: FastAPI application instance
     """
     setup_bento_openapi(app)
-    logger.info("✅ Custom OpenAPI schema configured (X-Idempotency-Key, X-Tenant-ID, X-Request-ID)")
+    logger.info(
+        "✅ Custom OpenAPI schema configured (X-Idempotency-Key, X-Tenant-ID, X-Request-ID)"
+    )

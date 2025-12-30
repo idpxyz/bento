@@ -35,7 +35,9 @@ _CHANGE_TYPE_TO_COMPAT: dict[str, CompatibilityLevel] = {
 }
 
 
-def build_workflow(contract_id: str, version: str, approvals: Sequence[ApprovalInput]) -> ApprovalWorkflow:
+def build_workflow(
+    contract_id: str, version: str, approvals: Sequence[ApprovalInput]
+) -> ApprovalWorkflow:
     stages: list[ApprovalStage] = []
     for index, approval in enumerate(approvals, start=1):
         status = str(approval.get("status", "pending")).lower()
@@ -84,7 +86,9 @@ def build_change_history(contract_id: str, changes: Iterable[ChangeInput]) -> Ch
     return history
 
 
-def build_compatibility_matrix(contract_id: str, changes: Iterable[ChangeInput]) -> CompatibilityMatrix:
+def build_compatibility_matrix(
+    contract_id: str, changes: Iterable[ChangeInput]
+) -> CompatibilityMatrix:
     matrix = CompatibilityMatrix()
     for change in changes:
         change_type = str(change.get("change_type", "")).lower()
@@ -102,7 +106,9 @@ def build_compatibility_matrix(contract_id: str, changes: Iterable[ChangeInput])
     return matrix
 
 
-def build_dependency_graph(contract_id: str, dependencies: Iterable[DependencyInput]) -> DependencyGraph:
+def build_dependency_graph(
+    contract_id: str, dependencies: Iterable[DependencyInput]
+) -> DependencyGraph:
     graph = DependencyGraph(contract_id=contract_id)
     for dep in dependencies:
         graph.add_link(

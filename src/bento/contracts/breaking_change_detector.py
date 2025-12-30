@@ -29,6 +29,7 @@ from typing import Any
 
 class ChangeType(Enum):
     """Type of schema change."""
+
     PROPERTY_ADDED = "property_added"
     PROPERTY_REMOVED = "property_removed"
     PROPERTY_TYPE_CHANGED = "property_type_changed"
@@ -59,6 +60,7 @@ class BreakingChange:
         new_value: New schema value
         migration_hint: Suggested migration path
     """
+
     change_type: ChangeType
     path: str
     description: str
@@ -83,6 +85,7 @@ class BreakingChangeReport:
         compatible_changes: List of compatible changes
         is_compatible: Whether schemas are compatible
     """
+
     old_version: str
     new_version: str
     breaking_changes: list[BreakingChange] = field(default_factory=list)
@@ -255,12 +258,14 @@ class BreakingChangeDetector:
                 change = BreakingChange(
                     change_type=ChangeType.PROPERTY_ADDED,
                     path=f"{path}.{prop}" if path else prop,
-                    description=f"Property '{prop}' was added" +
-                                (" (required)" if is_breaking else ""),
+                    description=f"Property '{prop}' was added"
+                    + (" (required)" if is_breaking else ""),
                     is_breaking=is_breaking,
                     severity="critical" if is_breaking else "minor",
                     new_value=new_props[prop],
-                    migration_hint=f"Provide value for required property '{prop}'" if is_breaking else "",
+                    migration_hint=f"Provide value for required property '{prop}'"
+                    if is_breaking
+                    else "",
                 )
                 if is_breaking:
                     report.breaking_changes.append(change)

@@ -50,9 +50,11 @@ def repository_for[AR: AggregateRoot](aggregate_type: type[AR]) -> Callable[[typ
             pass
         ```
     """
+
     def decorator(cls: type) -> type:
         _repository_registry[aggregate_type] = cls
         return cls
+
     return decorator
 
 

@@ -4,6 +4,7 @@ Uses:
 - Bento QueryHandler base class
 - @query_handler decorator for DI registration
 """
+
 from dataclasses import dataclass
 from typing import Any
 

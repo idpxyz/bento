@@ -4,6 +4,7 @@ Uses:
 - handler_dependency for automatic handler injection
 - Bento's CommandHandler and QueryHandler patterns
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException

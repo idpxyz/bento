@@ -3,6 +3,7 @@
 Uses Bento's DomainEvent for automatic serialization and schema support.
 All events follow contract schemas in contracts/loms/v1.0.0/events/shipment/
 """
+
 from dataclasses import dataclass, field
 
 from bento.domain import DomainEvent

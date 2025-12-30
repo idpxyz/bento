@@ -57,9 +57,12 @@ def _load_framework_catalog():
         from pathlib import Path
 
         # Load framework.json from bento/contracts/reason-codes/
-        framework_json = Path(__file__).parent.parent / "contracts" / "reason-codes" / "framework.json"
+        framework_json = (
+            Path(__file__).parent.parent / "contracts" / "reason-codes" / "framework.json"
+        )
         if framework_json.exists():
             from bento.contracts.catalogs import ReasonCodeCatalog
+
             doc = json.loads(framework_json.read_text(encoding="utf-8"))
             _global_catalog = ReasonCodeCatalog(doc)
             _framework_catalog_loaded = True
@@ -134,7 +137,7 @@ class BentoException(Exception):
             if self.http_status == 500:  # default value
                 self.http_status = rc.http_status
             self.retryable = rc.retryable
-            if hasattr(rc, 'category') and rc.category:
+            if hasattr(rc, "category") and rc.category:
                 # Map category string to enum
                 cat_map = {
                     "DOMAIN": ExceptionCategory.DOMAIN,

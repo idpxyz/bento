@@ -4,6 +4,7 @@ from enum import Enum
 
 class ShipmentStatusEnum(str, Enum):
     """Shipment status values from state machine."""
+
     DRAFT = "DRAFT"
     PLANNED = "PLANNED"
     IN_TRANSIT = "IN_TRANSIT"
@@ -19,6 +20,7 @@ TERMINAL_STATES = {ShipmentStatusEnum.CLOSED, ShipmentStatusEnum.CANCELLED}
 @dataclass(frozen=True)
 class ShipmentStatus:
     """Shipment status value object."""
+
     value: str
 
     def __post_init__(self) -> None:
@@ -65,6 +67,7 @@ class ShipmentStatus:
 @dataclass(frozen=True)
 class HoldTypeCode:
     """Hold type code value object."""
+
     value: str
 
     def __post_init__(self) -> None:
@@ -75,6 +78,7 @@ class HoldTypeCode:
 @dataclass(frozen=True)
 class ModeCode:
     """Transport mode code (AIR, SEA, ROAD, RAIL)."""
+
     value: str
 
     def __post_init__(self) -> None:
@@ -85,6 +89,7 @@ class ModeCode:
 @dataclass(frozen=True)
 class ServiceLevelCode:
     """Service level code (EXPRESS, STANDARD, ECONOMY)."""
+
     value: str
 
     def __post_init__(self) -> None:
@@ -95,6 +100,7 @@ class ServiceLevelCode:
 @dataclass(frozen=True)
 class ShipmentTypeCode:
     """Shipment type code (INBOUND, OUTBOUND, TRANSFER)."""
+
     value: str
 
     def __post_init__(self) -> None:

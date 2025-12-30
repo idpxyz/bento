@@ -39,9 +39,7 @@ class TenantContext:
         ```
     """
 
-    _current_tenant: ContextVar[str | None] = ContextVar(
-        'current_tenant', default=None
-    )
+    _current_tenant: ContextVar[str | None] = ContextVar("current_tenant", default=None)
 
     @classmethod
     def get(cls) -> str | None:

@@ -233,8 +233,7 @@ class OpenAPIGenerator:
         if schema.get("type") == "object":
             properties = schema.get("properties", {})
             result["properties"] = {
-                name: self._convert_schema(prop_schema)
-                for name, prop_schema in properties.items()
+                name: self._convert_schema(prop_schema) for name, prop_schema in properties.items()
             }
             if "required" in schema:
                 result["required"] = schema["required"]

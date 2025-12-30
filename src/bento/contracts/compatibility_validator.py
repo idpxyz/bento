@@ -29,9 +29,10 @@ from bento.contracts.breaking_change_detector import BreakingChangeDetector
 
 class CompatibilityMode(Enum):
     """Compatibility check mode."""
+
     BACKWARD = "backward"  # New schema must accept old data
-    FORWARD = "forward"    # Old schema must accept new data
-    FULL = "full"          # Both directions
+    FORWARD = "forward"  # Old schema must accept new data
+    FULL = "full"  # Both directions
 
 
 @dataclass
@@ -45,6 +46,7 @@ class CompatibilityResult:
         breaking_changes: Breaking changes detected
         migration_guide: Suggested migration steps
     """
+
     is_compatible: bool
     mode: CompatibilityMode
     issues: list[str] = field(default_factory=list)
@@ -322,10 +324,12 @@ class CompatibilityValidator:
             for i, guide in enumerate(result.migration_guide, 1):
                 steps.append(f"   {i}. {guide}")
 
-        steps.extend([
-            "3. Update clients to handle new schema",
-            "4. Deploy new version",
-            "5. Monitor for compatibility issues",
-        ])
+        steps.extend(
+            [
+                "3. Update clients to handle new schema",
+                "4. Deploy new version",
+                "5. Monitor for compatibility issues",
+            ]
+        )
 
         return steps

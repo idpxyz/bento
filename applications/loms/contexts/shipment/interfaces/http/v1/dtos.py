@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class CreateShipmentRequest(BaseModel):
     """Request to create a new shipment."""
+
     shipment_code: str = Field(min_length=1, max_length=64)
     mode_code: str | None = Field(default=None, max_length=32)
     service_level_code: str | None = Field(default=None, max_length=32)
@@ -17,6 +18,7 @@ class CreateShipmentRequest(BaseModel):
 
 class AddLegRequest(BaseModel):
     """Request to add a leg to a shipment."""
+
     leg_id: str = Field(min_length=1, max_length=64)
     origin_node_id: str = Field(min_length=1, max_length=64)
     destination_node_id: str = Field(min_length=1, max_length=64)
@@ -28,23 +30,27 @@ class AddLegRequest(BaseModel):
 
 class PlaceHoldRequest(BaseModel):
     """Request to place a hold on a shipment."""
+
     hold_type_code: str = Field(min_length=1, max_length=64)
     reason: str | None = Field(default=None, max_length=500)
 
 
 class ReleaseHoldRequest(BaseModel):
     """Request to release a hold from a shipment."""
+
     hold_type_code: str = Field(min_length=1, max_length=64)
     release_reason: str | None = Field(default=None, max_length=500)
 
 
 class CloseShipmentRequest(BaseModel):
     """Request to close a shipment."""
+
     force_close_reason: str | None = Field(default=None, max_length=500)
 
 
 class CancelShipmentRequest(BaseModel):
     """Request to cancel a shipment."""
+
     cancel_reason: str | None = Field(default=None, max_length=500)
 
 
@@ -55,6 +61,7 @@ class CancelShipmentRequest(BaseModel):
 
 class LegResponse(BaseModel):
     """Leg response."""
+
     id: str
     leg_index: int
     origin_node_id: str
@@ -69,6 +76,7 @@ class LegResponse(BaseModel):
 
 class HoldResponse(BaseModel):
     """Hold response."""
+
     id: str
     hold_type_code: str
     reason: str | None = None
@@ -80,6 +88,7 @@ class HoldResponse(BaseModel):
 
 class ShipmentResponse(BaseModel):
     """Shipment response."""
+
     id: str
     shipment_code: str
     status_code: str
@@ -91,5 +100,6 @@ class ShipmentResponse(BaseModel):
 
 class ShipmentDetailResponse(ShipmentResponse):
     """Detailed shipment response with legs and holds."""
+
     legs: list[LegResponse] = []
     holds: list[HoldResponse] = []

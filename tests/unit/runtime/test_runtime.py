@@ -216,11 +216,7 @@ class TestBentoRuntime:
             async def on_register(self, container):
                 registered.append("b")
 
-        runtime = (
-            RuntimeBuilder()
-            .with_modules(ModuleA(), ModuleB())
-            .build_runtime()
-        )
+        runtime = RuntimeBuilder().with_modules(ModuleA(), ModuleB()).build_runtime()
         await runtime.build_async()
 
         # Should be registered in dependency order
@@ -233,30 +229,20 @@ class TestBentoRuntime:
             async def on_register(self, container):
                 container.set("test.value", 42)
 
-        runtime = (
-            RuntimeBuilder()
-            .with_modules(TestModule())
-            .build_runtime()
-        )
+        runtime = RuntimeBuilder().with_modules(TestModule()).build_runtime()
         await runtime.build_async()
 
         assert runtime.container.get("test.value") == 42
 
     async def test_with_service(self):
-        runtime = (
-            RuntimeBuilder()
-            .with_service("my.service", "my_value")
-            .build_runtime()
-        )
+        runtime = RuntimeBuilder().with_service("my.service", "my_value").build_runtime()
         await runtime.build_async()
 
         assert runtime.container.get("my.service") == "my_value"
 
     async def test_with_config(self):
         runtime = (
-            RuntimeBuilder()
-            .with_config(service_name="my-app", environment="test")
-            .build_runtime()
+            RuntimeBuilder().with_config(service_name="my-app", environment="test").build_runtime()
         )
         await runtime.build_async()
 
@@ -278,11 +264,7 @@ class TestBentoRuntime:
 
                 return [router]
 
-        runtime = (
-            RuntimeBuilder()
-            .with_modules(TestModule())
-            .build_runtime()
-        )
+        runtime = RuntimeBuilder().with_modules(TestModule()).build_runtime()
         app = runtime.create_fastapi_app(title="Test API")
 
         assert app.title == "Test API"

@@ -20,7 +20,6 @@ class ConditionalUpdateMixin:
     - self._convert_spec_to_po: Method to convert AR spec to PO spec
     """
 
-
     # Type hints for attributes provided by RepositoryAdapter
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance

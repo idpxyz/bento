@@ -21,6 +21,7 @@ from typing import Any
 
 try:
     from jsonschema import Draft202012Validator
+
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
@@ -64,9 +65,7 @@ class EventSchemaRegistry:
 
         assert Draft202012Validator is not None
         self._envelope = Draft202012Validator(envelope_schema)
-        self._events = {
-            k: Draft202012Validator(v) for k, v in event_schemas.items()
-        }
+        self._events = {k: Draft202012Validator(v) for k, v in event_schemas.items()}
         self._envelope_schema = envelope_schema
         self._event_schemas = event_schemas
 
@@ -113,10 +112,7 @@ class EventSchemaRegistry:
         Raises:
             SchemaValidationError: If validation fails
         """
-        errors = sorted(
-            self._envelope.iter_errors(envelope),
-            key=lambda e: e.path
-        )
+        errors = sorted(self._envelope.iter_errors(envelope), key=lambda e: e.path)
         if errors:
             raise SchemaValidationError(
                 f"Envelope schema invalid: {errors[0].message}",
@@ -138,10 +134,7 @@ class EventSchemaRegistry:
         if not validator:
             raise KeyError(f"Unknown event schema: {event_type}")
 
-        errors = sorted(
-            validator.iter_errors(payload),
-            key=lambda e: e.path
-        )
+        errors = sorted(validator.iter_errors(payload), key=lambda e: e.path)
         if errors:
             raise SchemaValidationError(
                 f"Event schema invalid ({event_type}): {errors[0].message}",

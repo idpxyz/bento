@@ -65,6 +65,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         # If not in container, use standalone factory as fallback
         # This can happen during testing or if runtime initialization is delayed
         from shared.infrastructure.standalone_db import get_standalone_session_factory
+
         session_factory = get_standalone_session_factory()
 
     async with session_factory() as session:

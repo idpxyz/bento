@@ -288,7 +288,9 @@ class OptimisticLockInterceptor(Interceptor[T]):
                     # Check if SQLAlchemy's version_id_col is configured
                     # If configured, SQLAlchemy handles version increment automatically
                     # We detect this by checking the mapper's version_id_col property
-                    has_sqlalchemy_version = self._has_sqlalchemy_version_id_col(context.entity_type)
+                    has_sqlalchemy_version = self._has_sqlalchemy_version_id_col(
+                        context.entity_type
+                    )
 
                     current_version = self.get_field_value(context.entity, version_field, 0)
                     context.set_context_value("_old_version", current_version)

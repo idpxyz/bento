@@ -90,6 +90,7 @@ def require_permissions(*permissions: str):
             ...
         ```
     """
+
     async def dependency() -> CurrentUser:
         user = await get_current_user()
         if not user.has_all_permissions(list(permissions)):
@@ -98,6 +99,7 @@ def require_permissions(*permissions: str):
                 details={"required_permissions": list(permissions)},
             )
         return user
+
     return dependency
 
 
@@ -120,6 +122,7 @@ def require_roles(*roles: str):
             ...
         ```
     """
+
     async def dependency() -> CurrentUser:
         user = await get_current_user()
         for role in roles:
@@ -129,6 +132,7 @@ def require_roles(*roles: str):
                     details={"required_roles": list(roles)},
                 )
         return user
+
     return dependency
 
 
@@ -150,6 +154,7 @@ def require_any_role(*roles: str):
             ...
         ```
     """
+
     async def dependency() -> CurrentUser:
         user = await get_current_user()
         if not user.has_any_role(list(roles)):
@@ -158,4 +163,5 @@ def require_any_role(*roles: str):
                 details={"required_roles": list(roles), "mode": "any"},
             )
         return user
+
     return dependency

@@ -1,6 +1,5 @@
 """Category API routes (FastAPI) - Thin Interface Layer"""
 
-
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 

@@ -11,4 +11,3 @@ from applications.ecommerce.modules.order.domain.ports.order_repository import (
 __all__ = [
     "IOrderRepository",
 ]
-

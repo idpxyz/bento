@@ -225,10 +225,7 @@ class CompositeValueObject:
         """Compare by value equality (all attributes)."""
         if not isinstance(other, self.__class__):
             return False
-        return all(
-            getattr(self, f.name) == getattr(other, f.name)
-            for f in fields(self)
-        )
+        return all(getattr(self, f.name) == getattr(other, f.name) for f in fields(self))
 
     def __hash__(self) -> int:
         """Hash based on all attribute values."""

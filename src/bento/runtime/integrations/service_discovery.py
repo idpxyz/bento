@@ -78,9 +78,7 @@ class ServiceDiscoveryModule(BentoModule):
                 suffix=self.config.kubernetes_service_suffix,
             )
         else:
-            raise ValueError(
-                f"Unknown service discovery backend: {self.config.backend}"
-            )
+            raise ValueError(f"Unknown service discovery backend: {self.config.backend}")
 
         # Add caching
         discovery = CachedServiceDiscovery(discovery, ttl=self.config.cache_ttl)

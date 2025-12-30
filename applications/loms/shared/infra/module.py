@@ -20,12 +20,15 @@ class InfraModule(BentoModule):
         """Register infrastructure components into the container."""
         # Database session
         from loms.shared.infra.db.session import AsyncSessionMaker
+
         container.set("db.session_maker", AsyncSessionMaker)
 
         # Idempotency service
         from loms.shared.infra.idempotency.service import IdempotencyService
+
         container.set("idempotency.service_class", IdempotencyService)
 
         # Outbox: Use Bento's SqlAlchemyOutbox
         from bento.persistence.outbox import SqlAlchemyOutbox
+
         container.set("outbox.class", SqlAlchemyOutbox)

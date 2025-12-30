@@ -131,11 +131,14 @@ class TracingMiddleware(BaseHTTPMiddleware):
 
                 # Record failure metrics
                 counter = self.meter.create_counter("http_requests_failed")
-                counter.add(1, {
-                    "method": request.method,
-                    "path": request.url.path,
-                    "error_type": type(e).__name__,
-                })
+                counter.add(
+                    1,
+                    {
+                        "method": request.method,
+                        "path": request.url.path,
+                        "error_type": type(e).__name__,
+                    },
+                )
 
                 # Log error
                 self.logger.error(
@@ -166,22 +169,31 @@ class TracingMiddleware(BaseHTTPMiddleware):
         """
         # Record request count
         counter = self.meter.create_counter("http_requests_total")
-        counter.add(1, {
-            "method": method,
-            "path": path,
-            "status": status_code,
-        })
+        counter.add(
+            1,
+            {
+                "method": method,
+                "path": path,
+                "status": status_code,
+            },
+        )
 
         # Record request duration
         histogram = self.meter.create_histogram("http_request_duration_ms")
-        histogram.record(duration_ms, {
-            "method": method,
-            "path": path,
-        })
+        histogram.record(
+            duration_ms,
+            {
+                "method": method,
+                "path": path,
+            },
+        )
 
         # Record status code distribution
         counter = self.meter.create_counter(f"http_status_{status_code // 100}xx")
-        counter.add(1, {
-            "method": method,
-            "path": path,
-        })
+        counter.add(
+            1,
+            {
+                "method": method,
+                "path": path,
+            },
+        )

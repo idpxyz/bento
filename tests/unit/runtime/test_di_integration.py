@@ -20,11 +20,7 @@ async def test_get_uow_without_database_raises_error():
 async def test_get_uow_returns_generator(tmp_path):
     """Test that get_uow returns async generator function."""
     db_path = tmp_path / "test.db"
-    runtime = (
-        RuntimeBuilder()
-        .with_database(url=f"sqlite+aiosqlite:///{db_path}")
-        .build_runtime()
-    )
+    runtime = RuntimeBuilder().with_database(url=f"sqlite+aiosqlite:///{db_path}").build_runtime()
     await runtime.build_async()
 
     di_integration = DIIntegration(runtime)
@@ -47,11 +43,7 @@ async def test_get_repository_dependency_returns_generator(tmp_path):
         pass
 
     db_path = tmp_path / "test.db"
-    runtime = (
-        RuntimeBuilder()
-        .with_database(url=f"sqlite+aiosqlite:///{db_path}")
-        .build_runtime()
-    )
+    runtime = RuntimeBuilder().with_database(url=f"sqlite+aiosqlite:///{db_path}").build_runtime()
     await runtime.build_async()
 
     di_integration = DIIntegration(runtime)
@@ -100,11 +92,7 @@ def test_get_handler_dependency_returns_dict():
 async def test_get_uow_caches_function(tmp_path):
     """Test that get_uow caches the generated function."""
     db_path = tmp_path / "test.db"
-    runtime = (
-        RuntimeBuilder()
-        .with_database(url=f"sqlite+aiosqlite:///{db_path}")
-        .build_runtime()
-    )
+    runtime = RuntimeBuilder().with_database(url=f"sqlite+aiosqlite:///{db_path}").build_runtime()
     await runtime.build_async()
 
     di_integration = DIIntegration(runtime)

@@ -4,9 +4,11 @@ from loms.shared.platform.runtime.health.checks import contracts_check, db_check
 
 router = APIRouter(prefix="/health", tags=["health"])
 
+
 @router.get("/live")
 async def live():
     return {"status": "ok"}
+
 
 @router.get("/ready")
 async def ready(session=Depends(get_session)):

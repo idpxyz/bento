@@ -7,4 +7,3 @@ from applications.ecommerce.modules.order.application.projections.order_projecti
 __all__ = [
     "OrderProjection",
 ]
-

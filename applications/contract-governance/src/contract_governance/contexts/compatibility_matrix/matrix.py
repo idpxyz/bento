@@ -40,7 +40,9 @@ class CompatibilityMatrix:
     def evaluate(self, from_version: str, to_version: str) -> CompatibilityRule:
         key = (from_version, to_version)
         if key not in self._rules:
-            return CompatibilityRule(from_version, to_version, CompatibilityLevel.WARNING, notes="No rule defined")
+            return CompatibilityRule(
+                from_version, to_version, CompatibilityLevel.WARNING, notes="No rule defined"
+            )
         return self._rules[key]
 
     def compatible(self, from_version: str, to_version: str) -> bool:

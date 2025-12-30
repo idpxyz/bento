@@ -1,4 +1,5 @@
 """Repository registry with auto-discovery."""
+
 from __future__ import annotations
 
 import importlib
@@ -86,13 +87,14 @@ class RepositoryRegistry:
         for _, obj in inspect.getmembers(module):
             if inspect.isclass(obj):
                 # Check for @repository_for decorator metadata
-                if hasattr(obj, '__aggregate_type__'):
+                if hasattr(obj, "__aggregate_type__"):
                     aggregate_type = obj.__aggregate_type__
+
                     # Create factory that instantiates the repository
                     def factory(s, cls=obj):
                         return cls(s)
+
                     self.register(aggregate_type, factory)
                     logger.info(
-                        f"Auto-discovered repository: {obj.__name__} "
-                        f"for {aggregate_type.__name__}"
+                        f"Auto-discovered repository: {obj.__name__} for {aggregate_type.__name__}"
                     )

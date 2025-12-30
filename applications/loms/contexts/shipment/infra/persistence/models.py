@@ -4,6 +4,7 @@ Shipment Context - Domain ORM Models.
 Only domain-specific models belong here.
 Infrastructure models (Idempotency, Outbox, Inbox, DLQ) are in shared/infra.
 """
+
 from loms.shared.infra.db.base import Base, FullAuditMixin
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -81,6 +82,4 @@ class HoldORM(Base, FullAuditMixin):
     released_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
     release_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    shipment: Mapped["ShipmentORM"] = relationship(
-        "ShipmentORM", back_populates="holds"
-    )
+    shipment: Mapped["ShipmentORM"] = relationship("ShipmentORM", back_populates="holds")

@@ -56,7 +56,9 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
         exclude_paths=["/health", "/ping", "/docs", "/openapi.json", "/redoc"],
         sync_to_security_context=True,
     )
-    logger.info("✅ Tenant middleware registered (header: X-Tenant-ID, auto-synced to SecurityContext)")
+    logger.info(
+        "✅ Tenant middleware registered (header: X-Tenant-ID, auto-synced to SecurityContext)"
+    )
 
     # 3. CORS - Cross-Origin Resource Sharing (added early for proper order)
     app.add_middleware(

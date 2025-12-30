@@ -12,10 +12,7 @@ def main():
 
     # Test with header
     print("1. Request WITH X-Tenant-ID header:")
-    response = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "test-tenant"}
-    )
+    response = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "test-tenant"})
     print(f"   Status: {response.status_code}")
     data = response.json()
     print(f"   Tenant ID from response: {data.get('tenant_id')}")

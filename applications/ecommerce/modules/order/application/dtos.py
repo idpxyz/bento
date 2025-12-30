@@ -7,7 +7,7 @@ from datetime import datetime
 @dataclass
 class OrderItemDTO:
     """Order item data transfer object."""
-    
+
     product_id: str
     product_name: str
     quantity: int
@@ -18,7 +18,7 @@ class OrderItemDTO:
 @dataclass
 class OrderDTO:
     """Order data transfer object."""
-    
+
     order_id: str
     customer_id: str
     status: str
@@ -29,4 +29,3 @@ class OrderDTO:
     paid_at: datetime | None = None
     cancelled_at: datetime | None = None
     cancellation_reason: str | None = None
-

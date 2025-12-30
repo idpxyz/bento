@@ -71,9 +71,7 @@ class ExternalServiceClient:
         # Build full URL
         url = f"{instance.scheme}://{instance.host}:{instance.port}{path}"
 
-        logger.info(
-            f"Calling {method} {url} for service {service_name}"
-        )
+        logger.info(f"Calling {method} {url} for service {service_name}")
 
         # Make HTTP request
         response = await self._http_client.request(method, url, **kwargs)

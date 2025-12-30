@@ -39,9 +39,7 @@ class TestCreateCategoryHandler:
     async def test_create_category_success(self, usecase, mock_repository):
         """测试成功场景"""
         # Arrange
-        CreateCategoryCommand(
-            name="Electronics", description="Electronic products category"
-        )
+        CreateCategoryCommand(name="Electronics", description="Electronic products category")
 
         # Act
         # result = await usecase.execute(command)

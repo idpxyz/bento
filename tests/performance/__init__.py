@@ -1,2 +1,1 @@
 """Performance benchmark tests package."""
-

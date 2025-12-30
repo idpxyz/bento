@@ -9,9 +9,32 @@ class ShipmentRepository(Protocol):
     async def get(self, shipment_id: ID) -> Shipment | None: ...
     async def save(self, shipment: Shipment) -> None: ...
 
+
 class IdempotencyRepository(Protocol):
     async def get(self, tenant_id: str, key: str, method: str, path: str): ...
-    async def upsert(self, *, tenant_id: str, key: str, method: str, path: str, request_hash: str, status_code: int, response_body: dict): ...
+    async def upsert(
+        self,
+        *,
+        tenant_id: str,
+        key: str,
+        method: str,
+        path: str,
+        request_hash: str,
+        status_code: int,
+        response_body: dict,
+    ): ...
+
 
 class OutboxRepository(Protocol):
-    async def append(self, *, tenant_id: str, aggregate_type: str, aggregate_id: str, aggregate_version: int, event_type: str, event_version: int, payload: dict, headers: dict | None = None): ...
+    async def append(
+        self,
+        *,
+        tenant_id: str,
+        aggregate_type: str,
+        aggregate_id: str,
+        aggregate_version: int,
+        event_type: str,
+        event_version: int,
+        payload: dict,
+        headers: dict | None = None,
+    ): ...

@@ -174,10 +174,12 @@ class TestCompositeTenantResolver:
         composite = CompositeTenantResolver([header_resolver, subdomain_resolver])
 
         # Header takes precedence
-        request = MockRequest(headers={
-            "X-Tenant-ID": "from-header",
-            "host": "from-subdomain.example.com",
-        })
+        request = MockRequest(
+            headers={
+                "X-Tenant-ID": "from-header",
+                "host": "from-subdomain.example.com",
+            }
+        )
 
         result = composite.resolve(request)
 

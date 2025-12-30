@@ -63,10 +63,10 @@ class CommandHandler[TCommand, TResult](ABC):
 
     async def validate(self, command: TCommand) -> None:
         """Validate command before execution.
-        
+
         Override this method to add custom validation logic.
         Raise exceptions for validation failures.
-        
+
         Default implementation performs no validation (optional hook method).
 
         Args:

@@ -109,11 +109,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
         # Parse request body for hashing
         try:
-            body_obj = (
-                json.loads(body_bytes.decode("utf-8"))
-                if body_bytes
-                else {}
-            )
+            body_obj = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
         except Exception:
             body_obj = {"_raw": body_bytes.decode("utf-8", errors="ignore")}
 
@@ -128,6 +124,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 if runtime is None:
                     # Fallback: try to get from bootstrap module
                     from runtime.bootstrap_v2 import get_runtime
+
                     runtime = get_runtime()
                 session_factory = runtime.container.get("db.session_factory")
             except Exception:
@@ -195,7 +192,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     try:
                         response_body = json.loads(response_body_bytes.decode("utf-8"))
                     except Exception:
-                        response_body = {"_raw": response_body_bytes.decode("utf-8", errors="ignore")}
+                        response_body = {
+                            "_raw": response_body_bytes.decode("utf-8", errors="ignore")
+                        }
 
                     # Store response in idempotency record
                     await idempotency.store_response(

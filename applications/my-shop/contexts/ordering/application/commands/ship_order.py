@@ -49,7 +49,9 @@ class ShipOrderHandler(ObservableCommandHandler[ShipOrderCommand, Order]):
             if command.tracking_number:
                 span.set_attribute("tracking_number", command.tracking_number)
 
-            self.logger.info("Shipping order", order_id=command.order_id, tracking_number=command.tracking_number)
+            self.logger.info(
+                "Shipping order", order_id=command.order_id, tracking_number=command.tracking_number
+            )
 
             try:
                 from contexts.ordering.infrastructure.repositories.order_repository_impl import (
@@ -73,7 +75,9 @@ class ShipOrderHandler(ObservableCommandHandler[ShipOrderCommand, Order]):
                     order.ship(tracking_number=command.tracking_number)
                 except ValueError as e:
                     self._record_failure("ship_order", "invalid_state", error=str(e))
-                    self.logger.error("Invalid order state for shipping", order_id=command.order_id, error=str(e))
+                    self.logger.error(
+                        "Invalid order state for shipping", order_id=command.order_id, error=str(e)
+                    )
                     raise ApplicationException(
                         reason_code="INVALID_PARAMS",
                         details={"reason": str(e)},
@@ -100,5 +104,7 @@ class ShipOrderHandler(ObservableCommandHandler[ShipOrderCommand, Order]):
                 span.record_exception(e)
                 span.set_status("error", str(e))
                 self._record_failure("ship_order", "unexpected_error", error_type=type(e).__name__)
-                self.logger.error("Unexpected error shipping order", order_id=command.order_id, error=str(e))
+                self.logger.error(
+                    "Unexpected error shipping order", order_id=command.order_id, error=str(e)
+                )
                 raise

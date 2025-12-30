@@ -26,6 +26,7 @@ class MessagingManager:
         if not self.runtime._event_bus:
             try:
                 from bento.messaging.event_bus import InMemoryEventBus
+
                 self.runtime._event_bus = InMemoryEventBus()
                 logger.info("Event bus configured: InMemoryEventBus")
             except ImportError:

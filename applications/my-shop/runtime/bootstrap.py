@@ -60,7 +60,9 @@ def create_app() -> FastAPI:
 
     # Build runtime with all modules
     runtime = build_runtime()
-    logger.debug("BentoRuntime configured with modules: infra, catalog, identity, ordering, service_discovery, observability")
+    logger.debug(
+        "BentoRuntime configured with modules: infra, catalog, identity, ordering, service_discovery, observability"
+    )
 
     # Create FastAPI app with BentoRuntime's built-in lifespan
     app = runtime.create_fastapi_app(

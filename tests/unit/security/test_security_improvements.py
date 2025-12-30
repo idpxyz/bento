@@ -16,6 +16,7 @@ from bento.security import (
 @dataclass
 class Order:
     """Test resource with created_by."""
+
     id: str
     created_by: str
 
@@ -23,6 +24,7 @@ class Order:
 @dataclass
 class Article:
     """Test resource with user_id instead of owner_id."""
+
     id: str
     user_id: str
 
@@ -238,6 +240,7 @@ class TestAuthorizationAuditLogging:
     async def test_authorized_access_logged(self, caplog):
         """Test that authorized access is logged at DEBUG level by default."""
         import logging
+
         caplog.set_level(logging.DEBUG)
 
         authorizer = OwnershipAuthorizer()
@@ -253,6 +256,7 @@ class TestAuthorizationAuditLogging:
     async def test_denied_access_logged(self, caplog):
         """Test that denied access is logged at warning level."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         authorizer = OwnershipAuthorizer()
@@ -269,6 +273,7 @@ class TestAuthorizationAuditLogging:
     async def test_log_includes_resource_details(self, caplog):
         """Test that denied access log includes resource details."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         authorizer = OwnershipAuthorizer()

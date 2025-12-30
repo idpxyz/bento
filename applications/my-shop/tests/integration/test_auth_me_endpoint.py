@@ -10,9 +10,9 @@ def main():
     app = create_app()
     client = TestClient(app)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🔐 Testing /api/v1/auth/me Endpoint with Tenant Context")
-    print("="*70)
+    print("=" * 70)
 
     # Test 1: Without tenant
     print("\n1️⃣  GET /api/v1/auth/me (without tenant):")
@@ -25,16 +25,13 @@ def main():
     print(f"     - roles: {data.get('roles')}")
     print(f"     - tenant_id: {data.get('tenant_id')}")
     print(f"     - metadata: {data.get('metadata')}")
-    assert data.get('id') == 'demo-user', "User ID should be demo-user"
-    assert data.get('tenant_id') is None, "Tenant ID should be None"
+    assert data.get("id") == "demo-user", "User ID should be demo-user"
+    assert data.get("tenant_id") is None, "Tenant ID should be None"
     print("   ✅ Response includes tenant_id field (None)")
 
     # Test 2: With tenant
     print("\n2️⃣  GET /api/v1/auth/me (with X-Tenant-ID: tenant-a):")
-    response = client.get(
-        "/api/v1/auth/me",
-        headers={"X-Tenant-ID": "tenant-a"}
-    )
+    response = client.get("/api/v1/auth/me", headers={"X-Tenant-ID": "tenant-a"})
     print(f"   Status: {response.status_code}")
     data = response.json()
     print("   Response:")
@@ -43,41 +40,37 @@ def main():
     print(f"     - roles: {data.get('roles')}")
     print(f"     - tenant_id: {data.get('tenant_id')}")
     print(f"     - metadata: {data.get('metadata')}")
-    assert data.get('id') == 'demo-user', "User ID should be demo-user"
-    assert data.get('tenant_id') == 'tenant-a', "Tenant ID should be tenant-a"
+    assert data.get("id") == "demo-user", "User ID should be demo-user"
+    assert data.get("tenant_id") == "tenant-a", "Tenant ID should be tenant-a"
     print("   ✅ Response includes tenant_id field (tenant-a)")
 
     # Test 3: Different tenant
     print("\n3️⃣  GET /api/v1/auth/me (with X-Tenant-ID: tenant-xyz):")
-    response = client.get(
-        "/api/v1/auth/me",
-        headers={"X-Tenant-ID": "tenant-xyz"}
-    )
+    response = client.get("/api/v1/auth/me", headers={"X-Tenant-ID": "tenant-xyz"})
     print(f"   Status: {response.status_code}")
     data = response.json()
     print("   Response:")
     print(f"     - id: {data.get('id')}")
     print(f"     - tenant_id: {data.get('tenant_id')}")
-    assert data.get('tenant_id') == 'tenant-xyz', "Tenant ID should be tenant-xyz"
+    assert data.get("tenant_id") == "tenant-xyz", "Tenant ID should be tenant-xyz"
     print("   ✅ Response includes tenant_id field (tenant-xyz)")
 
     # Test 4: Verify response schema
     print("\n4️⃣  Verifying response schema:")
-    response = client.get(
-        "/api/v1/auth/me",
-        headers={"X-Tenant-ID": "test-tenant"}
-    )
+    response = client.get("/api/v1/auth/me", headers={"X-Tenant-ID": "test-tenant"})
     data = response.json()
-    required_fields = {'id', 'permissions', 'roles', 'tenant_id', 'metadata'}
+    required_fields = {"id", "permissions", "roles", "tenant_id", "metadata"}
     actual_fields = set(data.keys())
     print(f"   Required fields: {required_fields}")
     print(f"   Actual fields: {actual_fields}")
-    assert required_fields == actual_fields, f"Schema mismatch: {required_fields} vs {actual_fields}"
+    assert required_fields == actual_fields, (
+        f"Schema mismatch: {required_fields} vs {actual_fields}"
+    )
     print("   ✅ Response schema is correct")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("✅ All /api/v1/auth/me endpoint tests passed!")
-    print("="*70)
+    print("=" * 70)
 
     print("\n📊 Response Schema:")
     print("""

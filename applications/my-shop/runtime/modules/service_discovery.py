@@ -37,8 +37,6 @@ def create_service_discovery_module() -> BentoServiceDiscoveryModule:
         kubernetes_service_suffix=settings.kubernetes_service_suffix,
     )
 
-    logger.info(
-        f"Creating service discovery module with backend: {config.backend}"
-    )
+    logger.info(f"Creating service discovery module with backend: {config.backend}")
 
     return BentoServiceDiscoveryModule(config)

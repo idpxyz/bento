@@ -64,11 +64,13 @@ async def test_order_creation_persists_outbox_events(db_session):
 
     # Register product catalog as a port
     from contexts.ordering.domain.ports.services import IProductCatalogService
+
     product_catalog = MockProductCatalog()
     uow.register_port(IProductCatalogService, lambda s: product_catalog)
 
     # Create observability provider (NoOp for testing)
     from bento.adapters.observability.noop import NoOpObservabilityProvider
+
     observability = NoOpObservabilityProvider()
 
     handler = CreateOrderHandler(uow, observability)

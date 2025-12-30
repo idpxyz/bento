@@ -3,6 +3,7 @@ Leg BC - Standalone API Entrypoint.
 
 Run independently: uv run uvicorn loms.bootstrap.entrypoints.leg_api:app --port 8002
 """
+
 import os
 
 from loms.contexts.leg.module import LegModule

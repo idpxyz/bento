@@ -55,12 +55,8 @@ class SecurityContext:
         ```
     """
 
-    _current_user: ContextVar[CurrentUser | None] = ContextVar(
-        'current_user', default=None
-    )
-    _current_tenant: ContextVar[str | None] = ContextVar(
-        'current_tenant', default=None
-    )
+    _current_user: ContextVar[CurrentUser | None] = ContextVar("current_user", default=None)
+    _current_tenant: ContextVar[str | None] = ContextVar("current_tenant", default=None)
 
     @classmethod
     def get_user(cls) -> CurrentUser | None:

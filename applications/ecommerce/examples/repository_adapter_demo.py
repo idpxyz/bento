@@ -102,9 +102,7 @@ async def demo_basic_crud():
         all_orders = await repo.list()  # ✅ Inherited method
         print(f"   Total orders: {len(all_orders)}")
         for order in all_orders:
-            print(
-                f"   - {order.id.value}: {order.status.value} (${order.total_amount})"
-            )
+            print(f"   - {order.id.value}: {order.status.value} (${order.total_amount})")
 
     finally:
         await anext(session_gen, None)
@@ -128,7 +126,7 @@ async def demo_custom_queries():
         orders = []
         for i in range(5):
             order = Order(
-                order_id=ID(f"order-{100+i}"),
+                order_id=ID(f"order-{100 + i}"),
                 customer_id=ID(f"cust-{i % 2 + 1}"),  # cust-1 or cust-2
             )
             order.add_item(
@@ -155,9 +153,7 @@ async def demo_custom_queries():
 
         # Custom query 2: Find by customer
         print("\n✅ 2. 按客户查询（自定义方法）")
-        customer_orders = await repo.find_by_customer(
-            ID("cust-1")
-        )  # ✅ Custom method
+        customer_orders = await repo.find_by_customer(ID("cust-1"))  # ✅ Custom method
         print(f"   Customer cust-1 orders: {len(customer_orders)}")
 
         # Custom query 3: Find high value
@@ -200,7 +196,7 @@ async def demo_specification_queries():
         # Create test data
         for i in range(20):
             order = Order(
-                order_id=ID(f"order-{200+i}"),
+                order_id=ID(f"order-{200 + i}"),
                 customer_id=ID("cust-001"),
             )
             order.add_item(
@@ -218,9 +214,7 @@ async def demo_specification_queries():
 
         # 1. Dynamic query with build_query_spec
         print("\n✅ 1. 动态查询（使用 build_query_spec helper）")
-        spec = repo.build_query_spec(
-            customer_id=ID("cust-001"), status="paid", min_amount=200.0
-        )
+        spec = repo.build_query_spec(customer_id=ID("cust-001"), status="paid", min_amount=200.0)
         results = await repo.list(spec)  # ✅ Inherited method
         print(f"   Results: {len(results)} orders")
         print("   (customer=cust-001, status=paid, amount>=200)")
@@ -349,9 +343,7 @@ async def main():
     print("演示完成！")
     print("=" * 60)
     print("\n📚 更多信息:")
-    print(
-        "  - RepositoryAdapter 源码: src/bento/infrastructure/repository/adapter.py"
-    )
+    print("  - RepositoryAdapter 源码: src/bento/infrastructure/repository/adapter.py")
     print(
         "  - OrderRepository 示例: "
         "applications/ecommerce/modules/order/persistence/repositories/order_repository.py"

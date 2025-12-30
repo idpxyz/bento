@@ -100,9 +100,7 @@ class ModuleRegistry:
         for name, module in self._modules.items():
             for dep in module.requires:
                 if dep not in self._modules:
-                    raise ValueError(
-                        f"Module '{name}' requires '{dep}' but it is not registered"
-                    )
+                    raise ValueError(f"Module '{name}' requires '{dep}' but it is not registered")
 
     def resolve_order(self) -> list[BentoModule]:
         """Return modules in topological order (dependencies first).

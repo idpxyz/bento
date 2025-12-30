@@ -4,9 +4,11 @@ from pydantic import BaseModel, Field
 
 router = APIRouter()
 
+
 class OkResponse(BaseModel):
     code: str = Field(default="OK")
     message: str
+
 
 @router.get("/_bc/tracking/ping", response_model=OkResponse)
 async def ping(request: Request):

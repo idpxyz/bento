@@ -1,4 +1,5 @@
 """Shipment commands and handlers."""
+
 from loms.contexts.shipment.application.commands.add_leg import (
     AddLegCommand,
     AddLegHandler,

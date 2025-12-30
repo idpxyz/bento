@@ -39,10 +39,12 @@ def require_auth(func: Callable) -> Callable:
             ...
         ```
     """
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         SecurityContext.require_user()
         return await func(*args, **kwargs)
+
     return wrapper
 
 
@@ -62,6 +64,7 @@ def require_permission(permission: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -72,7 +75,9 @@ def require_permission(permission: str) -> Callable:
                     details={"required_permission": permission},
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -92,6 +97,7 @@ def require_any_permission(*permissions: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -102,7 +108,9 @@ def require_any_permission(*permissions: str) -> Callable:
                     details={"required_permissions": list(permissions), "mode": "any"},
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -122,6 +130,7 @@ def require_all_permissions(*permissions: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -132,7 +141,9 @@ def require_all_permissions(*permissions: str) -> Callable:
                     details={"required_permissions": list(permissions), "mode": "all"},
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -152,6 +163,7 @@ def require_role(role: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -162,7 +174,9 @@ def require_role(role: str) -> Callable:
                     details={"required_role": role},
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -182,6 +196,7 @@ def require_any_role(*roles: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -192,7 +207,9 @@ def require_any_role(*roles: str) -> Callable:
                     details={"required_roles": list(roles), "mode": "any"},
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -212,6 +229,7 @@ def require_all_roles(*roles: str) -> Callable:
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -223,7 +241,9 @@ def require_all_roles(*roles: str) -> Callable:
                         details={"required_roles": list(roles), "mode": "all"},
                     )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -253,6 +273,7 @@ def require_owner_or_role(
             ...
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -267,7 +288,7 @@ def require_owner_or_role(
                 resource = args[0]
                 if owner_getter:
                     owner_id = owner_getter(resource)
-                elif hasattr(resource, 'owner_id'):
+                elif hasattr(resource, "owner_id"):
                     owner_id = resource.owner_id
                 else:
                     owner_id = None
@@ -279,5 +300,7 @@ def require_owner_or_role(
                 reason_code="FORBIDDEN",
                 details={"required": f"owner or {role}"},
             )
+
         return wrapper
+
     return decorator

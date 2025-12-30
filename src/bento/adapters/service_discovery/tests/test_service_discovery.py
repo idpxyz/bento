@@ -27,9 +27,7 @@ class MockServiceDiscovery(ServiceDiscovery):
         self.registered_services: list[tuple[str, str, int]] = []
         self.deregistered_services: list[tuple[str, str, int]] = []
 
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover service."""
         instances = await self.discover_all(service_name)
         if not instances:
@@ -50,15 +48,11 @@ class MockServiceDiscovery(ServiceDiscovery):
         """Register service."""
         self.registered_services.append((service_name, host, port))
 
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Deregister service."""
         self.deregistered_services.append((service_name, host, port))
 
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Check health."""
         instances = await self.discover_all(service_name)
         for instance in instances:

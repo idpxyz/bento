@@ -127,6 +127,7 @@ async def main():
 
         # Create observability provider (NoOp for testing)
         from bento.adapters.observability.noop import NoOpObservabilityProvider
+
         observability = NoOpObservabilityProvider()
 
         handler = CreateOrderHandler(uow, observability)

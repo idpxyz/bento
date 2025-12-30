@@ -36,7 +36,9 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
     validation_exc = exc if isinstance(exc, RequestValidationError) else None
 
     # 获取 request_id（由 RequestIDMiddleware 设置）
-    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+    request_id = getattr(
+        request.state, "request_id", request.headers.get("X-Request-ID", "unknown")
+    )
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -57,7 +59,9 @@ async def response_validation_exception_handler(request: Request, exc: Exception
     记录详细日志供开发者调试。
     """
     # 获取 request_id（由 RequestIDMiddleware 设置）
-    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+    request_id = getattr(
+        request.state, "request_id", request.headers.get("X-Request-ID", "unknown")
+    )
 
     logger.error(
         f"[{request_id}] Response validation failed for {request.url.path}: {exc}",
@@ -83,7 +87,9 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         return await generic_exception_handler(request, exc)
 
     # 获取 request_id（由 RequestIDMiddleware 设置）
-    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+    request_id = getattr(
+        request.state, "request_id", request.headers.get("X-Request-ID", "unknown")
+    )
 
     logger.warning(
         f"[{request_id}] Application exception for {request.url.path}: {app_exc.reason_code} - {app_exc.details}",
@@ -123,7 +129,9 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         return await application_exception_handler(request, exc)
 
     # 获取 request_id（由 RequestIDMiddleware 设置）
-    request_id = getattr(request.state, 'request_id', request.headers.get("X-Request-ID", "unknown"))
+    request_id = getattr(
+        request.state, "request_id", request.headers.get("X-Request-ID", "unknown")
+    )
 
     # 业务验证错误（领域模型抛出的 ValueError）
     if isinstance(exc, ValueError):

@@ -19,6 +19,7 @@ class GateResult:
         errors: List of error messages
         warnings: List of warning messages
     """
+
     passed: bool
     errors: list[str]
     warnings: list[str]
@@ -94,10 +95,13 @@ class ContractGate:
             # Try to load and validate
             try:
                 import json
+
                 for f in reason_files:
                     doc = json.loads(f.read_text(encoding="utf-8"))
                     if "reason_codes" not in doc:
-                        errors.append(f"Invalid reason codes file: {f} (missing 'reason_codes' key)")
+                        errors.append(
+                            f"Invalid reason codes file: {f} (missing 'reason_codes' key)"
+                        )
             except Exception as e:
                 errors.append(f"Failed to load reason codes: {e}")
 
@@ -113,6 +117,7 @@ class ContractGate:
             # Try to load and validate
             try:
                 import yaml
+
                 for f in sm_files:
                     doc = yaml.safe_load(f.read_text(encoding="utf-8"))
                     if not doc or "transitions" not in doc:

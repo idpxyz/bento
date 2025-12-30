@@ -6,6 +6,7 @@ Uses:
 - @state_transition decorator for Contract-as-Code validation
 - @command_handler decorator for DI registration
 """
+
 from dataclasses import dataclass
 
 from loms.contexts.shipment.domain.model.shipment import Shipment
@@ -48,6 +49,7 @@ class PlaceHoldHandler(CommandHandler[PlaceHoldCommand, dict]):
 
         # Set TenantContext for repository filtering
         from bento.multitenancy import TenantContext
+
         TenantContext.set(cmd.tenant_id)
 
         tenant = ID(cmd.tenant_id)

@@ -77,7 +77,10 @@ class CreateOrderHandler(ObservableCommandHandler[CreateOrderCommand, Order]):
             if item.unit_price < 0:
                 raise ApplicationException(
                     reason_code="INVALID_PARAMS",
-                    details={"field": f"items[{idx}].unit_price", "reason": "must be greater than or equal to 0"},
+                    details={
+                        "field": f"items[{idx}].unit_price",
+                        "reason": "must be greater than or equal to 0",
+                    },
                 )
 
     async def handle(self, command: CreateOrderCommand) -> Order:
@@ -112,7 +115,9 @@ class CreateOrderHandler(ObservableCommandHandler[CreateOrderCommand, Order]):
 
                 if unavailable_ids:
                     span.set_status("error", "Products not found")
-                    self._record_failure("create_order", "products_not_found", unavailable_count=len(unavailable_ids))
+                    self._record_failure(
+                        "create_order", "products_not_found", unavailable_count=len(unavailable_ids)
+                    )
                     self.logger.error(
                         "Products not found",
                         unavailable_products=unavailable_ids,
@@ -126,12 +131,12 @@ class CreateOrderHandler(ObservableCommandHandler[CreateOrderCommand, Order]):
                         },
                     )
 
-        # TODO P2: 检查库存充足（需要在 IProductCatalogService 中添加方法）
-        # products_info = await self._product_catalog.get_products_info(product_ids)
-        # for item in command.items:
-        #     product_info = products_info[item.product_id]
-        #     if product_info.stock < item.quantity:
-        #         raise ApplicationException(...)
+                # TODO P2: 检查库存充足（需要在 IProductCatalogService 中添加方法）
+                # products_info = await self._product_catalog.get_products_info(product_ids)
+                # for item in command.items:
+                #     product_info = products_info[item.product_id]
+                #     if product_info.stock < item.quantity:
+                #         raise ApplicationException(...)
 
                 # 创建订单聚合根
                 order_id = ID.generate()  # 生成 ID 对象（不转字符串）
@@ -213,7 +218,9 @@ class CreateOrderHandler(ObservableCommandHandler[CreateOrderCommand, Order]):
                 span.record_exception(e)
                 span.set_status("error", str(e))
 
-                self._record_failure("create_order", "unexpected_error", error_type=type(e).__name__)
+                self._record_failure(
+                    "create_order", "unexpected_error", error_type=type(e).__name__
+                )
 
                 self.logger.error(
                     "Unexpected error creating order",

@@ -78,6 +78,7 @@ def add_tenant_middleware(
     if sync_to_security_context:
         try:
             from bento.security import SecurityContext
+
             security_context = SecurityContext
         except ImportError:
             # SecurityContext not available, skip sync

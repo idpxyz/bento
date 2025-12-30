@@ -176,7 +176,7 @@ class MockGenerator:
         elif string_format == "ipv4":
             return f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
         elif string_format == "ipv6":
-            return ":".join(f"{random.randint(0, 0xffff):x}" for _ in range(8))
+            return ":".join(f"{random.randint(0, 0xFFFF):x}" for _ in range(8))
         elif pattern:
             # For patterns, just generate a string that might match
             # (full regex matching is complex, so we do simple approach)

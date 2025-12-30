@@ -228,33 +228,29 @@ async def test_read_service(session: AsyncSession, customer_id: str):
     order_data = await read_service.get_order_by_id(first_order.id)
     print_success(f"Retrieved order: {order_data['id']}")
     print_metric("Total amount", f"${order_data['total_amount']:.2f}")
-    print_metric("Items count", order_data['items_count'])
+    print_metric("Items count", order_data["items_count"])
 
     # Test 2: List orders
     print_info("\nTest 3.2: List orders by customer")
     result = await read_service.list_orders(customer_id=customer_id, limit=10)
     print_success(f"Found {len(result['items'])} orders")
-    print_metric("Total count", result['total'])
+    print_metric("Total count", result["total"])
 
     # Test 3: Search by amount range
     print_info("\nTest 3.3: Search orders by amount range")
-    result = await read_service.search_orders(
-        min_amount=100.0,
-        max_amount=5000.0,
-        limit=10
-    )
+    result = await read_service.search_orders(min_amount=100.0, max_amount=5000.0, limit=10)
     print_success(f"Found {len(result['items'])} orders in range $100-$5000")
-    for item in result['items']:
+    for item in result["items"]:
         print_metric(f"  Order {item['id'][:8]}...", f"${item['total_amount']:.2f}")
 
     # Test 4: Statistics
     print_info("\nTest 3.4: Get order statistics")
     stats = await read_service.get_order_statistics(customer_id=customer_id)
     print_success("Statistics calculated from read model:")
-    print_metric("Total orders", stats['total_orders'])
+    print_metric("Total orders", stats["total_orders"])
     print_metric("Total revenue", f"${stats['total_revenue']:.2f}")
     print_metric("Average order value", f"${stats['average_order_value']:.2f}")
-    print_metric("Status breakdown", stats['status_breakdown'])
+    print_metric("Status breakdown", stats["status_breakdown"])
 
 
 async def test_query_service_comparison(session: AsyncSession, customer_id: str):
@@ -271,34 +267,26 @@ async def test_query_service_comparison(session: AsyncSession, customer_id: str)
     # Traditional approach (in-memory filtering)
     print_info("\n[Traditional Approach]")
     start_time = time.time()
-    result1 = await query_service.search_orders(
-        min_amount=100.0,
-        max_amount=5000.0,
-        limit=10
-    )
+    result1 = await query_service.search_orders(min_amount=100.0, max_amount=5000.0, limit=10)
     elapsed1 = (time.time() - start_time) * 1000
 
     print_metric("Execution time", f"{elapsed1:.2f}ms")
-    print_metric("Results found", len(result1['items']))
+    print_metric("Results found", len(result1["items"]))
     print_warning("⚠ Requires JOIN + in-memory filtering")
 
     # CQRS approach (database-level filtering)
     print_info("\n[CQRS Approach]")
     start_time = time.time()
-    result2 = await read_service.search_orders(
-        min_amount=100.0,
-        max_amount=5000.0,
-        limit=10
-    )
+    result2 = await read_service.search_orders(min_amount=100.0, max_amount=5000.0, limit=10)
     elapsed2 = (time.time() - start_time) * 1000
 
     print_metric("Execution time", f"{elapsed2:.2f}ms")
-    print_metric("Results found", len(result2['items']))
+    print_metric("Results found", len(result2["items"]))
     print_success("✓ Database-level filtering on pre-calculated field")
 
     # Performance comparison
     if elapsed1 > 0:
-        speedup = elapsed1 / elapsed2 if elapsed2 > 0 else float('inf')
+        speedup = elapsed1 / elapsed2 if elapsed2 > 0 else float("inf")
         print_info(f"\n{BOLD}Performance Improvement: {speedup:.1f}x faster{RESET}")
 
 
@@ -351,7 +339,7 @@ async def test_batch_operations(session: AsyncSession):
 
     print_success(f"Created {num_orders} orders with projections")
     print_metric("Total time", f"{elapsed:.2f}ms")
-    print_metric("Average per order", f"{elapsed/num_orders:.2f}ms")
+    print_metric("Average per order", f"{elapsed / num_orders:.2f}ms")
 
     # Verify counts
     write_count = await session.scalar(select(func.count()).select_from(OrderModel))
@@ -452,7 +440,7 @@ async def test_mapper_functionality(session: AsyncSession):
         assert domain_item.item_id.value == po_item.id
         assert domain_item.product_name == po_item.product_name
         assert domain_item.quantity == po_item.quantity
-        print_success(f"✓ Item {i+1}: {po_item.product_name} mapped correctly")
+        print_success(f"✓ Item {i + 1}: {po_item.product_name} mapped correctly")
 
     # Map back to domain
     print_info("\nMapping: Persistence → Domain (reverse)")
@@ -478,7 +466,6 @@ async def main():
     try:
         # Setup
         engine = await setup_database()
-
 
         async with AsyncSession(engine) as session:
             # Test 1: Write model CRUD
@@ -509,7 +496,9 @@ async def main():
         print_success("✓ Test 3: CQRS Read Service")
         print_success("✓ Test 4: Performance Comparison")
         print_success("✓ Test 5: Batch Operations")
-        print_success("✓ Test 6: Data Consistency" if is_consistent else "✗ Test 6: Data Consistency")
+        print_success(
+            "✓ Test 6: Data Consistency" if is_consistent else "✗ Test 6: Data Consistency"
+        )
         print_success("✓ Test 7: Mapper Functionality")
 
         print(f"\n{BOLD}{GREEN}All tests completed successfully! ✓{RESET}\n")
@@ -519,17 +508,10 @@ async def main():
     except Exception as e:
         print_error(f"Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         raise
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
-
-
-
-

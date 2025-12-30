@@ -46,9 +46,11 @@ def port_for[T](port_interface: type[T]) -> Callable[[type], type]:
                 self.session = session
         ```
     """
+
     def decorator(cls: type) -> type:
         _port_registry[port_interface] = cls
         return cls
+
     return decorator
 
 

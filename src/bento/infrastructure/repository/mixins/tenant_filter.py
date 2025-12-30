@@ -64,6 +64,7 @@ class TenantFilterMixin:
             Current tenant ID or None
         """
         from bento.multitenancy import TenantContext
+
         return TenantContext.get()
 
     def _apply_tenant_filter(
@@ -87,11 +88,7 @@ class TenantFilterMixin:
 
         from bento.persistence.specification import EntitySpecificationBuilder
 
-        tenant_spec = (
-            EntitySpecificationBuilder()
-            .where(self.tenant_field, "=", tenant_id)
-            .build()
-        )
+        tenant_spec = EntitySpecificationBuilder().where(self.tenant_field, "=", tenant_id).build()
 
         if specification is None:
             return tenant_spec

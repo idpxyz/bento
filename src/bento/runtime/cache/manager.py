@@ -31,7 +31,7 @@ class CacheManager:
         Gracefully falls back to in-memory cache if Redis dependencies are missing.
         """
         # Cache configuration is optional
-        cache_config = getattr(self.runtime.config, 'cache', None)
+        cache_config = getattr(self.runtime.config, "cache", None)
         if not cache_config:
             logger.info("No cache configured, skipping")
             return
@@ -40,6 +40,7 @@ class CacheManager:
             # Try to import cache components
             try:
                 from bento.adapters.cache.config import CacheBackend, CacheConfig
+
                 has_cache_adapters = True
             except ImportError as e:
                 logger.warning(f"bento.adapters.cache not fully available: {e}")
@@ -51,13 +52,13 @@ class CacheManager:
 
             # Parse configuration
             if isinstance(cache_config, dict):
-                backend = cache_config.get('backend', 'memory')
+                backend = cache_config.get("backend", "memory")
                 config = CacheConfig(
                     backend=CacheBackend(backend),
-                    prefix=cache_config.get('prefix', ''),
-                    ttl=cache_config.get('ttl'),
-                    max_size=cache_config.get('max_size', 10000),
-                    redis_url=cache_config.get('redis_url'),
+                    prefix=cache_config.get("prefix", ""),
+                    ttl=cache_config.get("ttl"),
+                    max_size=cache_config.get("max_size", 10000),
+                    redis_url=cache_config.get("redis_url"),
                 )
             else:
                 # Assume it's already a CacheConfig object
@@ -99,6 +100,7 @@ class CacheManager:
 
                 try:
                     from bento.adapters.cache.redis import RedisCache
+
                     cache = RedisCache(config)
                     logger.info(
                         f"Cache configured: RedisCache "
@@ -106,9 +108,7 @@ class CacheManager:
                     )
                     return cache
                 except ImportError:
-                    logger.warning(
-                        "Redis dependencies not available, falling back to MemoryCache"
-                    )
+                    logger.warning("Redis dependencies not available, falling back to MemoryCache")
                     # Fallback to memory cache
                     cache = MemoryCache(config)
                     logger.info("Using MemoryCache as fallback")

@@ -1,4 +1,5 @@
 """CloseShipment command and handler."""
+
 from dataclasses import dataclass
 
 from loms.contexts.shipment.domain.model import Shipment

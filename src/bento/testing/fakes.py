@@ -5,6 +5,7 @@ Provides in-memory test doubles for:
 - Repository
 - IdempotencyStore
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -106,10 +107,14 @@ class FakeIdempotencyStore:
         if data is None:
             return None
         # Return mock object with expected attributes
-        return type("CachedResponse", (), {
-            "request_hash": data["request_hash"],
-            "response_body": data["response_body"],
-        })()
+        return type(
+            "CachedResponse",
+            (),
+            {
+                "request_hash": data["request_hash"],
+                "response_body": data["response_body"],
+            },
+        )()
 
     async def store_response(
         self,
@@ -161,8 +166,10 @@ class FakeUnitOfWork:
     ) -> None:
         """Register a repository for an aggregate type."""
         if repo_factory is None:
+
             def default_factory() -> InMemoryRepository:
                 return InMemoryRepository()
+
             repo_factory = default_factory
 
         if callable(repo_factory) and not isinstance(repo_factory, type):

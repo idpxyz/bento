@@ -60,10 +60,10 @@ class QueryHandler[TQuery, TResult](ABC):
 
     async def validate(self, query: TQuery) -> None:
         """Validate query parameters before execution.
-        
+
         Override this method to add custom validation logic.
         Raise exceptions for validation failures.
-        
+
         Default implementation performs no validation (optional hook method).
 
         Args:

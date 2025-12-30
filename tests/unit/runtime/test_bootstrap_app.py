@@ -45,11 +45,7 @@ class DummyModule(BentoModule):
 @pytest.mark.asyncio
 async def test_create_fastapi_app_registers_routes_middleware_and_lifecycle():
     events: list[str] = []
-    runtime = (
-        RuntimeBuilder()
-        .with_modules(DummyModule(events))
-        .build_runtime()
-    )
+    runtime = RuntimeBuilder().with_modules(DummyModule(events)).build_runtime()
     app = runtime.create_fastapi_app(title="Test App")
 
     with TestClient(app) as client:

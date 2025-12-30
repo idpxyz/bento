@@ -13,6 +13,7 @@ class ReasonCodeSpec:
     http_status: int
     retry_after_hint_seconds: int | None = None
 
+
 class ReasonCodes:
     def __init__(self, mapping: dict[str, ReasonCodeSpec]):
         self._mapping = mapping

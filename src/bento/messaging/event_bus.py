@@ -13,11 +13,9 @@ Handler = Callable[[dict], Awaitable[None]]
 class EventBus(Protocol):
     """Protocol describing minimal event bus functionality."""
 
-    async def publish(self, topic: str, payload: dict) -> None:
-        ...
+    async def publish(self, topic: str, payload: dict) -> None: ...
 
-    def subscribe(self, topic: str, handler: Handler) -> None:
-        ...
+    def subscribe(self, topic: str, handler: Handler) -> None: ...
 
 
 class InMemoryEventBus:

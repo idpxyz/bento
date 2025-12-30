@@ -2,4 +2,3 @@
 
 Contains application bootstrap and dependency injection configuration.
 """
-

@@ -1,4 +1,5 @@
 """Product 仓储集成测试"""
+
 import pytest
 
 from contexts.catalog.domain.models.product import Product

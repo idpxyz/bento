@@ -3,6 +3,7 @@ Contract Loader - Contracts-as-Code.
 
 Loads all contracts (state machines, reason codes, routing, schemas) from files.
 """
+
 import json
 import pathlib
 
@@ -36,11 +37,19 @@ class ContractLoader:
 
         # Reason codes
         reason_path = p / "contracts/reason-codes/reason_codes.full.v1_0.json"
-        reason_doc = json.loads(reason_path.read_text(encoding="utf-8")) if reason_path.exists() else {"reason_codes": []}
+        reason_doc = (
+            json.loads(reason_path.read_text(encoding="utf-8"))
+            if reason_path.exists()
+            else {"reason_codes": []}
+        )
 
         # Routing matrix
         routing_path = p / "contracts/routing/event_routing_matrix.full.v1_0.yaml"
-        routing_doc = yaml.safe_load(routing_path.read_text(encoding="utf-8")) if routing_path.exists() else {"routes": []}
+        routing_doc = (
+            yaml.safe_load(routing_path.read_text(encoding="utf-8"))
+            if routing_path.exists()
+            else {"routes": []}
+        )
 
         # State machines
         machines = {}

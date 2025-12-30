@@ -11,7 +11,6 @@ from typing import Any
 class SoftDeleteEnhancedMixin:
     """Mixin providing enhanced soft delete operations for RepositoryAdapter."""
 
-
     # Type hints for attributes provided by RepositoryAdapter
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance

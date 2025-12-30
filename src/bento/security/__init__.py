@@ -91,4 +91,3 @@ __all__ = [
 # - clear_user() - Clear only user, keeping tenant
 # - clear_tenant() - Clear only tenant, keeping user
 # - clear() - Now clears both user and tenant (breaking change from previous behavior)
-

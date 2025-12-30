@@ -107,8 +107,7 @@ def setup_database(runtime: "BentoRuntime") -> None:
                 )
 
             logger.warning(
-                "No database configured. "
-                "Database-dependent features will not be available."
+                "No database configured. Database-dependent features will not be available."
             )
             return
 
@@ -134,6 +133,5 @@ def setup_database(runtime: "BentoRuntime") -> None:
 
     except Exception as e:
         raise RuntimeError(
-            f"Failed to setup database: {e}\n"
-            f"Check DATABASE_URL format and database connectivity."
+            f"Failed to setup database: {e}\nCheck DATABASE_URL format and database connectivity."
         ) from e

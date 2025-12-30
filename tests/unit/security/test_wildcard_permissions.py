@@ -12,7 +12,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:read", "orders:write"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("orders:write") is True
         assert user.has_permission("products:read") is False
@@ -23,7 +23,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:*"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("orders:write") is True
         assert user.has_permission("orders:delete") is True
@@ -35,7 +35,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["*:read"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("products:read") is True
         assert user.has_permission("users:read") is True
@@ -47,7 +47,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["*"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("products:write") is True
         assert user.has_permission("users:delete") is True
@@ -59,15 +59,15 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:*", "products:read", "users:admin:*"],
         )
-        
+
         # Exact matches
         assert user.has_permission("products:read") is True
-        
+
         # Wildcard matches
         assert user.has_permission("orders:write") is True
         assert user.has_permission("users:admin:create") is True
         assert user.has_permission("users:admin:delete") is True
-        
+
         # Non-matches
         assert user.has_permission("products:write") is False
         assert user.has_permission("users:read") is False
@@ -78,7 +78,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["order?:read"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("ordert:read") is True
         assert user.has_permission("order:read") is False
@@ -90,7 +90,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["[op]rders:*"],
         )
-        
+
         assert user.has_permission("orders:read") is True
         assert user.has_permission("prders:read") is True
         assert user.has_permission("arders:read") is False
@@ -101,10 +101,10 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:read", "orders:*"],
         )
-        
+
         # Should match via exact match (fast path)
         assert user.has_permission("orders:read") is True
-        
+
         # Should match via wildcard
         assert user.has_permission("orders:write") is True
 
@@ -114,7 +114,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=[],
         )
-        
+
         assert user.has_permission("orders:read") is False
         assert user.has_permission("*") is False
 
@@ -124,7 +124,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["Orders:*"],
         )
-        
+
         assert user.has_permission("Orders:read") is True
         assert user.has_permission("orders:read") is False
 
@@ -134,7 +134,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:*"],
         )
-        
+
         # Should work with wildcard permissions
         assert user.has_any_permission(["orders:read", "products:write"]) is True
         assert user.has_any_permission(["products:read", "users:write"]) is False
@@ -145,7 +145,7 @@ class TestWildcardPermissions:
             id="user-1",
             permissions=["orders:*", "products:*"],
         )
-        
+
         # Should work with wildcard permissions
         assert user.has_all_permissions(["orders:read", "products:write"]) is True
         assert user.has_all_permissions(["orders:read", "users:write"]) is False

@@ -15,9 +15,9 @@ def main():
     app = create_app()
     client = TestClient(app)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🔐 My-Shop Auth Endpoints Test")
-    print("="*70)
+    print("=" * 70)
 
     # Test 1: Get current user
     print("\n1️⃣  Testing GET /api/v1/auth/me (Get current user):")
@@ -43,9 +43,9 @@ def main():
     print(f"      Has 'admin' permission: {context['has_permission_check']['admin']}")
     print(f"      Has 'user' permission: {context['has_permission_check']['user']}")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("✅ Auth Endpoints Test Completed!")
-    print("="*70)
+    print("=" * 70)
 
     print("\n📊 Summary:")
     print("   ✅ GET /api/v1/auth/me - Returns current user")

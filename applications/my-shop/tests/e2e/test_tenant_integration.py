@@ -13,9 +13,9 @@ def main():
     app = create_app()
     client = TestClient(app)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🏢 My-Shop Tenant Middleware Integration Test")
-    print("="*70)
+    print("=" * 70)
 
     # Test 1: Request without tenant header
     print("\n1️⃣  Testing without X-Tenant-ID header:")
@@ -27,41 +27,32 @@ def main():
 
     # Test 2: Request with tenant header
     print("\n2️⃣  Testing with X-Tenant-ID: tenant-a:")
-    response = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "tenant-a"}
-    )
+    response = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "tenant-a"})
     print(f"   Status: {response.status_code}")
     context = response.json()
     print(f"   Tenant ID: {context.get('tenant_id')}")
-    assert context.get('tenant_id') == "tenant-a", "Tenant ID should be 'tenant-a'"
+    assert context.get("tenant_id") == "tenant-a", "Tenant ID should be 'tenant-a'"
     print("   ✅ X-Tenant-ID header → tenant_id = 'tenant-a'")
 
     # Test 3: Request with different tenant
     print("\n3️⃣  Testing with X-Tenant-ID: tenant-b:")
-    response = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "tenant-b"}
-    )
+    response = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "tenant-b"})
     print(f"   Status: {response.status_code}")
     context = response.json()
     print(f"   Tenant ID: {context.get('tenant_id')}")
-    assert context.get('tenant_id') == "tenant-b", "Tenant ID should be 'tenant-b'"
+    assert context.get("tenant_id") == "tenant-b", "Tenant ID should be 'tenant-b'"
     print("   ✅ X-Tenant-ID header → tenant_id = 'tenant-b'")
 
     # Test 4: Verify user and tenant coexist
     print("\n4️⃣  Testing user and tenant coexistence:")
-    response = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "tenant-xyz"}
-    )
+    response = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "tenant-xyz"})
     context = response.json()
     print(f"   Authenticated: {context.get('authenticated')}")
     print(f"   User ID: {context.get('user', {}).get('id')}")
     print(f"   Tenant ID: {context.get('tenant_id')}")
-    assert context.get('authenticated'), "Should be authenticated"
-    assert context.get('user', {}).get('id') == "demo-user", "User should be demo-user"
-    assert context.get('tenant_id') == "tenant-xyz", "Tenant should be tenant-xyz"
+    assert context.get("authenticated"), "Should be authenticated"
+    assert context.get("user", {}).get("id") == "demo-user", "User should be demo-user"
+    assert context.get("tenant_id") == "tenant-xyz", "Tenant should be tenant-xyz"
     print("   ✅ User and tenant both available in context")
 
     # Test 5: Excluded paths don't require tenant
@@ -75,26 +66,20 @@ def main():
     print("\n6️⃣  Testing tenant isolation concept:")
     print("   Making requests with different tenants:")
 
-    response1 = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "tenant-shop-a"}
-    )
-    tenant1 = response1.json().get('tenant_id')
+    response1 = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "tenant-shop-a"})
+    tenant1 = response1.json().get("tenant_id")
 
-    response2 = client.get(
-        "/api/v1/auth/me/context",
-        headers={"X-Tenant-ID": "tenant-shop-b"}
-    )
-    tenant2 = response2.json().get('tenant_id')
+    response2 = client.get("/api/v1/auth/me/context", headers={"X-Tenant-ID": "tenant-shop-b"})
+    tenant2 = response2.json().get("tenant_id")
 
     print(f"   Request 1 tenant: {tenant1}")
     print(f"   Request 2 tenant: {tenant2}")
     assert tenant1 != tenant2, "Different requests should have different tenants"
     print("   ✅ Tenant isolation verified")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("✅ Tenant Middleware Integration Test Completed!")
-    print("="*70)
+    print("=" * 70)
 
     print("\n📊 Summary:")
     print("   ✅ Tenant middleware is active")

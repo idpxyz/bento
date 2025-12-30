@@ -184,10 +184,7 @@ class TestBreakingChangeDetector:
 
         assert not report.is_compatible
         assert len(report.breaking_changes) == 1
-        assert (
-            report.breaking_changes[0].change_type
-            == ChangeType.ADDITIONAL_PROPERTIES_CHANGED
-        )
+        assert report.breaking_changes[0].change_type == ChangeType.ADDITIONAL_PROPERTIES_CHANGED
 
     def test_detect_multiple_changes(self):
         """Test detection of multiple changes."""

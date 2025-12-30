@@ -1,4 +1,5 @@
 """Shipment aggregate root - @dataclass + AggregateRoot pattern."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -148,7 +149,9 @@ class Shipment(AggregateRoot):
     # ==========================================================================
     # Command: PlaceHold
     # ==========================================================================
-    def place_hold(self, hold_type: HoldTypeCode, reason: str | None, hold_id: ID | None = None) -> Hold:
+    def place_hold(
+        self, hold_type: HoldTypeCode, reason: str | None, hold_id: ID | None = None
+    ) -> Hold:
         """Place a hold on the shipment."""
         if not self.status.can_place_hold:
             raise ValueError("STATE_CONFLICT: Cannot place hold in current status")
@@ -156,7 +159,9 @@ class Shipment(AggregateRoot):
         # Check for duplicate active hold of same type
         for h in self.active_holds:
             if h.hold_type_code == hold_type.value:
-                raise ValueError(f"DUPLICATE_HOLD: Active hold of type {hold_type.value} already exists")
+                raise ValueError(
+                    f"DUPLICATE_HOLD: Active hold of type {hold_type.value} already exists"
+                )
 
         now = datetime.now(UTC)
         hold = Hold(
@@ -225,7 +230,9 @@ class Shipment(AggregateRoot):
             raise ValueError("STATE_CONFLICT: Cannot close in current status")
 
         if self.has_active_hold and not force_close_reason:
-            raise ValueError("ACTIVE_HOLD: Cannot close with active holds without force_close_reason")
+            raise ValueError(
+                "ACTIVE_HOLD: Cannot close with active holds without force_close_reason"
+            )
 
         self.status = ShipmentStatus(ShipmentStatusEnum.CLOSED.value)
 
@@ -264,4 +271,3 @@ class Shipment(AggregateRoot):
                 updated_at=datetime.now(UTC).isoformat(),
             )
         )
-

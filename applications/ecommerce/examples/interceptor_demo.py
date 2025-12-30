@@ -29,11 +29,11 @@ from bento.core.ids import ID
 def print_separator(title: str = "") -> None:
     """Print a formatted separator."""
     if title:
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(f"  {title}")
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
     else:
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
 
 async def demo_audit_fields():
@@ -45,9 +45,7 @@ async def demo_audit_fields():
 
     async for session in get_session():
         # Create repository with Interceptors (actor = "user-alice")
-        repo = create_order_repository_with_interceptors(
-            session=session, actor="user-alice"
-        )
+        repo = create_order_repository_with_interceptors(session=session, actor="user-alice")
 
         # 1. CREATE: Create a new order
         print("1️⃣  Creating new order...")
@@ -86,9 +84,7 @@ async def demo_audit_fields():
         await asyncio.sleep(0.1)  # Small delay to see timestamp change
 
         # Change actor to simulate different user
-        repo2 = create_order_repository_with_interceptors(
-            session=session, actor="user-bob"
-        )
+        repo2 = create_order_repository_with_interceptors(session=session, actor="user-bob")
 
         order2 = await repo2.find_by_id(ID(order.id.value))
         if order2:
@@ -110,9 +106,7 @@ async def demo_audit_fields():
         print("\n3️⃣  Soft deleting order...")
         await asyncio.sleep(0.1)
 
-        repo3 = create_order_repository_with_interceptors(
-            session=session, actor="user-admin"
-        )
+        repo3 = create_order_repository_with_interceptors(session=session, actor="user-admin")
 
         order3 = await repo3.find_by_id(ID(order.id.value))
         if order3:
@@ -120,9 +114,7 @@ async def demo_audit_fields():
             await session.commit()
 
         # Reload from DB to see soft delete
-        result = await session.execute(
-            select(OrderModel).where(OrderModel.id == order.id.value)
-        )
+        result = await session.execute(select(OrderModel).where(OrderModel.id == order.id.value))
         order_model_after_delete = result.scalar_one()
 
         print(f"✅ Order soft deleted: {order_model_after_delete.id}")
@@ -139,9 +131,7 @@ async def demo_version_management():
     print_separator("DEMO 2: Optimistic Locking (Version Management)")
 
     async for session in get_session():
-        repo = create_order_repository_with_interceptors(
-            session=session, actor="user-charlie"
-        )
+        repo = create_order_repository_with_interceptors(session=session, actor="user-charlie")
 
         # Create order
         print("1️⃣  Creating order...")
@@ -160,9 +150,7 @@ async def demo_version_management():
         await session.commit()
 
         # Check initial version
-        result = await session.execute(
-            select(OrderModel).where(OrderModel.id == order.id.value)
-        )
+        result = await session.execute(select(OrderModel).where(OrderModel.id == order.id.value))
         order_model = result.scalar_one()
         print(f"✅ Initial version: {order_model.version}")
 
@@ -201,9 +189,7 @@ async def demo_soft_delete_queries():
     print_separator("DEMO 3: Soft Delete Query Behavior")
 
     async for session in get_session():
-        repo = create_order_repository_with_interceptors(
-            session=session, actor="user-dave"
-        )
+        repo = create_order_repository_with_interceptors(session=session, actor="user-dave")
 
         # Create 3 orders
         print("1️⃣  Creating 3 orders...")
@@ -215,7 +201,7 @@ async def demo_soft_delete_queries():
             )
             order.add_item(
                 product_id=ID.generate(),
-                product_name=f"Product {i+1}",
+                product_name=f"Product {i + 1}",
                 quantity=1,
                 unit_price=99.99 * (i + 1),
             )
@@ -237,9 +223,7 @@ async def demo_soft_delete_queries():
             await session.commit()
 
         # Check soft delete in DB
-        result = await session.execute(
-            select(OrderModel).where(OrderModel.id == order_ids[0])
-        )
+        result = await session.execute(select(OrderModel).where(OrderModel.id == order_ids[0]))
         deleted_order = result.scalar_one()
         print("✅ Order soft deleted")
         print(f"   deleted_at: {deleted_order.deleted_at}")

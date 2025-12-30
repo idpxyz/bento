@@ -1,4 +1,5 @@
 """Shipment domain events."""
+
 from loms.contexts.shipment.domain.events.shipment_events import (
     LegAdded,
     ShipmentClosed,

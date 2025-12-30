@@ -66,10 +66,12 @@ class TestCreateOrderHandler:
         )
 
         # Mock product_catalog 通过 uow.port() 获取
-        mock_product_catalog.check_products_available = AsyncMock(return_value=(
-            ["product-001"],  # available
-            [],  # unavailable
-        ))
+        mock_product_catalog.check_products_available = AsyncMock(
+            return_value=(
+                ["product-001"],  # available
+                [],  # unavailable
+            )
+        )
         mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Mock 仓储
@@ -104,10 +106,12 @@ class TestCreateOrderHandler:
         )
 
         # Mock product_catalog 通过 uow.port() 获取
-        mock_product_catalog.check_products_available = AsyncMock(return_value=(
-            [],  # available
-            ["nonexistent-product"],  # unavailable
-        ))
+        mock_product_catalog.check_products_available = AsyncMock(
+            return_value=(
+                [],  # available
+                ["nonexistent-product"],  # unavailable
+            )
+        )
         mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Act & Assert

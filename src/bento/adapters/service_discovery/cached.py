@@ -37,9 +37,7 @@ class CachedServiceDiscovery(ServiceDiscovery):
         self.ttl = ttl
         self.cache: dict[str, tuple[list[ServiceInstance], float]] = {}
 
-    async def discover(
-        self, service_name: str, strategy: str = "round_robin"
-    ) -> ServiceInstance:
+    async def discover(self, service_name: str, strategy: str = "round_robin") -> ServiceInstance:
         """Discover with caching."""
         instances = await self.discover_all(service_name)
 
@@ -89,17 +87,13 @@ class CachedServiceDiscovery(ServiceDiscovery):
         self.cache.pop(service_name, None)
         logger.debug(f"Invalidated cache for {service_name}")
 
-    async def deregister(
-        self, service_name: str, host: str, port: int
-    ) -> None:
+    async def deregister(self, service_name: str, host: str, port: int) -> None:
         """Deregister and invalidate cache."""
         await self.discovery.deregister(service_name, host, port)
         self.cache.pop(service_name, None)
         logger.debug(f"Invalidated cache for {service_name}")
 
-    async def health_check(
-        self, service_name: str, host: str, port: int
-    ) -> bool:
+    async def health_check(self, service_name: str, host: str, port: int) -> bool:
         """Health check."""
         return await self.discovery.health_check(service_name, host, port)
 

@@ -313,16 +313,12 @@ def example_stock_replenishment():
 
     # Case 2: Low stock - urgent
     print("\n2. Low stock - urgent replenishment needed:")
-    item2 = InventoryItem(
-        product_id="CHARGER-008", available_quantity=15, low_stock_threshold=30
-    )
+    item2 = InventoryItem(product_id="CHARGER-008", available_quantity=15, low_stock_threshold=30)
     recommendation2 = service.recommend_stock_replenishment(item2, sales_velocity=5.0)
     if recommendation2:
         print(f"   Product: {recommendation2['product_id']}")
         print(f"   Urgency: {recommendation2['urgency'].upper()}")
-        print(
-            f"   Days Until Stockout: {recommendation2['days_until_stockout']} days"
-        )
+        print(f"   Days Until Stockout: {recommendation2['days_until_stockout']} days")
         print(f"   Recommended Quantity: {recommendation2['recommended_quantity']} units")
         print(f"   ⚠ {recommendation2['message']}")
 
