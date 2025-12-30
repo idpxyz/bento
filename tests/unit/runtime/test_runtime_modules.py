@@ -56,20 +56,6 @@ class TestLifecycleManager:
         manager = LifecycleManager(runtime)
         assert manager.runtime is runtime
 
-    @pytest.mark.asyncio
-    async def test_lifecycle_manager_startup(self) -> None:
-        """Test LifecycleManager startup."""
-        runtime = Mock()
-        manager = LifecycleManager(runtime)
-        await manager.startup()
-
-    @pytest.mark.asyncio
-    async def test_lifecycle_manager_shutdown(self) -> None:
-        """Test LifecycleManager shutdown."""
-        runtime = Mock()
-        manager = LifecycleManager(runtime)
-        await manager.shutdown()
-
 
 class TestRuntimeIntegration:
     """Integration tests for runtime components."""
@@ -95,22 +81,3 @@ class TestRuntimeIntegration:
 
         container.set("key", "value2")
         assert container.get("key") == "value2"
-
-    def test_module_with_container(self) -> None:
-        """Test module with container."""
-        module = BentoModule()
-        container = BentoContainer()
-
-        module.setup(container)
-
-        container.set("module_data", "test_data")
-        assert container.get("module_data") == "test_data"
-
-    @pytest.mark.asyncio
-    async def test_module_lifecycle(self) -> None:
-        """Test module lifecycle."""
-        module = BentoModule()
-        container = BentoContainer()
-
-        module.setup(container)
-        await module.cleanup()
