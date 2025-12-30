@@ -1,9 +1,6 @@
 """Order API routes (FastAPI) - Thin Interface Layer"""
 
-from datetime import datetime
-
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
 
 from contexts.ordering.application.commands.cancel_order import (
     CancelOrderCommand,
@@ -30,87 +27,20 @@ from contexts.ordering.application.queries.list_orders import (
     ListOrdersHandler,
     ListOrdersQuery,
 )
-from contexts.ordering.interfaces.order_presenters import order_to_dict
+from contexts.ordering.interfaces.dto import (
+    # Request Models
+    CreateOrderRequest,
+    PayOrderRequest,
+    ShipOrderRequest,
+    CancelOrderRequest,
+    # Response Models
+    OrderResponse,
+    ListOrdersResponse,
+)
+from contexts.ordering.interfaces.mappers import order_to_response
 from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
-
-
-# ==================== Request/Response Models ====================
-
-
-class OrderItemRequest(BaseModel):
-    """Order item request model."""
-
-    product_id: str
-    product_name: str
-    quantity: int
-    unit_price: float
-
-
-class CreateOrderRequest(BaseModel):
-    """Create order request model.
-
-    Note: For idempotency, pass X-Idempotency-Key in HTTP Header.
-    """
-
-    customer_id: str
-    items: list[OrderItemRequest]
-
-
-class PayOrderRequest(BaseModel):
-    """Pay order request model.
-
-    Note: For idempotency, pass X-Idempotency-Key in HTTP Header.
-    """
-
-    pass  # Empty body, idempotency handled via Header
-
-
-class ShipOrderRequest(BaseModel):
-    """Ship order request model.
-
-    Note: For idempotency, pass X-Idempotency-Key in HTTP Header.
-    """
-
-    tracking_number: str | None = None
-
-
-class CancelOrderRequest(BaseModel):
-    """Cancel order request model."""
-
-    reason: str
-
-
-class OrderItemResponse(BaseModel):
-    """Order item response model."""
-
-    id: str
-    product_id: str
-    product_name: str
-    quantity: int
-    unit_price: float
-    subtotal: float
-
-
-class OrderResponse(BaseModel):
-    """Order response model."""
-
-    id: str
-    customer_id: str
-    items: list[OrderItemResponse]
-    total: float
-    status: str
-    created_at: datetime | None  # ✅ 与 OrderDTO 保持一致
-    paid_at: datetime | None
-    shipped_at: datetime | None
-
-
-class ListOrdersResponse(BaseModel):
-    """List orders response model."""
-
-    items: list[OrderResponse]
-    total: int
 
 
 # ==================== Dependency Injection ====================
@@ -155,11 +85,11 @@ async def create_order(
         items=items,
     )
 
-    # Execute Use Case
+    # Execute Command
     order = await handler.execute(command)
 
-    # Domain → Response
-    return OrderResponse(**order_to_dict(order))
+    # Domain → DTO → Response
+    return order_to_response(order)
 
 
 @router.get(
@@ -177,7 +107,7 @@ async def list_orders(
     result = await handler.execute(query)
 
     return ListOrdersResponse(
-        items=[OrderResponse(**order.model_dump()) for order in result.orders],
+        items=[order_to_response(order) for order in result.orders],
         total=result.total,
     )
 
@@ -194,7 +124,7 @@ async def get_order(
     """Get an order by ID."""
     query = GetOrderQuery(order_id=order_id)
     order = await handler.execute(query)
-    return OrderResponse(**order.model_dump())
+    return order_to_response(order)
 
 
 @router.post(
@@ -219,7 +149,7 @@ async def pay_order(
         order_id=order_id,
     )
     order = await handler.execute(command)
-    return OrderResponse(**order_to_dict(order))
+    return order_to_response(order)
 
 
 @router.post(
@@ -250,7 +180,7 @@ async def ship_order(
             tracking_number=request.tracking_number,
         )
         order = await handler.execute(command)
-        return OrderResponse(**order_to_dict(order))
+        return order_to_response(order)
     except ApplicationException as e:
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail="Order not found") from e
@@ -273,4 +203,4 @@ async def cancel_order(
         reason=request.reason,
     )
     order = await handler.execute(command)
-    return OrderResponse(**order_to_dict(order))
+    return order_to_response(order)
