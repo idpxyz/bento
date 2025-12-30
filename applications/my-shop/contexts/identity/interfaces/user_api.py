@@ -83,7 +83,7 @@ class ListUsersResponse(BaseModel):
 )
 async def create_user(
     request: CreateUserRequest,
-    handler: CreateUserHandler = handler_dependency(CreateUserHandler),  # type: ignore
+    handler: CreateUserHandler = handler_dependency(CreateUserHandler),
 ) -> UserResponse:
     """Create a new user."""
     # 1. Convert Request → Command
@@ -106,7 +106,7 @@ async def create_user(
     description="List users with pagination",
 )
 async def list_users(
-    handler: ListUsersHandler = handler_dependency(ListUsersHandler),  # type: ignore
+    handler: ListUsersHandler = handler_dependency(ListUsersHandler),
     page: int = 1,
     page_size: int = 10,
 ) -> ListUsersResponse:
@@ -137,7 +137,7 @@ async def list_users(
 )
 async def get_user(
     user_id: str,
-    handler: GetUserHandler = handler_dependency(GetUserHandler),  # type: ignore
+    handler: GetUserHandler = handler_dependency(GetUserHandler),
 ) -> UserResponse:
     """Get a user by ID."""
     # 1. Convert Request → Query
@@ -159,7 +159,7 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    handler: UpdateUserHandler = handler_dependency(UpdateUserHandler),  # type: ignore
+    handler: UpdateUserHandler = handler_dependency(UpdateUserHandler),
 ) -> UserResponse:
     """Update a user."""
     # 1. Convert Request → Command
@@ -184,7 +184,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: str,
-    handler: DeleteUserHandler = handler_dependency(DeleteUserHandler),  # type: ignore
+    handler: DeleteUserHandler = handler_dependency(DeleteUserHandler),
 ) -> None:
     """Delete a user (soft delete)."""
     # 1. Convert Request → Command

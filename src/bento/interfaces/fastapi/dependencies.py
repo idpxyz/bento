@@ -26,18 +26,20 @@ if TYPE_CHECKING:
     from fastapi import Request
 
 
-class HandlerProtocol(Protocol):
-    """Protocol for Handler classes that accept UoW in constructor.
+THandler = TypeVar("THandler")
 
-    All CommandHandler and QueryHandler classes follow this protocol.
-    Note: Observable handlers may also accept an ObservabilityProvider parameter,
-    which is handled dynamically at runtime via reflection in handler_dependency().
+
+class HandlerProtocol(Protocol):
+    """Protocol for Handler classes.
+
+    Supports both standard handlers (UoW only) and observable handlers (UoW + ObservabilityProvider).
+    The actual __init__ signature is flexible and determined at runtime via reflection.
     """
 
-    def __init__(self, uow: UnitOfWork) -> None: ...
+    async def execute(self, command_or_query: Any) -> Any: ...
 
 
-def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callable[[type[HandlerProtocol]], Any]:
+def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callable[[type[Any]], Any]:
     """Create a handler_dependency factory with custom UoW dependency.
 
     This is the primary way to create handler dependencies in Bento applications.

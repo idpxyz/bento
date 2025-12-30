@@ -126,7 +126,7 @@ class ListOrdersResponse(BaseModel):
 )
 async def create_order(
     request: CreateOrderRequest,
-    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),  # type: ignore
+    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),
 ) -> OrderResponse:
     """Create a new order with items.
 
@@ -205,7 +205,7 @@ async def get_order(
 async def pay_order(
     order_id: str,
     request: PayOrderRequest,
-    handler: PayOrderHandler = handler_dependency(PayOrderHandler),  # type: ignore
+    handler: PayOrderHandler = handler_dependency(PayOrderHandler),
 ) -> OrderResponse:
     """Confirm payment for an order.
 
@@ -230,7 +230,7 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),  # type: ignore
+    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),
 ) -> OrderResponse:
     """Ship an order.
 
@@ -265,7 +265,7 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),  # type: ignore
+    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),
 ) -> OrderResponse:
     """Cancel an order."""
     command = CancelOrderCommand(
