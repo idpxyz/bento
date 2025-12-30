@@ -8,10 +8,11 @@ in the actual ecommerce application with interceptors and database.
 import asyncio
 import sys
 from pathlib import Path
+
+from applications.ecommerce.persistence.models import OrderModel
 from sqlalchemy import select
 
 from applications.ecommerce.modules.order.domain.order import Order
-from applications.ecommerce.persistence.models import OrderModel
 from applications.ecommerce.runtime.composition import (
     close_db,
     create_order_repository_with_interceptors,

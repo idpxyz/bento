@@ -12,11 +12,11 @@ Run with:
 
 import asyncio
 
+from applications.ecommerce.persistence.models import OrderModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from applications.ecommerce.modules.order.domain.order import Order
-from applications.ecommerce.persistence.models import OrderModel
 from applications.ecommerce.runtime.composition import (
     close_db,
     create_order_repository_with_interceptors,

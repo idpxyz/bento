@@ -10,13 +10,14 @@
 import asyncio
 import sys
 from pathlib import Path
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.persistence import OrderRepository
-from bento.persistence import Base
 from bento.core.ids import ID
 from bento.infrastructure.database import init_database
+from bento.persistence import Base
 from bento.persistence.specification import PageParams
 
 # Add project root to Python path
