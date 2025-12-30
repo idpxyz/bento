@@ -31,7 +31,7 @@ Performance Monitoring:
 """
 
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar, overload
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar
 import time
 import logging
 
@@ -39,7 +39,6 @@ from bento.application.ports.uow import UnitOfWork
 
 if TYPE_CHECKING:
     from fastapi import Request
-    from bento.application.ports.observability import ObservabilityProvider
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +82,10 @@ def _create_handler_with_dependencies(
     and injects it from runtime.container, falling back to NoOp if unavailable.
 
     Performance: Uses cached reflection results to minimize overhead.
+
+    Note: This function uses runtime reflection to determine the correct
+    constructor signature. The type checker cannot verify this at compile time,
+    but it is guaranteed to be correct at runtime.
 
     Args:
         handler_cls: Handler class to instantiate
@@ -136,13 +139,12 @@ class HandlerProtocol(Protocol):
     """Protocol for Handler classes.
 
     Supports both standard handlers (UoW only) and observable handlers (UoW + ObservabilityProvider).
+
+    Note: The __init__ signature is intentionally not defined here because handlers
+    can have different constructor signatures (with or without observability parameter).
+    Runtime reflection in _create_handler_with_dependencies() ensures the correct
+    constructor is called.
     """
-
-    @overload
-    def __init__(self, uow: UnitOfWork) -> None: ...
-
-    @overload
-    def __init__(self, uow: UnitOfWork, observability: "ObservabilityProvider") -> None: ...
 
     async def execute(self, command_or_query: Any) -> Any: ...
 
