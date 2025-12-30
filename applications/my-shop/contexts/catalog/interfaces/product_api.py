@@ -1,7 +1,5 @@
 """Product API routes (FastAPI) - Thin Interface Layer - Complete Version"""
 
-from typing import Any
-
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
@@ -111,7 +109,7 @@ async def list_products(
     result = await handler.execute(query)
 
     return ListProductsResponse(
-        items=[ProductResponse(**p.model_dump()) for p in result.products],
+        items=[product_to_response(p) for p in result.products],
         total=result.total,
         page=result.page,
         page_size=result.page_size,
@@ -126,7 +124,7 @@ async def list_products(
 async def get_product(
     product_id: str,
     handler: GetProductHandler = handler_dependency(GetProductHandler),
-) -> dict[str, Any]:
+) -> ProductResponse:
     """Get a product by ID."""
     from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
@@ -134,7 +132,7 @@ async def get_product(
     try:
         query = GetProductQuery(product_id=product_id)
         product = await handler.execute(query)  # 返回 ProductDTO
-        return product.model_dump()  # ✅ 使用 DTO 内置序列化
+        return product_to_response(product)
     except ApplicationException as e:
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail="Product not found") from e
@@ -150,7 +148,7 @@ async def update_product(
     product_id: str,
     request: UpdateProductRequest,
     handler: UpdateProductHandler = handler_dependency(UpdateProductHandler),
-) -> dict[str, Any]:
+) -> ProductResponse:
     """Update a product."""
     command = UpdateProductCommand(
         product_id=product_id,
@@ -164,7 +162,7 @@ async def update_product(
     )
 
     product = await handler.execute(command)
-    return product_to_dict(product)
+    return product_to_response(product)
 
 
 @router.get(
