@@ -59,37 +59,26 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info("✅ Tenant middleware registered (header: X-Tenant-ID, auto-synced to SecurityContext)")
 
-    # 3. Request ID - Generate unique ID for each request
+    # 3. CORS - Cross-Origin Resource Sharing (added early for proper order)
     app.add_middleware(
-        RequestIDMiddleware,
-        header_name="X-Request-ID",
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
-    logger.info("✅ RequestID middleware registered (header: X-Request-ID)")
+    logger.info(f"✅ CORS middleware registered (origins: {settings.cors_origins})")
 
-    # 4. Tracing - Automatic distributed tracing for all HTTP requests
-    try:
-        observability = runtime.container.get("observability")
-        app.add_middleware(
-            TracingMiddleware,
-            observability=observability,
-        )
-        logger.info("✅ TracingMiddleware registered (automatic HTTP request tracing)")
-    except KeyError:
-        # Runtime not fully initialized yet (e.g., in tests)
-        # TracingMiddleware will be added after runtime initialization
-        logger.warning("⚠️ TracingMiddleware skipped (observability not available yet)")
-
-    # 5. Structured Logging - Log all requests with structured data
+    # 4. Idempotency - Prevent duplicate operations
     app.add_middleware(
-        StructuredLoggingMiddleware,
-        logger_name="my-shop",
-        log_request_body=False,
-        log_response_body=False,
-        skip_paths={"/health", "/ping", "/metrics"},
+        IdempotencyMiddleware,
+        header_name="X-Idempotency-Key",
+        ttl_seconds=86400,
+        tenant_id="default",
     )
-    logger.info("✅ StructuredLogging middleware registered (logger: my-shop)")
+    logger.info("✅ Idempotency middleware registered (TTL: 24h, header: X-Idempotency-Key)")
 
-    # 6. Rate Limiting - Protect API from abuse
+    # 5. Rate Limiting - Protect API from abuse
     if os.getenv("TESTING") != "true":
         app.add_middleware(
             RateLimitingMiddleware,
@@ -102,23 +91,34 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     else:
         logger.info("⚠️ RateLimiting middleware disabled (testing mode)")
 
-    # 7. Idempotency - Prevent duplicate operations
+    # 6. Structured Logging - Log all requests with structured data
     app.add_middleware(
-        IdempotencyMiddleware,
-        header_name="X-Idempotency-Key",
-        ttl_seconds=86400,
-        tenant_id="default",
+        StructuredLoggingMiddleware,
+        logger_name="my-shop",
+        log_request_body=False,
+        log_response_body=False,
+        skip_paths={"/health", "/ping", "/metrics"},
     )
-    logger.info("✅ Idempotency middleware registered (TTL: 24h, header: X-Idempotency-Key)")
+    logger.info("✅ StructuredLogging middleware registered (logger: my-shop)")
 
-    # 8. CORS - Cross-Origin Resource Sharing
+    # 7. Tracing - Automatic distributed tracing for all HTTP requests
+    try:
+        observability = runtime.container.get("observability")
+        app.add_middleware(
+            TracingMiddleware,
+            observability=observability,
+        )
+        logger.info("✅ TracingMiddleware registered (automatic HTTP request tracing)")
+    except KeyError:
+        # Runtime not fully initialized yet (e.g., in tests)
+        # TracingMiddleware will be added after runtime initialization
+        logger.warning("⚠️ TracingMiddleware skipped (observability not available yet)")
+
+    # 8. Request ID - Generate unique ID for each request (MUST be last to execute first)
     app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        RequestIDMiddleware,
+        header_name="X-Request-ID",
     )
-    logger.info(f"✅ CORS middleware registered (origins: {settings.cors_origins})")
+    logger.info("✅ RequestID middleware registered (header: X-Request-ID)")
 
     logger.info("Middleware stack configuration completed")
