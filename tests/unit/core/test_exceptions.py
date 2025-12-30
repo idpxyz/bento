@@ -2,17 +2,18 @@
 Unit tests for Bento Exception system with Contracts-as-Code.
 """
 import pytest
+
+from bento.contracts import ReasonCodeCatalog
 from bento.core.exceptions import (
+    ApplicationException,
     BentoException,
     DomainException,
-    ApplicationException,
+    ExceptionCategory,
     InfrastructureException,
     InterfaceException,
-    ExceptionCategory,
-    set_global_catalog,
     get_global_catalog,
+    set_global_catalog,
 )
-from bento.contracts import ReasonCodeCatalog
 
 
 class TestBentoExceptionWithContracts:

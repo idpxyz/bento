@@ -16,7 +16,8 @@ Example:
     ```
 """
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from bento.domain.aggregate import AggregateRoot
 
@@ -26,7 +27,7 @@ AR = TypeVar("AR", bound=AggregateRoot)
 _repository_registry: dict[type[AggregateRoot], type[Any]] = {}
 
 
-def repository_for(aggregate_type: type[AR]) -> Callable[[type], type]:
+def repository_for[AR: AggregateRoot](aggregate_type: type[AR]) -> Callable[[type], type]:
     """Decorator to register a Repository for a specific AggregateRoot.
 
     This decorator registers the repository class in a global registry,
@@ -64,7 +65,7 @@ def get_repository_registry() -> dict[type[AggregateRoot], type[Any]]:
     return _repository_registry.copy()
 
 
-def get_repository_class(aggregate_type: type[AR]) -> type[Any] | None:
+def get_repository_class[AR: AggregateRoot](aggregate_type: type[AR]) -> type[Any] | None:
     """Get the repository class for a specific aggregate type.
 
     Args:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from loms.shared.infra.db.base import Base
 
+
 def register_all_models() -> None:
     """Import ORM models to ensure they are registered on Base.metadata.
 
@@ -12,6 +13,7 @@ def register_all_models() -> None:
     # Platform Core models
     from loms.shared.infra.idempotency.models import IdempotencyRecord  # noqa: F401
     from loms.shared.infra.inbox.models import InboxEvent  # noqa: F401
+
     # Outbox uses Bento's OutboxRecord (now shares same Base)
     from bento.persistence.outbox import OutboxRecord  # noqa: F401
 

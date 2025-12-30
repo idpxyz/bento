@@ -30,7 +30,8 @@ Example:
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Sequence, Union
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from fastapi import APIRouter
@@ -71,7 +72,7 @@ class BentoModule(ABC):
         if not self.name:
             self.name = self.__class__.__name__.lower().replace("module", "")
 
-    async def on_register(self, container: "BentoContainer") -> None:
+    async def on_register(self, container: BentoContainer) -> None:
         """Called when module is registered.
 
         Override to register services, repositories, handlers in container.
@@ -81,7 +82,7 @@ class BentoModule(ABC):
         """
         pass
 
-    async def on_startup(self, container: "BentoContainer") -> None:
+    async def on_startup(self, container: BentoContainer) -> None:
         """Called during application startup.
 
         Override for initialization: cache warmup, connections, etc.
@@ -91,7 +92,7 @@ class BentoModule(ABC):
         """
         pass
 
-    async def on_shutdown(self, container: "BentoContainer") -> None:
+    async def on_shutdown(self, container: BentoContainer) -> None:
         """Called during application shutdown.
 
         Override for cleanup: close connections, flush buffers, etc.
@@ -122,7 +123,7 @@ class BentoModule(ABC):
         """
         return []
 
-    def get_middleware(self) -> list["Middleware"]:
+    def get_middleware(self) -> list[Middleware]:
         """Return middleware provided by this module.
 
         Override to provide Starlette middleware.

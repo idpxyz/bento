@@ -4,9 +4,9 @@ from __future__ import annotations
 import pytest
 
 from bento.testing.fakes import (
-    InMemoryRepository,
     FakeIdempotencyStore,
     FakeUnitOfWork,
+    InMemoryRepository,
 )
 
 

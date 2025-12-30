@@ -224,10 +224,10 @@ def create_handler_factory[THandler](handler_cls: type[THandler]) -> Callable[..
 # =============================================================================
 
 # Global contracts reference (set during app startup)
-_global_contracts: "Contracts | None" = None
+_global_contracts: Contracts | None = None
 
 
-def set_global_contracts(contracts: "Contracts") -> None:
+def set_global_contracts(contracts: Contracts) -> None:
     """Set the global contracts instance.
 
     Called during application startup after loading contracts.
@@ -239,7 +239,7 @@ def set_global_contracts(contracts: "Contracts") -> None:
     _global_contracts = contracts
 
 
-def get_global_contracts() -> "Contracts | None":
+def get_global_contracts() -> Contracts | None:
     """Get the global contracts instance."""
     return _global_contracts
 

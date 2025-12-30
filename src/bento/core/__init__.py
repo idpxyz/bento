@@ -23,10 +23,9 @@ from bento.core.exceptions import (
     ExceptionCategory,
     InfrastructureException,
     InterfaceException,
-    set_global_catalog,
     get_global_catalog,
+    set_global_catalog,
 )
-
 from bento.core.guard import require
 from bento.core.ids import ID, EntityId
 from bento.core.result import Err, Ok, Result

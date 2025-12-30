@@ -26,7 +26,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from bento.application.cqrs.command_handler import CommandHandler
 from bento.application.ports.observability import ObservabilityProvider
@@ -38,7 +38,7 @@ TCommand = TypeVar("TCommand")
 TResult = TypeVar("TResult")
 
 
-class ObservableCommandHandler(CommandHandler[TCommand, TResult], Generic[TCommand, TResult]):
+class ObservableCommandHandler[TCommand, TResult](CommandHandler[TCommand, TResult]):
     """CommandHandler with built-in observability support.
 
     Provides:

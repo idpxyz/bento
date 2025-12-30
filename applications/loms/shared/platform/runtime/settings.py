@@ -5,10 +5,13 @@ This module provides type-safe configuration management using Pydantic.
 Environment variables take precedence over default values.
 """
 from __future__ import annotations
+
 from pathlib import Path
-from typing import Literal, Optional
-from pydantic import Field, SecretStr, field_validator, HttpUrl, RedisDsn, PostgresDsn, field_validator
+from typing import Literal
+
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class DatabaseSettings(BaseSettings):
     """Database configuration settings."""

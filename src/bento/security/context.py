@@ -55,7 +55,7 @@ class SecurityContext:
         ```
     """
 
-    _current_user: ContextVar["CurrentUser | None"] = ContextVar(
+    _current_user: ContextVar[CurrentUser | None] = ContextVar(
         'current_user', default=None
     )
     _current_tenant: ContextVar[str | None] = ContextVar(
@@ -63,7 +63,7 @@ class SecurityContext:
     )
 
     @classmethod
-    def get_user(cls) -> "CurrentUser | None":
+    def get_user(cls) -> CurrentUser | None:
         """Get current authenticated user.
 
         Returns:
@@ -72,7 +72,7 @@ class SecurityContext:
         return cls._current_user.get()
 
     @classmethod
-    def require_user(cls) -> "CurrentUser":
+    def require_user(cls) -> CurrentUser:
         """Get current user, raising if not authenticated.
 
         Returns:
@@ -87,7 +87,7 @@ class SecurityContext:
         return user
 
     @classmethod
-    def set_user(cls, user: "CurrentUser | None") -> None:
+    def set_user(cls, user: CurrentUser | None) -> None:
         """Set current authenticated user.
 
         Args:

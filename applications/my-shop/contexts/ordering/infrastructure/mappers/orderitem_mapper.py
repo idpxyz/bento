@@ -1,5 +1,6 @@
 """OrderItem 映射器接口"""
 from typing import Protocol
+
 from contexts.ordering.domain.models.orderitem import OrderItem
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 

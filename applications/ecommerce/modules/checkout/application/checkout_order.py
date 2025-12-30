@@ -14,6 +14,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from bento.application.usecase import BaseUseCase
+from bento.core.error_codes import CommonErrors
+from bento.core.errors import ApplicationException
+
 from applications.ecommerce.modules.inventory.integration.provider import (
     InMemoryInventoryProvider,
     InventoryProvider,
@@ -26,9 +30,6 @@ from applications.ecommerce.modules.payment.integration.gateway import (
     PaymentGateway,
 )
 from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
 from bento.core.ids import ID
 
 

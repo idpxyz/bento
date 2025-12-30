@@ -5,10 +5,10 @@ Run independently: uv run uvicorn loms.bootstrap.entrypoints.leg_api:app --port 
 """
 import os
 
-from bento.runtime import BentoRuntime
-
 from loms.contexts.leg.module import LegModule
 from loms.shared.infra.module import InfraModule
+
+from bento.runtime import BentoRuntime
 
 
 def create_leg_app():

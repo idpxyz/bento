@@ -1,11 +1,11 @@
 """Shipment domain events."""
 from loms.contexts.shipment.domain.events.shipment_events import (
+    LegAdded,
+    ShipmentClosed,
     ShipmentCreated,
-    ShipmentUpdated,
     ShipmentHoldPlaced,
     ShipmentHoldReleased,
-    ShipmentClosed,
-    LegAdded,
+    ShipmentUpdated,
 )
 
 __all__ = [

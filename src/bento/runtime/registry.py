@@ -40,10 +40,10 @@ class ModuleRegistry:
     """
 
     def __init__(self) -> None:
-        self._modules: dict[str, "BentoModule"] = {}
-        self._cached_order: list["BentoModule"] | None = None
+        self._modules: dict[str, BentoModule] = {}
+        self._cached_order: list[BentoModule] | None = None
 
-    def register(self, module: "BentoModule") -> "ModuleRegistry":
+    def register(self, module: BentoModule) -> ModuleRegistry:
         """Register a module.
 
         Args:
@@ -58,7 +58,7 @@ class ModuleRegistry:
         self._cached_order = None  # Invalidate cache
         return self
 
-    def register_all(self, *modules: "BentoModule") -> "ModuleRegistry":
+    def register_all(self, *modules: BentoModule) -> ModuleRegistry:
         """Register multiple modules.
 
         Args:
@@ -71,7 +71,7 @@ class ModuleRegistry:
             self.register(module)
         return self
 
-    def get(self, name: str) -> "BentoModule":
+    def get(self, name: str) -> BentoModule:
         """Get a module by name.
 
         Args:
@@ -104,7 +104,7 @@ class ModuleRegistry:
                         f"Module '{name}' requires '{dep}' but it is not registered"
                     )
 
-    def resolve_order(self) -> list["BentoModule"]:
+    def resolve_order(self) -> list[BentoModule]:
         """Return modules in topological order (dependencies first).
 
         Uses cached result if available for performance.

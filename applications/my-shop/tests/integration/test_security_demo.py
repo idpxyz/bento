@@ -4,6 +4,7 @@ This script demonstrates how the security middleware works with StubAuthenticato
 """
 
 from fastapi.testclient import TestClient
+
 from runtime.bootstrap import create_app
 
 
@@ -39,14 +40,14 @@ def main():
     response = client.get("/docs")
     print(f"   Status: {response.status_code}")
     print(f"   Response length: {len(response.text)} bytes")
-    print(f"   ✅ Swagger UI is available")
+    print("   ✅ Swagger UI is available")
 
     # Test 5: OpenAPI schema
     print("\n5️⃣  Testing /openapi.json endpoint (excluded from auth):")
     response = client.get("/openapi.json")
     print(f"   Status: {response.status_code}")
     schema = response.json()
-    print(f"   ✅ OpenAPI schema loaded")
+    print("   ✅ OpenAPI schema loaded")
     print(f"   Title: {schema.get('info', {}).get('title')}")
     print(f"   Version: {schema.get('info', {}).get('version')}")
 

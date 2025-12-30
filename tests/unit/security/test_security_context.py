@@ -1,8 +1,9 @@
 """Unit tests for SecurityContext."""
 
 import pytest
-from bento.security import SecurityContext, CurrentUser
+
 from bento.core.exceptions import DomainException
+from bento.security import CurrentUser, SecurityContext
 
 
 class TestSecurityContextUser:

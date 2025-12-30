@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from contract_governance.config.settings import Settings
 from contract_governance.api.router import router
+from contract_governance.config.settings import Settings
 
 settings = Settings()
 

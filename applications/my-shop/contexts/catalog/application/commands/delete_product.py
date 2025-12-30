@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from bento.application import CommandHandler, command_handler
 from bento.application.ports.uow import UnitOfWork
+
 # CommonErrors removed - use DomainException directly
 from bento.core.exceptions import ApplicationException
 

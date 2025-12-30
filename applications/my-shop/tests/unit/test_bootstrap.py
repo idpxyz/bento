@@ -82,7 +82,7 @@ def test_app_lifespan_initializes_runtime():
     """Test that app lifespan properly initializes runtime."""
     app = create_app()
 
-    with TestClient(app) as client:
+    with TestClient(app):
         # After startup, runtime should be in app.state
         assert hasattr(app.state, "runtime")
         assert hasattr(app.state, "container")

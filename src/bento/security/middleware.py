@@ -29,7 +29,7 @@ from bento.security.ports import IAuthenticator
 
 
 def add_security_middleware(
-    app: "FastAPI",
+    app: FastAPI,
     authenticator: IAuthenticator,
     require_auth: bool = False,
     exclude_paths: list[str] | None = None,

@@ -256,7 +256,7 @@ class BreakingChangeDetector:
                     change_type=ChangeType.PROPERTY_ADDED,
                     path=f"{path}.{prop}" if path else prop,
                     description=f"Property '{prop}' was added" +
-                                (f" (required)" if is_breaking else ""),
+                                (" (required)" if is_breaking else ""),
                     is_breaking=is_breaking,
                     severity="critical" if is_breaking else "minor",
                     new_value=new_props[prop],

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class IAuthenticator(Protocol):
     """Protocol for authentication providers."""
 
-    async def authenticate(self, request: "Request") -> "CurrentUser | None":
+    async def authenticate(self, request: Request) -> CurrentUser | None:
         """Authenticate a request and return the current user.
 
         Args:
@@ -57,7 +57,7 @@ class IAuthorizer(Protocol):
 
     async def authorize(
         self,
-        user: "CurrentUser",
+        user: CurrentUser,
         action: str,
         resource: Any,
     ) -> bool:

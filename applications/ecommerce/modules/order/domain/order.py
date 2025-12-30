@@ -3,6 +3,8 @@
 from datetime import datetime
 from decimal import Decimal
 
+from bento.core.errors import DomainException
+
 from applications.ecommerce.modules.order.domain.events import (
     OrderCancelled,
     OrderCreated,
@@ -16,7 +18,6 @@ from applications.ecommerce.modules.order.domain.vo import (
     Shipment,
 )
 from applications.ecommerce.modules.order.errors import OrderErrors
-from bento.core.errors import DomainException
 from bento.core.ids import ID
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.entity import Entity

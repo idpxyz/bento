@@ -8,9 +8,6 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from bento.multitenancy import HeaderTenantResolver, add_tenant_middleware
 from bento.runtime import BentoRuntime
 from bento.runtime.integrations import setup_security
@@ -21,6 +18,8 @@ from bento.runtime.middleware import (
     StructuredLoggingMiddleware,
     TracingMiddleware,
 )
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 

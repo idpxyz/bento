@@ -7,11 +7,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError, ResponseValidationError
-
 from bento.core.exceptions import ApplicationException
 from bento.runtime.integrations import setup_bento_openapi
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 
 from config import settings
 from shared.exceptions import (

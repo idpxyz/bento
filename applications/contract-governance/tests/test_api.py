@@ -1,6 +1,5 @@
-from fastapi.testclient import TestClient
-
 from contract_governance.api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

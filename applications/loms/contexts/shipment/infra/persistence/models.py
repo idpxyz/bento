@@ -4,10 +4,9 @@ Shipment Context - Domain ORM Models.
 Only domain-specific models belong here.
 Infrastructure models (Idempotency, Outbox, Inbox, DLQ) are in shared/infra.
 """
+from loms.shared.infra.db.base import Base, FullAuditMixin
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from loms.shared.infra.db.base import Base, FullAuditMixin
 
 
 class ShipmentORM(Base, FullAuditMixin):

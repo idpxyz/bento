@@ -2,6 +2,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from loms.shared.platform.errors.exceptions import AppError
 
+
 def _best_locale(request: Request) -> str | None:
     header = request.headers.get("accept-language")
     return header.split(",")[0].strip() if header else None

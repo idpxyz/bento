@@ -1,7 +1,7 @@
 """Database management for runtime."""
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bento.runtime.bootstrap import BentoRuntime

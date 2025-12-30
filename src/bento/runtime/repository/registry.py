@@ -1,5 +1,6 @@
 """Repository registry with auto-discovery."""
 from __future__ import annotations
+
 import importlib
 import inspect
 import logging
@@ -21,7 +22,7 @@ class RepositoryRegistry:
         self,
         aggregate_type: type,
         factory: Callable[[AsyncSession], Any],
-    ) -> "RepositoryRegistry":
+    ) -> RepositoryRegistry:
         """Register repository factory for an aggregate type.
 
         Args:

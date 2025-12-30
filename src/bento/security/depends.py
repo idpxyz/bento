@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from bento.security.models import CurrentUser
 
 
-async def get_current_user() -> "CurrentUser":
+async def get_current_user() -> CurrentUser:
     """FastAPI dependency that returns the current authenticated user.
 
     Raises:
@@ -52,7 +52,7 @@ async def get_current_user() -> "CurrentUser":
     return user
 
 
-async def get_optional_user() -> "CurrentUser | None":
+async def get_optional_user() -> CurrentUser | None:
     """FastAPI dependency that returns the current user or None.
 
     Does not raise if not authenticated.
@@ -90,7 +90,7 @@ def require_permissions(*permissions: str):
             ...
         ```
     """
-    async def dependency() -> "CurrentUser":
+    async def dependency() -> CurrentUser:
         user = await get_current_user()
         if not user.has_all_permissions(list(permissions)):
             raise DomainException(
@@ -120,7 +120,7 @@ def require_roles(*roles: str):
             ...
         ```
     """
-    async def dependency() -> "CurrentUser":
+    async def dependency() -> CurrentUser:
         user = await get_current_user()
         for role in roles:
             if not user.has_role(role):
@@ -150,7 +150,7 @@ def require_any_role(*roles: str):
             ...
         ```
     """
-    async def dependency() -> "CurrentUser":
+    async def dependency() -> CurrentUser:
         user = await get_current_user()
         if not user.has_any_role(list(roles)):
             raise DomainException(

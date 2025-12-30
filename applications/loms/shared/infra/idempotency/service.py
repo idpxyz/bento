@@ -1,5 +1,8 @@
-import hashlib, json
+import hashlib
+import json
+
 from loms.shared.platform.errors.exceptions import AppError
+
 
 class IdempotencyService:
     def __init__(self, repo):

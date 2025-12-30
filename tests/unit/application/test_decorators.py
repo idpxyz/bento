@@ -10,7 +10,6 @@ from bento.application.decorators import (
     get_registered_handlers,
     is_handler,
 )
-from bento.application.ports.uow import UnitOfWork
 
 
 # Test fixtures

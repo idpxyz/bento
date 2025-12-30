@@ -22,7 +22,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from bento.application.cqrs.query_handler import QueryHandler
 from bento.application.ports.observability import ObservabilityProvider
@@ -34,7 +34,7 @@ TQuery = TypeVar("TQuery")
 TResult = TypeVar("TResult")
 
 
-class ObservableQueryHandler(QueryHandler[TQuery, TResult], Generic[TQuery, TResult]):
+class ObservableQueryHandler[TQuery, TResult](QueryHandler[TQuery, TResult]):
     """QueryHandler with built-in observability support.
 
     Provides:

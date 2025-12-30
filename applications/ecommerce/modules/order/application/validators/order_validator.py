@@ -9,9 +9,10 @@ This module demonstrates validation best practices:
 
 from typing import Any
 
-from applications.ecommerce.modules.order.errors import OrderErrors
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
+
+from applications.ecommerce.modules.order.errors import OrderErrors
 
 
 class OrderValidator:

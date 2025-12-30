@@ -38,7 +38,6 @@ class User(AggregateRoot):
         if not new_name or len(new_name.strip()) == 0:
             raise ValueError("Name cannot be empty")
 
-        old_name = self.name
         self.name = new_name.strip()
 
         # 发布领域事件

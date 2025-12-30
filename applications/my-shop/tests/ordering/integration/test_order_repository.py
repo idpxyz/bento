@@ -1,5 +1,6 @@
 """Order 仓储集成测试"""
 import pytest
+
 from contexts.ordering.domain.models.order import Order
 
 

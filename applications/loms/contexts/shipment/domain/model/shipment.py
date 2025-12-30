@@ -2,29 +2,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+from loms.contexts.shipment.domain.events import (
+    LegAdded,
+    ShipmentClosed,
+    ShipmentCreated,
+    ShipmentHoldPlaced,
+    ShipmentHoldReleased,
+    ShipmentUpdated,
+)
+from loms.contexts.shipment.domain.model.hold import Hold
+from loms.contexts.shipment.domain.model.leg import Leg
+from loms.contexts.shipment.domain.vo.codes import (
+    HoldTypeCode,
+    ShipmentStatus,
+    ShipmentStatusEnum,
+)
 
 from bento.core.ids import ID
 from bento.domain import AggregateRoot
-
-from loms.contexts.shipment.domain.model.leg import Leg
-from loms.contexts.shipment.domain.model.hold import Hold
-from loms.contexts.shipment.domain.vo.codes import (
-    ShipmentStatus,
-    ShipmentStatusEnum,
-    HoldTypeCode,
-    ModeCode,
-    ServiceLevelCode,
-    ShipmentTypeCode,
-)
-from loms.contexts.shipment.domain.events import (
-    ShipmentCreated,
-    ShipmentUpdated,
-    ShipmentHoldPlaced,
-    ShipmentHoldReleased,
-    ShipmentClosed,
-    LegAdded,
-)
 
 
 @dataclass
@@ -161,7 +158,7 @@ class Shipment(AggregateRoot):
             if h.hold_type_code == hold_type.value:
                 raise ValueError(f"DUPLICATE_HOLD: Active hold of type {hold_type.value} already exists")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         hold = Hold(
             id=hold_id or ID.generate(),
             shipment_id=self.id,
@@ -199,7 +196,7 @@ class Shipment(AggregateRoot):
         if not hold:
             raise ValueError(f"HOLD_NOT_FOUND: No active hold of type {hold_type.value}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         hold.released_at = now
         hold.release_reason = release_reason
 
@@ -237,7 +234,7 @@ class Shipment(AggregateRoot):
                 aggregate_id=str(self.id),
                 tenant_id=str(self.tenant_id),
                 shipment_id=str(self.id),
-                closed_at=datetime.now(timezone.utc).isoformat(),
+                closed_at=datetime.now(UTC).isoformat(),
                 force_close_reason=force_close_reason,
             )
         )
@@ -264,7 +261,7 @@ class Shipment(AggregateRoot):
                 tenant_id=str(self.tenant_id),
                 shipment_id=str(self.id),
                 status_code=self.status.value,
-                updated_at=datetime.now(timezone.utc).isoformat(),
+                updated_at=datetime.now(UTC).isoformat(),
             )
         )
 

@@ -19,7 +19,7 @@ Design Philosophy:
 - Extensible: Easy to subclass for custom behavior
 """
 
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel
 
@@ -58,7 +58,7 @@ class ResponseMapper(Protocol[DTO, Response]):
         ...
 
 
-class PydanticResponseMapper(Generic[DTO, Response]):
+class PydanticResponseMapper[DTO: BaseDTO, Response: BaseModel]:
     """Generic Response Mapper using Pydantic's model_validate.
 
     Since both DTO and Response are Pydantic models with identical or compatible fields,

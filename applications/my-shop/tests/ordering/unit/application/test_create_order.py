@@ -3,8 +3,8 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from bento.adapters.observability.noop import NoOpObservabilityProvider
+
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
     CreateOrderHandler,

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 pytestmark = pytest.mark.asyncio
 
-from bento.multitenancy import TenantContext, HeaderTenantResolver
+from bento.multitenancy import HeaderTenantResolver, TenantContext
 
 
 @pytest.fixture(autouse=True)
@@ -23,7 +22,7 @@ class TestAddTenantMiddleware:
 
     async def test_sets_tenant_context_from_resolver(self):
         """Middleware should set TenantContext from resolver."""
-        from fastapi import FastAPI, Request
+        from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
         app = FastAPI()

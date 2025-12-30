@@ -7,6 +7,7 @@ Uses Bento's database infrastructure for configuration and lifecycle management.
 import os
 from collections.abc import AsyncGenerator
 
+from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -21,7 +22,6 @@ from bento.infrastructure.database import (
     init_database,
 )
 from bento.persistence import Base
-from bento.persistence.sqlalchemy.outbox_sql import SqlAlchemyOutbox
 from bento.persistence.uow import UnitOfWork
 
 # ==================== Database Configuration ====================

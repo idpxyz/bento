@@ -10,7 +10,7 @@ idempotency keys for exactly-once command execution.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import JSON, TIMESTAMP, Index, Integer, String, func, select
@@ -219,14 +219,14 @@ class SqlAlchemyIdempotency:
 
         # Check if expired
         if record and record.expires_at:
+
             from bento.core.clock import now_utc
-            from datetime import timezone
 
             now = now_utc()
             expires = record.expires_at
             # Ensure both are timezone-aware for comparison
             if expires.tzinfo is None:
-                expires = expires.replace(tzinfo=timezone.utc)
+                expires = expires.replace(tzinfo=UTC)
             if expires < now:
                 return None  # Expired
 

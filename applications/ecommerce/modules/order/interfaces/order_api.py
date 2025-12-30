@@ -2,6 +2,7 @@
 
 from typing import Annotated, Any
 
+from bento.core.error_handler import get_error_responses_schema
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, PositiveFloat, PositiveInt
 
@@ -24,7 +25,6 @@ from applications.ecommerce.modules.order.application.queries.order_query_servic
 from applications.ecommerce.modules.order.interfaces.presenters import (
     order_to_dict,
 )
-from bento.core.error_handler import get_error_responses_schema
 
 # Create router
 router = APIRouter()

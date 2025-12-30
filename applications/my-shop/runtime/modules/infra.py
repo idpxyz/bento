@@ -35,7 +35,7 @@ class InfraModule(BentoModule):
         self._projector_task: asyncio.Task | None = None
         self._projection_session: Any = None
 
-    async def on_register(self, container: "BentoContainer") -> None:
+    async def on_register(self, container: BentoContainer) -> None:
         """Register infrastructure services."""
         # Note: db.session_factory is set by BentoRuntime's database manager
         # during build_async(), so we don't try to access it here.
@@ -56,7 +56,7 @@ class InfraModule(BentoModule):
 
         logger.info("Infrastructure services registered")
 
-    async def on_startup(self, container: "BentoContainer") -> None:
+    async def on_startup(self, container: BentoContainer) -> None:
         """Start infrastructure services."""
         bus: InProcessMessageBus = container.get("messaging.bus")
         session_factory = container.get("db.session_factory")
@@ -77,7 +77,7 @@ class InfraModule(BentoModule):
 
         logger.info("Infrastructure services started")
 
-    async def on_shutdown(self, container: "BentoContainer") -> None:
+    async def on_shutdown(self, container: BentoContainer) -> None:
         """Stop infrastructure services."""
         # Stop projector
         projector = container.get("messaging.projector", None)

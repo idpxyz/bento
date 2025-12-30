@@ -11,13 +11,13 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from bento.core.errors import ApplicationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from applications.ecommerce.modules.order.errors import OrderErrors
 from applications.ecommerce.modules.order.persistence.models.order_model import OrderModel
-from bento.core.errors import ApplicationError
 from bento.core.ids import ID
 from bento.persistence.specification import SortDirection
 from bento.persistence.specification.builder import FluentSpecificationBuilder

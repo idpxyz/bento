@@ -39,25 +39,25 @@ Example:
     ```
 """
 
-from bento.contracts.state_machines import StateMachineEngine, StateTransitionException
-from bento.contracts.catalogs import ReasonCode, ReasonCodeCatalog, RoutingMatrix
-from bento.contracts.schema_registry import EventSchemaRegistry
 from bento.contracts.breaking_change_detector import (
-    BreakingChangeDetector,
     BreakingChange,
+    BreakingChangeDetector,
     BreakingChangeReport,
     ChangeType,
 )
-from bento.contracts.schema_comparator import SchemaComparator, SchemaDiff
+from bento.contracts.catalogs import ReasonCode, ReasonCodeCatalog, RoutingMatrix
 from bento.contracts.compatibility_validator import (
-    CompatibilityValidator,
-    CompatibilityResult,
     CompatibilityMode,
+    CompatibilityResult,
+    CompatibilityValidator,
 )
+from bento.contracts.loader import ContractConfig, ContractLoader, Contracts
 from bento.contracts.mock_generator import MockGenerator
-from bento.contracts.sdk_generator import SDKGenerator
 from bento.contracts.openapi_generator import OpenAPIGenerator
-from bento.contracts.loader import ContractLoader, ContractConfig, Contracts
+from bento.contracts.schema_comparator import SchemaComparator, SchemaDiff
+from bento.contracts.schema_registry import EventSchemaRegistry
+from bento.contracts.sdk_generator import SDKGenerator
+from bento.contracts.state_machines import StateMachineEngine, StateTransitionException
 
 __all__ = [
     # Core types

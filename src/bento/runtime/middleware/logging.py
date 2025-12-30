@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Callable, Awaitable, Set
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -91,8 +91,8 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         logger_name: str = "bento.http",
         log_request_body: bool = False,
         log_response_body: bool = False,
-        sensitive_headers: Set[str] | None = None,
-        skip_paths: Set[str] | None = None,
+        sensitive_headers: set[str] | None = None,
+        skip_paths: set[str] | None = None,
     ):
         super().__init__(app)
         self.logger = logging.getLogger(logger_name)

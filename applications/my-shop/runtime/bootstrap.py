@@ -89,6 +89,6 @@ def create_app() -> FastAPI:
     configure_openapi(app)
 
     logger.info(f"FastAPI application created successfully: {settings.app_name} (Best Practice)")
-    logger.info(f"API documentation available at: /docs")
+    logger.info("API documentation available at: /docs")
 
     return app

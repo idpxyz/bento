@@ -1,8 +1,9 @@
 from typing import Protocol
 
+from loms.contexts.shipment.domain.model.shipment import Shipment
+
 from bento.core.ids import ID
 
-from loms.contexts.shipment.domain.model.shipment import Shipment
 
 class ShipmentRepository(Protocol):
     async def get(self, shipment_id: ID) -> Shipment | None: ...

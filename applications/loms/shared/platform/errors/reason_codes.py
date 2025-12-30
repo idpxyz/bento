@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import json
 from dataclasses import dataclass
 from pathlib import Path
-import json
-from typing import Optional
+
 
 @dataclass(frozen=True)
 class ReasonCodeSpec:
@@ -10,14 +11,14 @@ class ReasonCodeSpec:
     retryable: bool
     category: str
     http_status: int
-    retry_after_hint_seconds: Optional[int] = None
+    retry_after_hint_seconds: int | None = None
 
 class ReasonCodes:
     def __init__(self, mapping: dict[str, ReasonCodeSpec]):
         self._mapping = mapping
 
     @classmethod
-    def load_from_file(cls, path: Path) -> "ReasonCodes":
+    def load_from_file(cls, path: Path) -> ReasonCodes:
         data = json.loads(path.read_text(encoding="utf-8"))
         reason_codes_list = data.get("reason_codes", data) if isinstance(data, dict) else data
         mapping: dict[str, ReasonCodeSpec] = {}

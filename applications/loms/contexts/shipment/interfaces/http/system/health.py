@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from sqlalchemy import text
 from loms.shared.infra.db.session import engine
+from sqlalchemy import text
 
 router = APIRouter()
 

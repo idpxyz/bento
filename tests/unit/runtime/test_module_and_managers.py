@@ -7,11 +7,11 @@ from types import ModuleType
 from typing import TYPE_CHECKING, cast
 
 import pytest
+from bento.runtime.observability.metrics import MetricsCollector
 
 from bento.runtime.container import BentoContainer
 from bento.runtime.messaging.manager import MessagingManager
 from bento.runtime.module import BentoModule
-from bento.runtime.observability.metrics import MetricsCollector
 
 if TYPE_CHECKING:
     from bento.runtime.bootstrap import BentoRuntime

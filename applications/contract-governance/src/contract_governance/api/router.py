@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -13,20 +13,20 @@ from contract_governance.contexts.builders import (
 )
 from contract_governance.models import (
     Base,
-    ContractVersion,
     ContractApproval,
     ContractChange,
     ContractDependency,
+    ContractVersion,
 )
 from contract_governance.schemas import (
-    ContractVersionCreate,
-    ContractVersionResponse,
     ContractApprovalCreate,
     ContractApprovalResponse,
     ContractChangeCreate,
     ContractChangeResponse,
     ContractDependencyCreate,
     ContractDependencyResponse,
+    ContractVersionCreate,
+    ContractVersionResponse,
 )
 
 settings = Settings()

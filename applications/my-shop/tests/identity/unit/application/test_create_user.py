@@ -1,9 +1,11 @@
 """CreateUser 用例单元测试"""
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from contexts.identity.application.commands.create_user import (
-    CreateUserHandler,
     CreateUserCommand,
+    CreateUserHandler,
 )
 
 
@@ -37,7 +39,7 @@ class TestCreateUserHandler:
     async def test_create_user_success(self, usecase, mock_uow):
         """测试成功场景"""
         # Arrange
-        command = CreateUserCommand(
+        CreateUserCommand(
             name="张三",
             email="zhangsan@example.com",
         )
@@ -58,7 +60,7 @@ class TestCreateUserHandler:
     async def test_create_user_validation_failure(self, usecase):
         """测试验证失败场景"""
         # Arrange - 空名字应该验证失败
-        invalid_command = CreateUserCommand(
+        CreateUserCommand(
             name="",
             email="invalid@example.com",
         )

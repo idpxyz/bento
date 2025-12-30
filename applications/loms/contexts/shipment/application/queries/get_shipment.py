@@ -7,12 +7,11 @@ Uses:
 from dataclasses import dataclass
 from typing import Any
 
+from loms.contexts.shipment.domain.model.shipment import Shipment
+
 from bento.application.cqrs.query_handler import QueryHandler
 from bento.application.decorators import query_handler
-
 from bento.core.ids import ID
-
-from loms.contexts.shipment.domain.model.shipment import Shipment
 
 
 @dataclass(frozen=True)

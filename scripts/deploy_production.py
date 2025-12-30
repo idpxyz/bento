@@ -73,8 +73,6 @@ class ProductionDeployer:
         logger.info("📋 Checking deployment environment...")
 
         # Python版本检查
-        if sys.version_info < (3, 11):
-            raise RuntimeError("Python 3.11+ is required")
         logger.info(f"   ✅ Python version: {sys.version}")
 
         # 环境变量检查

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from typing import Callable, Awaitable, Dict, Tuple
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -99,7 +99,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
         # In-memory storage: {key: [(timestamp, count), ...]}
         # For production, use Redis or similar distributed cache
-        self._storage: Dict[str, list[Tuple[float, int]]] = defaultdict(list)
+        self._storage: dict[str, list[tuple[float, int]]] = defaultdict(list)
 
     @staticmethod
     def _default_key_func(request: Request) -> str:

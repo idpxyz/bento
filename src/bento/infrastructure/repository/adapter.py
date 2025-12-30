@@ -199,7 +199,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             # Create new
             created_po = await self._repository.create_po(po)
             if hasattr(created_po, "version") and hasattr(aggregate, "version"):
-                setattr(aggregate, "version", created_po.version)
+                aggregate.version = created_po.version
         else:
             # Check if exists in database
             existing = await self._repository.get_po_by_id(aggregate_id)
@@ -207,7 +207,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
                 # Create
                 created_po = await self._repository.create_po(po)
                 if hasattr(created_po, "version") and hasattr(aggregate, "version"):
-                    setattr(aggregate, "version", created_po.version)
+                    aggregate.version = created_po.version
             else:
                 # Validate tenant ownership before update (TenantFilterMixin)
                 existing_ar = None
@@ -237,7 +237,7 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
                 updated_po = await self._repository.update_po(po)
                 # Sync version back to aggregate
                 if hasattr(updated_po, "version") and hasattr(aggregate, "version"):
-                    setattr(aggregate, "version", updated_po.version)
+                    aggregate.version = updated_po.version
 
         # Ensure the current UoW can collect domain events from this aggregate
         try:

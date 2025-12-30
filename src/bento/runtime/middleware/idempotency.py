@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -236,7 +236,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     },
                     status_code=409,
                 )
-            except Exception as e:
+            except Exception:
                 # Rollback on error
                 await session.rollback()
                 raise

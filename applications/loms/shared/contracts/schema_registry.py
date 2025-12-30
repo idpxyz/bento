@@ -5,6 +5,7 @@ Validates event envelopes and payloads against JSON schemas.
 """
 import json
 import pathlib
+
 from jsonschema import Draft202012Validator
 
 

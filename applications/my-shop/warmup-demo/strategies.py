@@ -47,7 +47,7 @@ class HotProductsWarmupStrategy:
             # 使用 Repository 的聚合查询功能
             from datetime import datetime, timedelta
 
-            start_date = datetime.now() - timedelta(days=30)
+            datetime.now() - timedelta(days=30)
 
             # 实际实现中会调用：
             # hot_product_ids = await self._order_repo.group_by_field(
@@ -290,7 +290,7 @@ class ActiveUserSessionWarmupStrategy:
             # 业务逻辑：获取最近1小时内活跃的用户ID
             from datetime import datetime, timedelta
 
-            since = datetime.now() - timedelta(hours=1)
+            datetime.now() - timedelta(hours=1)
 
             # active_user_ids = await self._user_service.get_active_users(since=since)
 

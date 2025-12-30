@@ -6,11 +6,11 @@ Initializes and configures the FastAPI application.
 import logging
 from contextlib import asynccontextmanager
 
+from bento.core.error_handler import register_exception_handlers
 from fastapi import FastAPI
 
 from applications.ecommerce.modules.order.interfaces import router as order_router
 from applications.ecommerce.runtime.composition import close_db, init_db
-from bento.core.error_handler import register_exception_handlers
 
 # Configure logging
 logging.basicConfig(

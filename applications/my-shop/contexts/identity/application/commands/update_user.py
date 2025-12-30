@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports.uow import UnitOfWork
 from bento.application.cqrs import CommandHandler
+from bento.application.ports.uow import UnitOfWork
+
 # CommonErrors removed - use DomainException directly
 from bento.core.exceptions import ApplicationException
 

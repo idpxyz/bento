@@ -11,15 +11,15 @@ Available middleware:
 - TracingMiddleware: Automatic HTTP request tracing
 """
 
-from bento.runtime.middleware.idempotency import IdempotencyMiddleware
-from bento.runtime.middleware.request_id import RequestIDMiddleware
-from bento.runtime.middleware.logging import StructuredLoggingMiddleware
-from bento.runtime.middleware.rate_limiting import RateLimitingMiddleware
-from bento.runtime.middleware.tracing import TracingMiddleware
+from bento.multitenancy import TenantContext
 
 # Re-export from multitenancy module for unified import path
 from bento.multitenancy.middleware import add_tenant_middleware as TenantMiddleware
-from bento.multitenancy import TenantContext
+from bento.runtime.middleware.idempotency import IdempotencyMiddleware
+from bento.runtime.middleware.logging import StructuredLoggingMiddleware
+from bento.runtime.middleware.rate_limiting import RateLimitingMiddleware
+from bento.runtime.middleware.request_id import RequestIDMiddleware
+from bento.runtime.middleware.tracing import TracingMiddleware
 
 __all__ = [
     "IdempotencyMiddleware",

@@ -7,36 +7,36 @@ Uses:
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException
-
 from loms.contexts.shipment.application.commands import (
-    PlaceHoldCommand,
-    PlaceHoldHandler,
-    CreateShipmentCommand,
-    CreateShipmentHandler,
     AddLegCommand,
     AddLegHandler,
-    ReleaseHoldCommand,
-    ReleaseHoldHandler,
-    CloseShipmentCommand,
-    CloseShipmentHandler,
     CancelShipmentCommand,
     CancelShipmentHandler,
+    CloseShipmentCommand,
+    CloseShipmentHandler,
+    CreateShipmentCommand,
+    CreateShipmentHandler,
+    PlaceHoldCommand,
+    PlaceHoldHandler,
+    ReleaseHoldCommand,
+    ReleaseHoldHandler,
 )
 from loms.contexts.shipment.application.queries.get_shipment import (
     GetShipmentHandler,
     GetShipmentQuery,
 )
 from loms.contexts.shipment.interfaces.http.v1.dtos import (
-    CreateShipmentRequest,
     AddLegRequest,
+    CancelShipmentRequest,
+    CloseShipmentRequest,
+    CreateShipmentRequest,
     PlaceHoldRequest,
     ReleaseHoldRequest,
-    CloseShipmentRequest,
-    CancelShipmentRequest,
     ShipmentResponse,
 )
-from bento.interfaces.fastapi import handler_dependency
+
 from bento.core import get_exception_responses_schema
+from bento.interfaces.fastapi import handler_dependency
 
 router = APIRouter()
 

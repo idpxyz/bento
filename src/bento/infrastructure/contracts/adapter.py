@@ -33,7 +33,7 @@ class ContractsAdapter(ContractsPort):
         ```
     """
 
-    def __init__(self, contracts: "Contracts"):
+    def __init__(self, contracts: Contracts):
         """Initialize adapter with contracts container.
 
         Args:
@@ -113,6 +113,6 @@ class ContractsAdapter(ContractsPort):
         return self._contracts.routing.topic_for(event_type)
 
     @property
-    def contracts(self) -> "Contracts":
+    def contracts(self) -> Contracts:
         """Access the underlying Contracts instance."""
         return self._contracts

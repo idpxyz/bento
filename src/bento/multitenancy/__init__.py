@@ -29,11 +29,11 @@ Example:
 from bento.multitenancy.context import TenantContext
 from bento.multitenancy.middleware import add_tenant_middleware
 from bento.multitenancy.resolvers import (
-    TenantResolver,
-    HeaderTenantResolver,
-    TokenTenantResolver,
-    SubdomainTenantResolver,
     CompositeTenantResolver,
+    HeaderTenantResolver,
+    SubdomainTenantResolver,
+    TenantResolver,
+    TokenTenantResolver,
 )
 
 __all__ = [

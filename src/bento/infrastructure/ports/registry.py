@@ -17,7 +17,8 @@ Example:
     ```
 """
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -25,7 +26,7 @@ T = TypeVar("T")
 _port_registry: dict[type, type[Any]] = {}
 
 
-def port_for(port_interface: type[T]) -> Callable[[type], type]:
+def port_for[T](port_interface: type[T]) -> Callable[[type], type]:
     """Decorator to register an Adapter for a specific Port interface.
 
     This decorator registers the adapter class in a global registry,
@@ -60,7 +61,7 @@ def get_port_registry() -> dict[type, type[Any]]:
     return _port_registry.copy()
 
 
-def get_port_adapter(port_interface: type[T]) -> type[Any] | None:
+def get_port_adapter[T](port_interface: type[T]) -> type[Any] | None:
     """Get the adapter class for a specific port interface.
 
     Args:

@@ -30,10 +30,10 @@ Performance Monitoring:
     ```
 """
 
-from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Protocol, TypeVar
-import time
 import logging
+import time
+from collections.abc import AsyncGenerator, Callable
+from typing import TYPE_CHECKING, Annotated, Any, Protocol, TypeVar
 
 from bento.application.ports.uow import UnitOfWork
 
@@ -71,7 +71,7 @@ def _get_handler_params(handler_cls: type) -> set[str]:
     return _handler_signature_cache[handler_cls]
 
 
-def _create_handler_with_dependencies(
+def _create_handler_with_dependencies[THandler](
     handler_cls: type[THandler],
     uow: UnitOfWork,
     request: "Request",
@@ -248,10 +248,10 @@ async def get_uow_from_runtime(request: "Request") -> AsyncGenerator[UnitOfWork,
     # runtime.get_uow returns a FastAPI Depends-wrapped function
     # We need to get a session and create UoW manually
     async with runtime._session_factory() as session:
+        from bento.infrastructure.ports import get_port_registry
+        from bento.infrastructure.repository import get_repository_registry
         from bento.persistence.outbox.record import SqlAlchemyOutbox
         from bento.persistence.uow import SQLAlchemyUnitOfWork
-        from bento.infrastructure.repository import get_repository_registry
-        from bento.infrastructure.ports import get_port_registry
 
         outbox = SqlAlchemyOutbox(session)
         uow = SQLAlchemyUnitOfWork(
@@ -272,7 +272,7 @@ async def get_uow_from_runtime(request: "Request") -> AsyncGenerator[UnitOfWork,
 THandler = TypeVar("THandler", bound=HandlerProtocol)
 
 
-def handler_dependency(handler_cls: type[THandler]) -> Any:
+def handler_dependency[THandler: HandlerProtocol](handler_cls: type[THandler]) -> Any:
     """Create a FastAPI Depends for a CommandHandler/QueryHandler.
 
     This is the recommended way to inject handlers in Bento applications.
@@ -326,10 +326,10 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
             logger.info(f"Module scanning completed in {scan_elapsed:.2f}ms")
             _modules_scanned = True
 
+        from bento.infrastructure.ports import get_port_registry
+        from bento.infrastructure.repository import get_repository_registry
         from bento.persistence.outbox.record import SqlAlchemyOutbox
         from bento.persistence.uow import SQLAlchemyUnitOfWork
-        from bento.infrastructure.repository import get_repository_registry
-        from bento.infrastructure.ports import get_port_registry
 
         # Get tenant_id from request header
         tenant_id = request.headers.get("X-Tenant-Id", "default")

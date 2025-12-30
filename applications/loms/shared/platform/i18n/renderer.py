@@ -1,6 +1,7 @@
 from loms.shared.platform.i18n.catalog import CATALOG
 from loms.shared.platform.runtime.settings import settings
 
+
 class MessageRenderer:
     def __init__(self, default_locale: str | None = None):
         self._default = default_locale or settings.app.default_locale

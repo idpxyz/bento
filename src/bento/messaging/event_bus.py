@@ -7,7 +7,6 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from typing import Protocol
 
-
 Handler = Callable[[dict], Awaitable[None]]
 
 

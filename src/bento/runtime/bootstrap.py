@@ -95,7 +95,7 @@ class BentoRuntime:
         object.__setattr__(self, "_module_manager", ModuleManager(self))
         object.__setattr__(self, "_di_integration", DIIntegration(self))
 
-    def _scan_module_packages(self, module: "BentoModule") -> None:
+    def _scan_module_packages(self, module: BentoModule) -> None:
         """Scan module packages for decorator registrations.
 
         This imports all packages listed in module.scan_packages to trigger
@@ -129,7 +129,7 @@ class BentoRuntime:
 
                 logger.warning(error_msg)
 
-    async def build_async(self) -> "BentoRuntime":
+    async def build_async(self) -> BentoRuntime:
         """Build the runtime (async version).
 
         Runs gates and registers all modules.
@@ -186,7 +186,7 @@ class BentoRuntime:
 
         return self
 
-    def build(self) -> "BentoRuntime":
+    def build(self) -> BentoRuntime:
         """Build the runtime (sync wrapper).
 
         For async applications, prefer build_async().
@@ -213,7 +213,7 @@ class BentoRuntime:
         version: str = "1.0.0",
         docs_url: str = "/docs",
         **fastapi_kwargs: Any,
-    ) -> "FastAPI":
+    ) -> FastAPI:
         """Create a FastAPI application with lifespan management.
 
         Args:
@@ -253,15 +253,15 @@ class BentoRuntime:
         self._performance_monitor.log_metrics()
 
     # Module management delegation
-    async def reload_module(self, name: str) -> "BentoRuntime":
+    async def reload_module(self, name: str) -> BentoRuntime:
         """Reload a module at runtime (hot reload)."""
         return await self._module_manager.reload(name)
 
-    async def unload_module(self, name: str) -> "BentoRuntime":
+    async def unload_module(self, name: str) -> BentoRuntime:
         """Unload a module at runtime."""
         return await self._module_manager.unload(name)
 
-    async def load_module(self, module: "BentoModule") -> "BentoRuntime":
+    async def load_module(self, module: BentoModule) -> BentoRuntime:
         """Load a module at runtime."""
         return await self._module_manager.load(module)
 
@@ -277,7 +277,7 @@ class BentoRuntime:
         return self._di_integration.get_handler_dependency()
 
     # Test support methods
-    def with_test_mode(self, enabled: bool = True) -> "BentoRuntime":
+    def with_test_mode(self, enabled: bool = True) -> BentoRuntime:
         """Enable test mode for the runtime.
 
         Args:
@@ -295,7 +295,7 @@ class BentoRuntime:
         name: str,
         services: dict[str, Any] | None = None,
         on_register_fn: Any = None,
-    ) -> "BentoRuntime":
+    ) -> BentoRuntime:
         """Register a mock module for testing.
 
         Args:

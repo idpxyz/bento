@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
+from bento.core.exceptions import DomainException
 from bento.security import CurrentUser
 from bento.security.context import SecurityContext
 from bento.security.depends import (
     get_current_user,
     get_optional_user,
+    require_any_role,
     require_permissions,
     require_roles,
-    require_any_role,
 )
-from bento.core.exceptions import DomainException
 
 pytestmark = pytest.mark.asyncio
 

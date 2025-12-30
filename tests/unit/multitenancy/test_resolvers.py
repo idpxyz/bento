@@ -6,10 +6,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from bento.multitenancy import (
-    HeaderTenantResolver,
-    TokenTenantResolver,
-    SubdomainTenantResolver,
     CompositeTenantResolver,
+    HeaderTenantResolver,
+    SubdomainTenantResolver,
+    TokenTenantResolver,
 )
 
 

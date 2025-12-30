@@ -25,7 +25,7 @@ from contexts.identity.application.queries import (
     ListUsersHandler,
     ListUsersQuery,
 )
-from contexts.identity.interfaces.dto import UserResponse, ListUsersResponse
+from contexts.identity.interfaces.dto import ListUsersResponse, UserResponse
 from contexts.identity.interfaces.mappers import user_to_response
 from shared.infrastructure.dependencies import handler_dependency
 

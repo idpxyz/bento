@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from loms.shared.infra.db.session import get_session
-from loms.shared.platform.runtime.health.checks import db_check, contracts_check
+from loms.shared.platform.runtime.health.checks import contracts_check, db_check
 
 router = APIRouter(prefix="/health", tags=["health"])
 

@@ -39,7 +39,7 @@ class TestCreateCategoryHandler:
     async def test_create_category_success(self, usecase, mock_repository):
         """测试成功场景"""
         # Arrange
-        command = CreateCategoryCommand(
+        CreateCategoryCommand(
             name="Electronics", description="Electronic products category"
         )
 
@@ -56,7 +56,7 @@ class TestCreateCategoryHandler:
     async def test_create_category_validation_failure(self, usecase):
         """测试验证失败场景"""
         # Arrange
-        invalid_command = CreateCategoryCommand(
+        CreateCategoryCommand(
             name="",  # 无效：空名称
             description="Some description",
         )

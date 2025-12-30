@@ -39,7 +39,7 @@ class TestCreateProductHandler:
     async def test_create_product_success(self, usecase, mock_repository):
         """测试成功场景"""
         # Arrange
-        command = CreateProductCommand(
+        CreateProductCommand(
             name="iPhone 15 Pro", description="Latest flagship smartphone", price=999.99
         )
 
@@ -56,7 +56,7 @@ class TestCreateProductHandler:
     async def test_create_product_validation_failure(self, usecase):
         """测试验证失败场景"""
         # Arrange
-        invalid_command = CreateProductCommand(
+        CreateProductCommand(
             name="",  # 无效：空名称
             description="Some description",
             price=-100.0,  # 无效：负价格

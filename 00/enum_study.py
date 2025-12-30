@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from bento.application.mapper.base import BaseMapper
+
 from bento.core.ids import EntityId
 
 

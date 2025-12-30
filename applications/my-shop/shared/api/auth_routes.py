@@ -3,10 +3,9 @@
 Provides endpoints for authentication-related operations.
 """
 
+from bento.security import CurrentUser, SecurityContext, get_current_user
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-
-from bento.security import SecurityContext, CurrentUser, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

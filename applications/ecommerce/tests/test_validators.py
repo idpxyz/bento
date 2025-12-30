@@ -8,9 +8,9 @@ This module demonstrates testing best practices for validators:
 """
 
 import pytest
+from bento.core.errors import ApplicationException
 
 from applications.ecommerce.modules.order.application.validators import OrderValidator
-from bento.core.errors import ApplicationException
 
 
 class TestOrderValidator:

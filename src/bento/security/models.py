@@ -66,7 +66,7 @@ class CurrentUser:
     permissions: tuple[str, ...] = field(default_factory=tuple)
     roles: tuple[str, ...] = field(default_factory=tuple)
     metadata: dict[str, Any] = field(default_factory=dict)
-    _cache: "Cache | None" = field(default=None, init=False, repr=False, compare=False)
+    _cache: Cache | None = field(default=None, init=False, repr=False, compare=False)
 
     def __post_init__(self):
         """Validate permissions and roles after initialization."""
@@ -86,7 +86,7 @@ class CurrentUser:
                     f"Roles must be non-empty strings with max length 128."
                 )
 
-    def set_cache(self, cache: "Cache") -> None:
+    def set_cache(self, cache: Cache) -> None:
         """Set cache instance for permission checking.
 
         This allows using Bento's cache infrastructure for permission caching.

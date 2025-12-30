@@ -3,6 +3,7 @@ from loms.shared.platform.errors.exceptions import AppError
 from loms.shared.platform.errors.reason_codes import ReasonCodes
 from loms.shared.platform.i18n.renderer import MessageRenderer
 
+
 class ErrorMapper:
     def __init__(self, reason_codes: ReasonCodes, renderer: MessageRenderer):
         self._rc = reason_codes

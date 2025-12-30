@@ -27,7 +27,7 @@ class IdentityModule(BentoModule):
         "contexts.identity.infrastructure.repositories.user_repository_impl",
     ]
 
-    async def on_register(self, container: "BentoContainer") -> None:
+    async def on_register(self, container: BentoContainer) -> None:
         """Register identity services."""
         from contexts.identity.infrastructure.repositories.user_repository_impl import (
             UserRepository,
@@ -40,6 +40,7 @@ class IdentityModule(BentoModule):
     def get_routers(self) -> list:
         """Return identity API routers with /api/v1 prefix."""
         from fastapi import APIRouter
+
         from contexts.identity.interfaces import register_routes
 
         router = APIRouter(prefix="/api/v1")

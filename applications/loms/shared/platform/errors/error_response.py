@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class ErrorResponse(BaseModel):
     code: int = Field(..., description="HTTP映射码（与reason_code对应）")
     message: str = Field(..., description="错误信息（可本地化）")

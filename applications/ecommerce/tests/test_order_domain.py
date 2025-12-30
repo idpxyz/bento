@@ -1,11 +1,11 @@
 """Tests for order domain logic."""
 
 import pytest
+from bento.core.errors import DomainException
 
 from applications.ecommerce.modules.order.domain.order import Order
 from applications.ecommerce.modules.order.domain.order_status import OrderStatus
 from applications.ecommerce.modules.order.errors import OrderErrors
-from bento.core.errors import DomainException
 from bento.core.ids import ID
 
 

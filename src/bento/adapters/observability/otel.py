@@ -291,7 +291,10 @@ class OpenTelemetryProvider:
 
             for exporter_type in exporters:
                 if exporter_type == "console":
-                    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+                    from opentelemetry.sdk.trace.export import (
+                        ConsoleSpanExporter,
+                        SimpleSpanProcessor,
+                    )
                     processor = SimpleSpanProcessor(ConsoleSpanExporter())
                     tracer_provider.add_span_processor(processor)
                     logger.info("Added console trace exporter")
@@ -312,7 +315,9 @@ class OpenTelemetryProvider:
 
                 elif exporter_type == "otlp":
                     try:
-                        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                            OTLPSpanExporter,
+                        )
                         otlp_endpoint = self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317")
                         otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
                         tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
@@ -366,7 +371,9 @@ class OpenTelemetryProvider:
 
                 elif exporter_type == "otlp":
                     try:
-                        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+                        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+                            OTLPMetricExporter,
+                        )
                         otlp_endpoint = self.exporter_kwargs.get("otlp_endpoint", "http://localhost:4317")
                         otlp_exporter = OTLPMetricExporter(endpoint=otlp_endpoint)
                         reader = PeriodicExportingMetricReader(otlp_exporter)

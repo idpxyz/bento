@@ -1,6 +1,8 @@
 from __future__ import annotations
-from pathlib import Path
+
 import re
+from pathlib import Path
+
 
 def find_openapi_files(contracts_root: Path) -> list[Path]:
     candidates: list[Path] = []

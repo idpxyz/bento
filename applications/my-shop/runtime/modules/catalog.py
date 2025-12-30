@@ -30,7 +30,7 @@ class CatalogModule(BentoModule):
         "contexts.catalog.infrastructure.repositories.category_repository_impl",
     ]
 
-    async def on_register(self, container: "BentoContainer") -> None:
+    async def on_register(self, container: BentoContainer) -> None:
         """Register catalog services."""
         from contexts.catalog.infrastructure.repositories.category_repository_impl import (
             CategoryRepository,
@@ -44,7 +44,7 @@ class CatalogModule(BentoModule):
 
         logger.info("Catalog services registered")
 
-    async def on_startup(self, container: "BentoContainer") -> None:
+    async def on_startup(self, container: BentoContainer) -> None:
         """Warm up catalog cache."""
         from config.warmup_config import setup_cache_warmup
         from contexts.catalog.infrastructure.repositories.category_repository_impl import (
@@ -76,6 +76,7 @@ class CatalogModule(BentoModule):
     def get_routers(self) -> list:
         """Return catalog API routers with /api/v1 prefix."""
         from fastapi import APIRouter
+
         from contexts.catalog.interfaces import register_routes
 
         router = APIRouter(prefix="/api/v1")

@@ -2,12 +2,12 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from loms.contexts.shipment.domain.model import Shipment
+
 from bento.application.cqrs.command_handler import CommandHandler
 from bento.application.decorators import command_handler, idempotent, state_transition
 from bento.core.exceptions import DomainException
 from bento.core.ids import ID
-
-from loms.contexts.shipment.domain.model import Shipment
 
 
 @dataclass
@@ -45,7 +45,7 @@ class AddLegHandler(CommandHandler[AddLegCommand, dict]):
                 http_status=404,
             )
 
-        leg = shipment.add_leg(
+        shipment.add_leg(
             leg_id=ID(cmd.leg_id),
             origin_node_id=cmd.origin_node_id,
             destination_node_id=cmd.destination_node_id,

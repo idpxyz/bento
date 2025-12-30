@@ -29,19 +29,22 @@ Example:
     ```
 """
 
+from bento.security.authorization import (
+    AdminBypassAuthorizer,
+    OwnershipAuthorizer,
+    authorize_resource,
+    check_resource_access,
+)
 from bento.security.context import SecurityContext
-from bento.security.models import CurrentUser
-from bento.security.ports import IAuthenticator, IAuthorizer
-from bento.security.middleware import add_security_middleware
 from bento.security.decorators import (
-    require_auth,
-    require_permission,
-    require_any_permission,
     require_all_permissions,
-    require_role,
-    require_any_role,
     require_all_roles,
+    require_any_permission,
+    require_any_role,
+    require_auth,
     require_owner_or_role,
+    require_permission,
+    require_role,
 )
 from bento.security.depends import (
     get_current_user,
@@ -49,12 +52,9 @@ from bento.security.depends import (
     require_permissions,
     require_roles,
 )
-from bento.security.authorization import (
-    OwnershipAuthorizer,
-    AdminBypassAuthorizer,
-    check_resource_access,
-    authorize_resource,
-)
+from bento.security.middleware import add_security_middleware
+from bento.security.models import CurrentUser
+from bento.security.ports import IAuthenticator, IAuthorizer
 
 __all__ = [
     # Context

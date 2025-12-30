@@ -16,6 +16,8 @@ Note:
 
 from decimal import Decimal
 
+from bento.application.mapper import AutoMapper
+
 from applications.ecommerce.modules.order.domain.order import (
     Address,
     Discount,
@@ -41,7 +43,6 @@ from applications.ecommerce.modules.order.persistence.models import (
     OrderModel,
     OrderTaxLineModel,
 )
-from bento.application.mapper import AutoMapper
 from bento.core.ids import ID
 
 

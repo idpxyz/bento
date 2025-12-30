@@ -5,11 +5,11 @@ Run independently: uv run uvicorn loms.bootstrap.entrypoints.shipment_api:app --
 import os
 from pathlib import Path
 
-from bento.application.decorators import set_global_contracts
-from bento.runtime import BentoRuntime
-
 from loms.contexts.shipment.module import ShipmentModule
 from loms.shared.infra.module import InfraModule
+
+from bento.application.decorators import set_global_contracts
+from bento.runtime import BentoRuntime
 
 
 def create_shipment_app():

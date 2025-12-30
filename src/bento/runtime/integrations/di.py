@@ -1,7 +1,7 @@
 """Dependency injection integration for Bento Runtime."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from bento.runtime.bootstrap import BentoRuntime
@@ -44,8 +44,8 @@ class DIIntegration:
             )
 
         async def get_uow_impl():
-            from bento.persistence.uow import SQLAlchemyUnitOfWork
             from bento.persistence.outbox import SqlAlchemyOutbox
+            from bento.persistence.uow import SQLAlchemyUnitOfWork
 
             session = self.runtime._session_factory()
             try:
@@ -77,7 +77,7 @@ class DIIntegration:
         self.runtime._get_uow_func = get_uow_impl
         return self.runtime._get_uow_func
 
-    def get_repository_dependency(self, aggregate_class: Type[Any]) -> Any:
+    def get_repository_dependency(self, aggregate_class: type[Any]) -> Any:
         """Get repository dependency function for a specific aggregate.
 
         Args:
@@ -98,8 +98,8 @@ class DIIntegration:
             ```
         """
         async def get_repository_impl():
-            from bento.persistence.uow import SQLAlchemyUnitOfWork
             from bento.persistence.outbox import SqlAlchemyOutbox
+            from bento.persistence.uow import SQLAlchemyUnitOfWork
 
             session = self.runtime._session_factory()
             try:

@@ -10,11 +10,11 @@ import asyncio
 import sys
 from pathlib import Path
 
+from api.deps import engine, session_factory
 from bento.core.ids import ID
 from contexts.identity.domain.user import User
 from sqlalchemy import select
 
-from api.deps import engine, session_factory
 from contexts.catalog.domain.models.category import Category
 from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapper
@@ -289,8 +289,8 @@ async def main():
 
         # Seed data in order
         categories = await seed_categories()
-        products = await seed_products(categories)
-        users = await seed_users()
+        await seed_products(categories)
+        await seed_users()
 
         # Verify
         await verify_data()

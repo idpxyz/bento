@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from bento.contracts import ReasonCode
@@ -84,7 +84,7 @@ def get_global_catalog():
     return _global_catalog
 
 
-def _resolve_reason_code(code: str) -> "ReasonCode | None":
+def _resolve_reason_code(code: str) -> ReasonCode | None:
     """Resolve a reason code from the global catalog."""
     # Auto-load framework catalog if not set
     if _global_catalog is None:

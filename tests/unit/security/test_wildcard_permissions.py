@@ -1,6 +1,5 @@
 """Unit tests for wildcard permission support."""
 
-import pytest
 from bento.security import CurrentUser
 
 

@@ -17,7 +17,7 @@ from contexts.catalog.application.queries import (
     ListProductsHandler,
     ListProductsQuery,
 )
-from contexts.catalog.interfaces.dto import ProductResponse, ListProductsResponse
+from contexts.catalog.interfaces.dto import ListProductsResponse, ProductResponse
 from contexts.catalog.interfaces.mappers import product_to_response
 from shared.infrastructure.dependencies import handler_dependency
 

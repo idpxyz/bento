@@ -4,11 +4,12 @@ Contract Loader - Contracts-as-Code.
 Loads all contracts (state machines, reason codes, routing, schemas) from files.
 """
 import json
-import yaml
 import pathlib
+
+import yaml
 from loms.shared.contracts.catalogs import ReasonCodeCatalog, RoutingMatrix
-from loms.shared.contracts.state_machines import StateMachineEngine
 from loms.shared.contracts.schema_registry import EventSchemaRegistry
+from loms.shared.contracts.state_machines import StateMachineEngine
 
 
 class ContractLoader:

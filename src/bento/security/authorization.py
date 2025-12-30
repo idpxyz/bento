@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 from bento.core.exceptions import DomainException
 from bento.security.context import SecurityContext
@@ -79,7 +80,7 @@ class OwnershipAuthorizer:
 
     async def authorize(
         self,
-        user: "CurrentUser",
+        user: CurrentUser,
         action: str,
         resource: Any,
     ) -> bool:
@@ -137,7 +138,7 @@ class AdminBypassAuthorizer:
 
     async def authorize(
         self,
-        user: "CurrentUser",
+        user: CurrentUser,
         action: str,
         resource: Any,
     ) -> bool:
@@ -160,7 +161,7 @@ class AdminBypassAuthorizer:
 
 
 async def check_resource_access(
-    user: "CurrentUser",
+    user: CurrentUser,
     action: str,
     resource: Any,
     authorizer: Any,

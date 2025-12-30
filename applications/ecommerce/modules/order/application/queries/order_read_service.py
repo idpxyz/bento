@@ -7,13 +7,13 @@ providing better performance for complex queries.
 import logging
 from typing import Any
 
+from bento.core.errors import ApplicationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from applications.ecommerce.modules.order.persistence.models.order_read_model import (
     OrderReadModel,
 )
-from bento.core.errors import ApplicationError
 from bento.core.ids import ID
 
 logger = logging.getLogger(__name__)

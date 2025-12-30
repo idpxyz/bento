@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import os
-
 import pytest
-
 from bento.application.ports.service_discovery import ServiceNotFoundError
+
 from runtime.bootstrap import build_runtime
 from shared.services.external_service_client import ExternalServiceClient
 

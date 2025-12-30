@@ -1,10 +1,10 @@
 """Shipment Mapper using Bento's AutoMapper."""
+from loms.contexts.shipment.domain.model import Hold, Leg, Shipment
+from loms.contexts.shipment.domain.vo.codes import ShipmentStatus
+from loms.contexts.shipment.infra.persistence.models import HoldORM, LegORM, ShipmentORM
+
 from bento.application.mappers import AutoMapper
 from bento.core.ids import ID
-
-from loms.contexts.shipment.domain.model import Shipment, Leg, Hold
-from loms.contexts.shipment.domain.vo.codes import ShipmentStatus
-from loms.contexts.shipment.infra.persistence.models import ShipmentORM, LegORM, HoldORM
 
 
 class ShipmentMapper(AutoMapper[Shipment, ShipmentORM]):

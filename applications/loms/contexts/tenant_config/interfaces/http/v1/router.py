@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
 from loms.shared.platform.i18n.i18n import t
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 

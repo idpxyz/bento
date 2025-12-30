@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from bento.infrastructure.database.resilience.retry import (
-    RetryConfig,
     RetryableOperation,
+    RetryConfig,
     retry_on_db_error,
 )
 

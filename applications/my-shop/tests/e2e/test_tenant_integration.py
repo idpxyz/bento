@@ -4,6 +4,7 @@ This script demonstrates and validates the tenant middleware integration.
 """
 
 from fastapi.testclient import TestClient
+
 from runtime.bootstrap import create_app
 
 
@@ -22,7 +23,7 @@ def main():
     print(f"   Status: {response.status_code}")
     context = response.json()
     print(f"   Tenant ID: {context.get('tenant_id')}")
-    print(f"   ✅ No tenant header → tenant_id is None")
+    print("   ✅ No tenant header → tenant_id is None")
 
     # Test 2: Request with tenant header
     print("\n2️⃣  Testing with X-Tenant-ID: tenant-a:")
@@ -34,7 +35,7 @@ def main():
     context = response.json()
     print(f"   Tenant ID: {context.get('tenant_id')}")
     assert context.get('tenant_id') == "tenant-a", "Tenant ID should be 'tenant-a'"
-    print(f"   ✅ X-Tenant-ID header → tenant_id = 'tenant-a'")
+    print("   ✅ X-Tenant-ID header → tenant_id = 'tenant-a'")
 
     # Test 3: Request with different tenant
     print("\n3️⃣  Testing with X-Tenant-ID: tenant-b:")
@@ -46,7 +47,7 @@ def main():
     context = response.json()
     print(f"   Tenant ID: {context.get('tenant_id')}")
     assert context.get('tenant_id') == "tenant-b", "Tenant ID should be 'tenant-b'"
-    print(f"   ✅ X-Tenant-ID header → tenant_id = 'tenant-b'")
+    print("   ✅ X-Tenant-ID header → tenant_id = 'tenant-b'")
 
     # Test 4: Verify user and tenant coexist
     print("\n4️⃣  Testing user and tenant coexistence:")
@@ -58,17 +59,17 @@ def main():
     print(f"   Authenticated: {context.get('authenticated')}")
     print(f"   User ID: {context.get('user', {}).get('id')}")
     print(f"   Tenant ID: {context.get('tenant_id')}")
-    assert context.get('authenticated') == True, "Should be authenticated"
+    assert context.get('authenticated'), "Should be authenticated"
     assert context.get('user', {}).get('id') == "demo-user", "User should be demo-user"
     assert context.get('tenant_id') == "tenant-xyz", "Tenant should be tenant-xyz"
-    print(f"   ✅ User and tenant both available in context")
+    print("   ✅ User and tenant both available in context")
 
     # Test 5: Excluded paths don't require tenant
     print("\n5️⃣  Testing excluded path /health (no tenant required):")
     response = client.get("/health")
     print(f"   Status: {response.status_code}")
     assert response.status_code == 200, "Health check should work without tenant"
-    print(f"   ✅ Excluded paths work without tenant header")
+    print("   ✅ Excluded paths work without tenant header")
 
     # Test 6: Verify tenant isolation concept
     print("\n6️⃣  Testing tenant isolation concept:")
@@ -89,7 +90,7 @@ def main():
     print(f"   Request 1 tenant: {tenant1}")
     print(f"   Request 2 tenant: {tenant2}")
     assert tenant1 != tenant2, "Different requests should have different tenants"
-    print(f"   ✅ Tenant isolation verified")
+    print("   ✅ Tenant isolation verified")
 
     print("\n" + "="*70)
     print("✅ Tenant Middleware Integration Test Completed!")

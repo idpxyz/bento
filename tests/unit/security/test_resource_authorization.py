@@ -1,15 +1,16 @@
 """Unit tests for resource-based authorization."""
 
-import pytest
 from dataclasses import dataclass
 
+import pytest
+
+from bento.core.exceptions import DomainException
 from bento.security import (
+    AdminBypassAuthorizer,
     CurrentUser,
     OwnershipAuthorizer,
-    AdminBypassAuthorizer,
     check_resource_access,
 )
-from bento.core.exceptions import DomainException
 
 
 @dataclass

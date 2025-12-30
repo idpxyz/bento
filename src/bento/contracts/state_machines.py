@@ -29,10 +29,10 @@ YAML Contract Format:
 
 from __future__ import annotations
 
-from bento.core.exceptions import DomainException
-
 from dataclasses import dataclass
 from typing import Any
+
+from bento.core.exceptions import DomainException
 
 
 class StateMachineEngine:

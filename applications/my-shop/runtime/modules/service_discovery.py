@@ -11,7 +11,9 @@ from bento.adapters.service_discovery.config import (
     ServiceDiscoveryBackend,
     ServiceDiscoveryConfig,
 )
-from bento.runtime.integrations.service_discovery import ServiceDiscoveryModule as BentoServiceDiscoveryModule
+from bento.runtime.integrations.service_discovery import (
+    ServiceDiscoveryModule as BentoServiceDiscoveryModule,
+)
 
 from config import settings
 

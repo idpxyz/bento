@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from bento.runtime import BentoRuntime, RuntimeBuilder
+from bento.runtime import RuntimeBuilder
 
 
 @pytest.mark.asyncio

@@ -2,15 +2,15 @@
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
+from shared.auth import StubAuthenticator
 
-from bento.security import SecurityContext, CurrentUser
-from bento.multitenancy import TenantContext, HeaderTenantResolver, add_tenant_middleware
+from bento.core.exceptions import DomainException
+from bento.multitenancy import HeaderTenantResolver, add_tenant_middleware
 from bento.runtime.integrations.security import setup_security
 from bento.runtime.middleware import RequestIDMiddleware
-from bento.core.exceptions import DomainException
-from shared.auth import StubAuthenticator
+from bento.security import SecurityContext
 
 
 @pytest.fixture

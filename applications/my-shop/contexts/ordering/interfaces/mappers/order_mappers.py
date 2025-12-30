@@ -15,7 +15,6 @@ from contexts.ordering.application.dto.order_dto import OrderDTO, OrderItemDTO
 from contexts.ordering.domain.models.order import Order, OrderItem
 from contexts.ordering.interfaces.dto.order_responses import OrderResponse
 
-
 # ==================== Lazy Singleton Mappers ====================
 
 

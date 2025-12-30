@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Request, Header
+from fastapi import APIRouter, Header, Request
+from loms.shared.platform.i18n.catalog import CATALOG, t
 from pydantic import BaseModel, Field
-from loms.shared.platform.i18n.catalog import t, CATALOG
 
 router = APIRouter()
 

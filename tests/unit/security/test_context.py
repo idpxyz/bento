@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bento.security import SecurityContext, CurrentUser
+from bento.security import CurrentUser, SecurityContext
 
 
 def test_security_context_set_get_user():

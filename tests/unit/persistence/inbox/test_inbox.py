@@ -1,7 +1,5 @@
 """Tests for Inbox Pattern implementation."""
 
-import pytest
-from datetime import datetime, UTC
 
 from bento.persistence.inbox import InboxRecord, SqlAlchemyInbox
 
@@ -98,15 +96,15 @@ class TestInboxProtocol:
 
     def test_inbox_protocol_exists(self):
         """Test that Inbox protocol is defined."""
-        from bento.messaging.inbox import Inbox
         from typing import Protocol
+
+        from bento.messaging.inbox import Inbox
 
         # Inbox should be a Protocol
         assert issubclass(Inbox, Protocol)
 
     def test_sqlalchemy_inbox_implements_protocol(self):
         """Test that SqlAlchemyInbox implements Inbox protocol."""
-        from bento.messaging.inbox import Inbox
 
         # SqlAlchemyInbox should have all Inbox protocol methods
         assert hasattr(SqlAlchemyInbox, "is_processed")

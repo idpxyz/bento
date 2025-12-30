@@ -29,7 +29,7 @@ class OrderingModule(BentoModule):
         "contexts.ordering.infrastructure.adapters.services.product_catalog_adapter",
     ]
 
-    async def on_register(self, container: "BentoContainer") -> None:
+    async def on_register(self, container: BentoContainer) -> None:
         """Register ordering services."""
         from contexts.ordering.infrastructure.repositories.order_repository_impl import (
             OrderRepository,
@@ -39,7 +39,7 @@ class OrderingModule(BentoModule):
 
         logger.info("Ordering services registered")
 
-    async def on_startup(self, container: "BentoContainer") -> None:
+    async def on_startup(self, container: BentoContainer) -> None:
         """Register event handlers for projections."""
         from contexts.ordering.application.projections.order_projection import (
             OrderProjection,
@@ -64,7 +64,7 @@ class OrderingModule(BentoModule):
 
         logger.info("Ordering event handlers registered")
 
-    async def on_shutdown(self, container: "BentoContainer") -> None:
+    async def on_shutdown(self, container: BentoContainer) -> None:
         """Clean up ordering resources."""
         session = container.get("ordering.projection_session", None)
         if session is not None:
@@ -75,6 +75,7 @@ class OrderingModule(BentoModule):
     def get_routers(self) -> list:
         """Return ordering API routers with /api/v1 prefix."""
         from fastapi import APIRouter
+
         from contexts.ordering.interfaces import register_routes
 
         router = APIRouter(prefix="/api/v1")

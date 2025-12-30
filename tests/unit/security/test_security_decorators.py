@@ -1,23 +1,24 @@
 from __future__ import annotations
 
-import pytest
 from dataclasses import dataclass
+
+import pytest
 
 pytestmark = pytest.mark.asyncio
 
-from bento.security import (
-    SecurityContext,
-    CurrentUser,
-    require_auth,
-    require_permission,
-    require_any_permission,
-    require_all_permissions,
-    require_role,
-    require_any_role,
-    require_all_roles,
-    require_owner_or_role,
-)
 from bento.core.exceptions import DomainException
+from bento.security import (
+    CurrentUser,
+    SecurityContext,
+    require_all_permissions,
+    require_all_roles,
+    require_any_permission,
+    require_any_role,
+    require_auth,
+    require_owner_or_role,
+    require_permission,
+    require_role,
+)
 
 
 @pytest.fixture(autouse=True)

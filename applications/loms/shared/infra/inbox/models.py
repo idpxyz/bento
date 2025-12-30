@@ -1,7 +1,9 @@
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, DateTime
+
 from loms.shared.infra.db.base import Base
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 
 class InboxEvent(Base):
     __tablename__ = "inbox_events"

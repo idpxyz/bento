@@ -1,6 +1,5 @@
 """Tests for Idempotency Pattern implementation."""
 
-import pytest
 
 from bento.persistence.idempotency import IdempotencyRecord, SqlAlchemyIdempotency
 from bento.persistence.idempotency.record import IdempotencyConflictException
@@ -135,14 +134,14 @@ class TestIdempotencyProtocol:
 
     def test_idempotency_protocol_exists(self):
         """Test that IdempotencyStore protocol is defined."""
-        from bento.messaging.idempotency import IdempotencyStore
         from typing import Protocol
+
+        from bento.messaging.idempotency import IdempotencyStore
 
         assert issubclass(IdempotencyStore, Protocol)
 
     def test_sqlalchemy_idempotency_implements_protocol(self):
         """Test that SqlAlchemyIdempotency has protocol methods."""
-        from bento.messaging.idempotency import IdempotencyStore
 
         assert hasattr(SqlAlchemyIdempotency, "get_response")
         assert hasattr(SqlAlchemyIdempotency, "lock")

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
-def customize_openapi_for_bento(app: "FastAPI") -> dict:
+def customize_openapi_for_bento(app: FastAPI) -> dict:
     """Customize OpenAPI schema to add Bento Framework headers.
 
     This adds custom headers to all endpoints in Swagger UI:
@@ -128,7 +128,7 @@ def customize_openapi_for_bento(app: "FastAPI") -> dict:
     return app.openapi_schema
 
 
-def setup_bento_openapi(app: "FastAPI") -> None:
+def setup_bento_openapi(app: FastAPI) -> None:
     """Setup custom OpenAPI schema for Bento Framework features.
 
     This configures the FastAPI application to use Bento's custom OpenAPI schema

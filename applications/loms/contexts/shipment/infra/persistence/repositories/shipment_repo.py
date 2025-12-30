@@ -1,16 +1,15 @@
 """Shipment Repository using Bento's RepositoryAdapter."""
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from bento.infrastructure.repository import RepositoryAdapter, repository_for
-from bento.persistence.interceptor import create_default_chain
-from bento.persistence.repository import BaseRepository
-
 from loms.contexts.shipment.domain.model.shipment import Shipment
-from bento.core.ids import ID
 from loms.contexts.shipment.infra.persistence.mappers.shipment_mapper import (
     ShipmentMapper,
 )
 from loms.contexts.shipment.infra.persistence.models import ShipmentORM
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from bento.core.ids import ID
+from bento.infrastructure.repository import RepositoryAdapter, repository_for
+from bento.persistence.interceptor import create_default_chain
+from bento.persistence.repository import BaseRepository
 
 
 @repository_for(Shipment)

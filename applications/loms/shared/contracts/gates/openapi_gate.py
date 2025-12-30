@@ -4,9 +4,10 @@ OpenAPI Contract Gate - Startup validation.
 Validates OpenAPI contracts at application startup.
 """
 from __future__ import annotations
-from pathlib import Path
-import yaml
 
+from pathlib import Path
+
+import yaml
 from loms.shared.contracts.gates.openapi_loader import find_openapi_files
 
 

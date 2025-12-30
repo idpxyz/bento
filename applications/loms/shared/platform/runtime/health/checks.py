@@ -1,7 +1,9 @@
+from pathlib import Path
+
+from loms.shared.platform.runtime.settings import settings
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from pathlib import Path
-from loms.shared.platform.runtime.settings import settings
+
 
 async def db_check(session: AsyncSession) -> bool:
     try:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from bento.multitenancy import TenantContext
 from bento.core.exceptions import DomainException
+from bento.multitenancy import TenantContext
 
 
 @pytest.fixture(autouse=True)

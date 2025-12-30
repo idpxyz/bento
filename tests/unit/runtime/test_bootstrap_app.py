@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
-from bento.runtime import BentoModule, BentoRuntime, RuntimeBuilder
+from bento.runtime import BentoModule, RuntimeBuilder
 
 
 class DummyModule(BentoModule):

@@ -2,12 +2,13 @@
 
 from dataclasses import dataclass
 
-from applications.ecommerce.modules.order.domain.events import OrderCreated
-from applications.ecommerce.modules.order.domain.order import Order
-from bento.application.ports import IUnitOfWork
 from bento.application.usecase import BaseUseCase
 from bento.core.error_codes import CommonErrors
 from bento.core.errors import ApplicationException
+
+from applications.ecommerce.modules.order.domain.events import OrderCreated
+from applications.ecommerce.modules.order.domain.order import Order
+from bento.application.ports import IUnitOfWork
 from bento.core.ids import ID
 
 

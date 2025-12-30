@@ -1,17 +1,18 @@
 """
 Unit tests for Bento Contracts module.
 """
-import pytest
 import json
+
+import pytest
 import yaml
 
 from bento.contracts import (
-    StateMachineEngine,
-    StateTransitionException,
+    ContractConfig,
+    ContractLoader,
     ReasonCodeCatalog,
     RoutingMatrix,
-    ContractLoader,
-    ContractConfig,
+    StateMachineEngine,
+    StateTransitionException,
 )
 
 

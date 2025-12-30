@@ -6,6 +6,7 @@ This script demonstrates the new auth endpoints:
 """
 
 from fastapi.testclient import TestClient
+
 from runtime.bootstrap import create_app
 
 
@@ -23,7 +24,7 @@ def main():
     response = client.get("/api/v1/auth/me")
     print(f"   Status: {response.status_code}")
     user = response.json()
-    print(f"   Response:")
+    print("   Response:")
     print(f"      ID: {user['id']}")
     print(f"      Permissions: {user['permissions']}")
     print(f"      Roles: {user['roles']}")
@@ -34,7 +35,7 @@ def main():
     response = client.get("/api/v1/auth/me/context")
     print(f"   Status: {response.status_code}")
     context = response.json()
-    print(f"   Response:")
+    print("   Response:")
     print(f"      Authenticated: {context['authenticated']}")
     print(f"      User ID: {context['user']['id']}")
     print(f"      Permissions: {context['user']['permissions']}")

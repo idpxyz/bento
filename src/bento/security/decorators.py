@@ -18,8 +18,9 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
 
 from bento.core.exceptions import DomainException
 from bento.security.context import SecurityContext

@@ -29,7 +29,7 @@ from bento.multitenancy.resolvers import TenantResolver
 
 
 def add_tenant_middleware(
-    app: "FastAPI",
+    app: FastAPI,
     resolver: TenantResolver,
     require_tenant: bool = False,
     exclude_paths: list[str] | None = None,

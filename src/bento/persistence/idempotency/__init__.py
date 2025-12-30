@@ -43,8 +43,8 @@ Example:
 """
 
 from bento.persistence.idempotency.record import (
-    IdempotencyRecord,
     IdempotencyConflictException,
+    IdempotencyRecord,
     SqlAlchemyIdempotency,
 )
 

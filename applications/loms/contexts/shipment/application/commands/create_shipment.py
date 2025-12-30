@@ -1,11 +1,11 @@
 """CreateShipment command and handler."""
 from dataclasses import dataclass
 
+from loms.contexts.shipment.domain.model import Shipment
+
 from bento.application.cqrs.command_handler import CommandHandler
 from bento.application.decorators import command_handler, idempotent, state_transition
 from bento.core.ids import ID
-
-from loms.contexts.shipment.domain.model import Shipment
 
 
 @dataclass

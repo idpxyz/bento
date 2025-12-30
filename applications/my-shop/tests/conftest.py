@@ -23,11 +23,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Auto-scan repositories and ports (same as BentoRuntime.scan_packages)
 # This triggers @repository_for and @port_for decorator registration
 # ============================================================
+# Import OutboxRecord to create outbox table for e2e tests
+from bento.persistence.outbox.record import OutboxRecord  # noqa: F401
+
 import contexts.catalog.infrastructure.repositories.category_repository_impl  # noqa: F401
 import contexts.catalog.infrastructure.repositories.product_repository_impl  # noqa: F401
 import contexts.identity.infrastructure.repositories.user_repository_impl  # noqa: F401
-import contexts.ordering.infrastructure.repositories.order_repository_impl  # noqa: F401
 import contexts.ordering.infrastructure.adapters.services.product_catalog_adapter  # noqa: F401
+import contexts.ordering.infrastructure.repositories.order_repository_impl  # noqa: F401
 
 # Import all PO models to register them with Base.metadata
 from contexts.catalog.infrastructure.models.category_po import CategoryPO  # noqa: F401
@@ -35,9 +38,6 @@ from contexts.catalog.infrastructure.models.product_po import ProductPO  # noqa:
 from contexts.identity.infrastructure.models.user_po import UserPO  # noqa: F401
 from contexts.ordering.infrastructure.models.order_po import OrderPO  # noqa: F401
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO  # noqa: F401
-
-# Import OutboxRecord to create outbox table for e2e tests
-from bento.persistence.outbox.record import OutboxRecord  # noqa: F401
 
 # Test database URL (in-memory SQLite)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
