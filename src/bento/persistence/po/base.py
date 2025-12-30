@@ -37,7 +37,6 @@ class Base(DeclarativeBase):
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
-
         """Auto-generate table name from class name (lowercased).
 
         Can be overridden by explicitly setting __tablename__ in subclass.

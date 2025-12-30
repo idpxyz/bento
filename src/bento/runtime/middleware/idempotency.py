@@ -107,7 +107,6 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
         request._receive = receive
 
-
         # Parse request body for hashing
         try:
             body_obj = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
@@ -171,7 +170,6 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     if hasattr(response, "body_iterator"):
                         # StreamingResponse - iterate through chunks
                         async for chunk in response.body_iterator:
-
                             if isinstance(chunk, bytes):
                                 response_body_bytes += chunk
                             else:

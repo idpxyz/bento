@@ -46,16 +46,10 @@ class RandomSamplingMixin:
             random_user = await repo.find_random_po(spec)
             ```
         """
-        stmt = (
-            select(self._po_type)
-
-            .order_by(func.random())
-            .limit(1)
-        )
+        stmt = select(self._po_type).order_by(func.random()).limit(1)
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -84,16 +78,10 @@ class RandomSamplingMixin:
         if n <= 0:
             return []
 
-        stmt = (
-            select(self._po_type)
-
-            .order_by(func.random())
-            .limit(n)
-        )
+        stmt = select(self._po_type).order_by(func.random()).limit(n)
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -133,20 +121,11 @@ class RandomSamplingMixin:
             percentage = 100.0
 
         # First get total count
-        count_stmt = (
-            select(func.count()).select_from(self._po_type)
-
-        )
+        count_stmt = select(func.count()).select_from(self._po_type)
         if spec:
-            count_stmt = spec.apply(
+            count_stmt = spec.apply(count_stmt, self._po_type)
 
-                count_stmt, self._po_type
-            )
-
-        count_result = await self._session.execute(
-
-            count_stmt
-        )
+        count_result = await self._session.execute(count_stmt)
         total_count = count_result.scalar() or 0
 
         if total_count == 0:

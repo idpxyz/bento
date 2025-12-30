@@ -16,7 +16,6 @@ class SoftDeleteEnhancedMixin:
     _mapper: Any  # Mapper instance
 
     def _convert_spec_to_po(self, spec: Any) -> Any:
-
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -28,7 +27,6 @@ class SoftDeleteEnhancedMixin:
 
         return self._mapper.map_reverse_list(pos)
 
-
     async def find_with_trashed(self, spec: Any | None = None) -> list[Any]:
         """Find all aggregates including soft-deleted ones."""
         po_spec = self._convert_spec_to_po(spec) if spec else None
@@ -37,15 +35,12 @@ class SoftDeleteEnhancedMixin:
 
         return self._mapper.map_reverse_list(pos)
 
-
     async def count_trashed(self, spec: Any | None = None) -> int:
         """Count soft-deleted aggregates."""
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
         return await self._repository.count_trashed_po(po_spec)
 
-
     async def is_trashed(self, id: Any) -> bool:
         """Check if an aggregate is soft-deleted."""
         return await self._repository.is_trashed_po(id)
-

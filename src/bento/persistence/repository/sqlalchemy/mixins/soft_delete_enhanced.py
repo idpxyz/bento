@@ -48,22 +48,15 @@ class SoftDeleteEnhancedMixin:
             ```
         """
         if not hasattr(self._po_type, "deleted_at"):
-
             raise AttributeError(
                 f"{self._po_type.__name__} does not support soft delete "
-
                 "(missing 'deleted_at' field)"
             )
 
-        stmt = select(self._po_type).where(
-
-            self._po_type.deleted_at.isnot(None)
-
-        )
+        stmt = select(self._po_type).where(self._po_type.deleted_at.isnot(None))
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -90,10 +83,8 @@ class SoftDeleteEnhancedMixin:
         """
         stmt = select(self._po_type)
 
-
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -119,26 +110,19 @@ class SoftDeleteEnhancedMixin:
             ```
         """
         if not hasattr(self._po_type, "deleted_at"):
-
             raise AttributeError(
                 f"{self._po_type.__name__} does not support soft delete "
-
                 "(missing 'deleted_at' field)"
             )
 
         stmt = (
             select(func.count())
             .select_from(self._po_type)
-            .where(
-
-                self._po_type.deleted_at.isnot(None)
-
-            )
+            .where(self._po_type.deleted_at.isnot(None))
         )
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -160,19 +144,10 @@ class SoftDeleteEnhancedMixin:
             ```
         """
         if not hasattr(self._po_type, "deleted_at"):
-
             return False
 
         id_value = str(id.value) if hasattr(id, "value") else str(id)
-        stmt = (
-            select(self._po_type.deleted_at)
-            .where(
-
-                self._po_type.id == id_value
-
-            )
-            .limit(1)
-        )
+        stmt = select(self._po_type.deleted_at).where(self._po_type.id == id_value).limit(1)
 
         result = await self._session.execute(stmt)
 

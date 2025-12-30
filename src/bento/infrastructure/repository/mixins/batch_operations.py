@@ -24,7 +24,6 @@ class BatchOperationsMixin:
     _mapper: Any  # Mapper instance
 
     def _convert_spec_to_po(self, spec: Any) -> Any:
-
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -47,7 +46,6 @@ class BatchOperationsMixin:
 
         return self._mapper.map_reverse_list(pos)
 
-
     async def exists_by_id(self, id: Any) -> bool:
         """Check if an aggregate exists by its ID.
 
@@ -64,7 +62,6 @@ class BatchOperationsMixin:
             ```
         """
         return await self._repository.exists_po_by_id(id)
-
 
     async def delete_by_ids(self, ids: list[Any]) -> int:
         """Delete multiple aggregates by their IDs.
@@ -86,4 +83,3 @@ class BatchOperationsMixin:
             ```
         """
         return await self._repository.delete_po_by_ids(ids)
-

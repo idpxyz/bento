@@ -69,7 +69,6 @@ class SortingLimitingMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.SORT_LIMIT,
                 actor=self._actor,
@@ -87,10 +86,8 @@ class SortingLimitingMixin:
         # Execute query
         stmt = select(self._po_type)
 
-
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         if order_by:
             if order_by.startswith("-"):
@@ -99,7 +96,6 @@ class SortingLimitingMixin:
 
             else:
                 stmt = stmt.order_by(getattr(self._po_type, order_by))
-
 
         stmt = stmt.limit(1)
         result = await self._session.execute(stmt)
@@ -176,7 +172,6 @@ class SortingLimitingMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.SORT_LIMIT,
                 actor=self._actor,
@@ -194,10 +189,8 @@ class SortingLimitingMixin:
         # Execute query
         stmt = select(self._po_type)
 
-
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         if order_by:
             if order_by.startswith("-"):
@@ -206,7 +199,6 @@ class SortingLimitingMixin:
 
             else:
                 stmt = stmt.order_by(getattr(self._po_type, order_by))
-
 
         stmt = stmt.limit(n)
         result = await self._session.execute(stmt)
@@ -260,7 +252,6 @@ class SortingLimitingMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.PAGINATE,
                 actor=self._actor,
@@ -279,10 +270,8 @@ class SortingLimitingMixin:
         # Build base query
         stmt = select(self._po_type)
 
-
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         # Get total count
         from sqlalchemy import func
@@ -304,7 +293,6 @@ class SortingLimitingMixin:
 
             else:
                 stmt = stmt.order_by(getattr(self._po_type, order_by))
-
 
         # Apply pagination
         offset = (page - 1) * page_size

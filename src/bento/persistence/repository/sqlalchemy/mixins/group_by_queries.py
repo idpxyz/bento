@@ -62,7 +62,6 @@ class GroupByQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -82,7 +81,6 @@ class GroupByQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -126,7 +124,6 @@ class GroupByQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -142,7 +139,6 @@ class GroupByQueryMixin:
 
         # Execute query
         field_obj = getattr(self._po_type, date_field)
-
 
         if granularity == "day":
             # Group by date (YYYY-MM-DD) using strftime for SQLite compatibility
@@ -173,7 +169,6 @@ class GroupByQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -229,7 +224,6 @@ class GroupByQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -243,17 +237,12 @@ class GroupByQueryMixin:
                 return cached
 
         # Execute query
-        field_objs = [
-            getattr(self._po_type, f)
-            for f in fields
-
-        ]
+        field_objs = [getattr(self._po_type, f) for f in fields]
 
         stmt = select(*field_objs, func.count().label("count")).group_by(*field_objs)
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 

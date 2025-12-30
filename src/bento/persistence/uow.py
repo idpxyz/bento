@@ -250,7 +250,6 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
 
         return self._inbox
 
-
     @property
     def idempotency(self) -> IdempotencyStore:
         """Get the IdempotencyStore for command deduplication.
@@ -266,7 +265,6 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             self._idempotency = SqlAlchemyIdempotency(self._session, self._tenant_id)
 
         return self._idempotency
-
 
     def set_tenant_id(self, tenant_id: str) -> None:
         """Set the tenant ID for multi-tenant operations.

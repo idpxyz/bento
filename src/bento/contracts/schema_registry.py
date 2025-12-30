@@ -28,7 +28,6 @@ except ImportError:
     Draft202012Validator = None
 
 
-
 class EventSchemaRegistry:
     """Registry of event schemas for validation.
 

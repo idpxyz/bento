@@ -157,7 +157,6 @@ class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](
         """
         return await self._repository.query_po_by_spec(specification)
 
-
     # ==================== Extended Query Methods ====================
 
     async def find_one(self, specification: CompositeSpecification[AR]) -> AR | None:

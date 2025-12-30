@@ -108,7 +108,6 @@ def _create_handler_with_dependencies[THandler](
                 observability = runtime.container.get("observability")
                 handler = handler_cls(uow, observability)
 
-
                 elapsed = (time.perf_counter() - start_time) * 1000
                 logger.debug(
                     f"Created Observable Handler {handler_cls.__name__} in {elapsed:.2f}ms"
@@ -122,7 +121,6 @@ def _create_handler_with_dependencies[THandler](
 
         handler = handler_cls(uow, NoOpObservabilityProvider())
 
-
         elapsed = (time.perf_counter() - start_time) * 1000
         logger.debug(
             f"Created Observable Handler {handler_cls.__name__} with NoOp in {elapsed:.2f}ms"
@@ -131,7 +129,6 @@ def _create_handler_with_dependencies[THandler](
     else:
         # Standard handler with only uow
         handler = handler_cls(uow)
-
 
         elapsed = (time.perf_counter() - start_time) * 1000
         logger.debug(f"Created Standard Handler {handler_cls.__name__} in {elapsed:.2f}ms")

@@ -16,7 +16,6 @@ class GroupByQueryMixin:
     _mapper: Any  # Mapper instance
 
     def _convert_spec_to_po(self, spec: Any) -> Any:
-
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -24,10 +23,7 @@ class GroupByQueryMixin:
         """Group aggregates by field and count each group."""
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
-        return await self._repository.group_by_field_po(
-
-            field, po_spec
-        )
+        return await self._repository.group_by_field_po(field, po_spec)
 
     async def group_by_date(
         self, date_field: str, granularity: str = "day", spec: Any | None = None
@@ -35,10 +31,7 @@ class GroupByQueryMixin:
         """Group aggregates by date and count each group."""
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
-        return await self._repository.group_by_date_po(
-
-            date_field, granularity, po_spec
-        )
+        return await self._repository.group_by_date_po(date_field, granularity, po_spec)
 
     async def group_by_multiple_fields(
         self, fields: list[str], spec: Any | None = None
@@ -46,7 +39,4 @@ class GroupByQueryMixin:
         """Group aggregates by multiple fields and count each group."""
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
-        return await self._repository.group_by_multiple_fields_po(
-
-            fields, po_spec
-        )
+        return await self._repository.group_by_multiple_fields_po(fields, po_spec)

@@ -61,7 +61,6 @@ class AggregateQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -80,7 +79,6 @@ class AggregateQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -119,7 +117,6 @@ class AggregateQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -138,7 +135,6 @@ class AggregateQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -177,7 +173,6 @@ class AggregateQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -196,7 +191,6 @@ class AggregateQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -234,7 +228,6 @@ class AggregateQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -253,7 +246,6 @@ class AggregateQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 
@@ -294,7 +286,6 @@ class AggregateQueryMixin:
 
             context = InterceptorContext(
                 session=self._session,
-
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -318,7 +309,6 @@ class AggregateQueryMixin:
 
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         result = await self._session.execute(stmt)
 

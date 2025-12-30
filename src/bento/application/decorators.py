@@ -78,7 +78,6 @@ def command_handler[TCommandHandler: "CommandHandler[Any, Any]"](
 
     cls.__is_handler__ = True
 
-
     # Register in global registry
     handler_name = cls.__name__
     _COMMAND_HANDLERS[handler_name] = cls
@@ -133,7 +132,6 @@ def query_handler[TQueryHandler: "QueryHandler[Any, Any]"](
     cls.__handler_type__ = "query"
 
     cls.__is_handler__ = True
-
 
     # Register in global registry
     handler_name = cls.__name__
@@ -290,7 +288,6 @@ def state_transition(
     def decorator(cls: type[TCommandHandler]) -> type[TCommandHandler]:
         # Store metadata on the class
         cls.__state_transition__ = {
-
             "aggregate": aggregate,
             "command": command,
             "state_field": state_field,
@@ -457,7 +454,6 @@ def idempotent(
     def decorator(cls: type[TCommandHandler]) -> type[TCommandHandler]:
         # Store metadata
         cls.__idempotent__ = {
-
             "key_field": key_field,
             "hash_fields": hash_fields,
         }

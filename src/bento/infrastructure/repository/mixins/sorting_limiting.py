@@ -25,7 +25,6 @@ class SortingLimitingMixin:
     _mapper: Any  # Mapper instance
 
     def _convert_spec_to_po(self, spec: Any) -> Any:
-
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -62,7 +61,6 @@ class SortingLimitingMixin:
             return None
         return self._mapper.map_reverse(po)
 
-
     async def find_last(self, spec: Any | None = None, order_by: str = "created_at") -> Any | None:
         """Find last aggregate matching specification.
 
@@ -89,7 +87,6 @@ class SortingLimitingMixin:
         if po is None:
             return None
         return self._mapper.map_reverse(po)
-
 
     async def find_top_n(
         self, n: int, spec: Any | None = None, order_by: str | None = None
@@ -122,7 +119,6 @@ class SortingLimitingMixin:
         pos = await self._repository.find_top_n_po(n, po_spec, order_by)
 
         return self._mapper.map_reverse_list(pos)
-
 
     async def find_paginated(
         self,
@@ -163,10 +159,7 @@ class SortingLimitingMixin:
         """
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
-        pos, total = await self._repository.find_paginated_po(
-
-            page, page_size, po_spec, order_by
-        )
+        pos, total = await self._repository.find_paginated_po(page, page_size, po_spec, order_by)
         aggregates = self._mapper.map_reverse_list(pos)
 
         return aggregates, total

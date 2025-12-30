@@ -291,9 +291,7 @@ class OptimisticLockFieldMixin:
     # If no rows affected, raises StaleDataError
     @declared_attr.directive
     def __mapper_args__(cls) -> dict:
-
         return {"version_id_col": cls.__table__.c.version}
-
 
     version: Mapped[int] = mapped_column(
         Integer,

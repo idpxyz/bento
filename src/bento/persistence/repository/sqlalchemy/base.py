@@ -320,7 +320,6 @@ class BaseRepository[PO, ID](
             # pass through result None to allow invalidation logic in interceptors
             await self._interceptor_chain.process_result(context, po)
 
-
     # ==================== Batch Operations ====================
 
     async def batch_po_create(self, pos: list[PO]) -> list[PO]:

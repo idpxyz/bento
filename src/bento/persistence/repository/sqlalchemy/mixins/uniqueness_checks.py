@@ -53,16 +53,11 @@ class UniquenessChecksMixin:
                 raise ValidationError("Email already taken")
             ```
         """
-        stmt = select(self._po_type).where(
-
-            getattr(self._po_type, field) == value
-
-        )
+        stmt = select(self._po_type).where(getattr(self._po_type, field) == value)
 
         if exclude_id:
             id_value = str(exclude_id.value) if hasattr(exclude_id, "value") else str(exclude_id)
             stmt = stmt.where(self._po_type.id != id_value)
-
 
         stmt = stmt.limit(1)
         result = await self._session.execute(stmt)
@@ -88,15 +83,7 @@ class UniquenessChecksMixin:
             product_po = await repo.find_po_by_field("sku", "PROD-001")
             ```
         """
-        stmt = (
-            select(self._po_type)
-            .where(
-
-                getattr(self._po_type, field) == value
-
-            )
-            .limit(1)
-        )
+        stmt = select(self._po_type).where(getattr(self._po_type, field) == value).limit(1)
         result = await self._session.execute(stmt)
 
         return result.scalar_one_or_none()
@@ -120,11 +107,7 @@ class UniquenessChecksMixin:
             products_po = await repo.find_all_po_by_field("category_id", "cat-456")
             ```
         """
-        stmt = select(self._po_type).where(
-
-            getattr(self._po_type, field) == value
-
-        )
+        stmt = select(self._po_type).where(getattr(self._po_type, field) == value)
         result = await self._session.execute(stmt)
 
         return list(result.scalars().all())

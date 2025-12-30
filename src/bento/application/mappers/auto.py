@@ -95,11 +95,7 @@ class TypeAnalyzer:
         if is_dataclass(klass):
             # 移除 isinstance 过滤，统一在 _unwrap_optional 中处理
             # 这样可以正确处理 Optional[List[T]]、Annotated[T, ...] 等 typing 类型
-            d = {
-                f.name: TypeAnalyzer._unwrap_optional(f.type)
-
-                for f in dataclass_fields(klass)
-            }
+            d = {f.name: TypeAnalyzer._unwrap_optional(f.type) for f in dataclass_fields(klass)}
             cache[klass] = d
             return d
 
@@ -956,10 +952,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                         factory = getattr(self, "_id_factory", None)
                         domain_dict[fname] = (
                             factory(domain_dict[fname])
-
                             if callable(factory)
                             else self._default_id_type(domain_dict[fname])
-
                         )
             # Name-based fallback for *_id fields
             for fname, val in list(domain_dict.items()):
@@ -967,11 +961,7 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     # If already wrapped (unlikely, since it's str), skip
                     factory = getattr(self, "_id_factory", None)
                     domain_dict[fname] = (
-                        factory(val)
-
-                        if callable(factory)
-                        else self._default_id_type(val)
-
+                        factory(val) if callable(factory) else self._default_id_type(val)
                     )
         except Exception:
             # Best-effort normalization; ignore failures to avoid masking original errors

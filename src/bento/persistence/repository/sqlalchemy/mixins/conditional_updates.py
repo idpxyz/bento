@@ -65,10 +65,8 @@ class ConditionalUpdateMixin:
 
             updates_copy = updates.copy()
             if hasattr(self._po_type, "updated_at"):
-
                 updates_copy["updated_at"] = datetime.utcnow()
             if hasattr(self._po_type, "updated_by"):
-
                 updates_copy["updated_by"] = self._actor
 
         else:
@@ -77,20 +75,16 @@ class ConditionalUpdateMixin:
         # Build update statement
         stmt = update(self._po_type).values(**updates_copy)
 
-
         # Apply specification filter
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         # Execute update
         result = await self._session.execute(stmt)
 
         await self._session.flush()
 
-
         return result.rowcount
-
 
     async def delete_po_by_spec(self, spec: Any) -> int:
         """Delete entities matching specification.
@@ -119,20 +113,16 @@ class ConditionalUpdateMixin:
         # Build delete statement
         stmt = delete(self._po_type)
 
-
         # Apply specification filter
         if spec:
             stmt = spec.apply(stmt, self._po_type)
-
 
         # Execute delete
         result = await self._session.execute(stmt)
 
         await self._session.flush()
 
-
         return result.rowcount
-
 
     async def soft_delete_po_by_spec(self, spec: Any) -> int:
         """Soft delete entities matching specification.
@@ -157,18 +147,14 @@ class ConditionalUpdateMixin:
 
         # Check if soft delete fields exist
         if not hasattr(self._po_type, "deleted_at"):
-
             raise AttributeError(
                 f"{self._po_type.__name__} does not support soft delete "
-
                 "(missing 'deleted_at' field)"
             )
 
         updates = {"deleted_at": datetime.utcnow()}
         if hasattr(self._po_type, "deleted_by") and hasattr(self, "_actor"):
-
             updates["deleted_by"] = self._actor
-
 
         return await self.update_po_by_spec(spec, updates)
 
@@ -193,16 +179,13 @@ class ConditionalUpdateMixin:
         """
         # Check if soft delete fields exist
         if not hasattr(self._po_type, "deleted_at"):
-
             raise AttributeError(
                 f"{self._po_type.__name__} does not support soft delete "
-
                 "(missing 'deleted_at' field)"
             )
 
         updates = {"deleted_at": None}
         if hasattr(self._po_type, "deleted_by"):
-
             updates["deleted_by"] = None
 
         return await self.update_po_by_spec(spec, updates)

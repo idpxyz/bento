@@ -171,7 +171,6 @@ class ConnectionDrainer:
             # checkedout is a method, not an attribute
             # Note: Only available on QueuePool and AsyncAdaptedQueuePool, not StaticPool
             if hasattr(pool, "checkedout") and callable(pool.checkedout):
-
                 count = pool.checkedout()
 
                 return int(count)

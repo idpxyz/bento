@@ -549,5 +549,4 @@ class BaseMapper[Domain, PO](MapperStrategy[Domain, PO]):
             domain.clear_events()
 
 
-
 __all__ = ["BaseMapper", "MappingContext"]

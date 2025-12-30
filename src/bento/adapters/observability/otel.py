@@ -425,7 +425,6 @@ class OpenTelemetryProvider:
 
                 self._tracers[name] = NoOpTracer()
 
-
         return self._tracers[name]
 
     def get_meter(self, name: str) -> OpenTelemetryMeter:
@@ -441,7 +440,6 @@ class OpenTelemetryProvider:
                 from bento.adapters.observability.noop import NoOpMeter
 
                 self._meters[name] = NoOpMeter()
-
 
         return self._meters[name]
 

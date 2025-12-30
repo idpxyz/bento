@@ -71,15 +71,7 @@ class BatchOperationsMixin:
             ```
         """
         id_value = str(id.value) if hasattr(id, "value") else str(id)
-        stmt = (
-            select(self._po_type.id)
-            .where(
-
-                self._po_type.id == id_value
-
-            )
-            .limit(1)
-        )
+        stmt = select(self._po_type.id).where(self._po_type.id == id_value).limit(1)
         result = await self._session.execute(stmt)
 
         return result.scalar_one_or_none() is not None
@@ -114,4 +106,3 @@ class BatchOperationsMixin:
         await self._session.flush()
 
         return result.rowcount
-

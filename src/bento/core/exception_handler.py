@@ -52,7 +52,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(BentoException)
     async def handle_bento_exception(
-
         request: Request,
         exc: BentoException,
     ) -> JSONResponse:
@@ -114,7 +113,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(OptimisticLockException)
     async def handle_optimistic_lock(
-
         request: Request,
         exc: OptimisticLockException,
     ) -> JSONResponse:
@@ -138,7 +136,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StaleDataError)
     async def handle_stale_data(
-
         request: Request,
         exc: StaleDataError,
     ) -> JSONResponse:
@@ -159,7 +156,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(IdempotencyConflictError)
     async def handle_idempotency_conflict(
-
         request: Request,
         exc: IdempotencyConflictError,
     ) -> JSONResponse:
@@ -183,7 +179,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def handle_unexpected_exception(
-
         request: Request,
         exc: Exception,
     ) -> JSONResponse:

@@ -25,7 +25,6 @@ class AggregateQueryMixin:
     _mapper: Any  # Mapper instance
 
     def _convert_spec_to_po(self, spec: Any) -> Any:
-
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -56,7 +55,6 @@ class AggregateQueryMixin:
 
         return await self._repository.sum_field_po(field, po_spec)
 
-
     async def avg_field(self, field: str, spec: Any | None = None) -> float:
         """Calculate average value of a field across all matching aggregates.
 
@@ -82,7 +80,6 @@ class AggregateQueryMixin:
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
         return await self._repository.avg_field_po(field, po_spec)
-
 
     async def min_field(self, field: str, spec: Any | None = None) -> Any | None:
         """Find minimum value of a field across all matching aggregates.
@@ -110,7 +107,6 @@ class AggregateQueryMixin:
 
         return await self._repository.min_field_po(field, po_spec)
 
-
     async def max_field(self, field: str, spec: Any | None = None) -> Any | None:
         """Find maximum value of a field across all matching aggregates.
 
@@ -133,7 +129,6 @@ class AggregateQueryMixin:
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
         return await self._repository.max_field_po(field, po_spec)
-
 
     async def count_field(self, field: str, spec: Any | None = None, distinct: bool = False) -> int:
         """Count non-null values of a field.
@@ -161,4 +156,3 @@ class AggregateQueryMixin:
         po_spec = self._convert_spec_to_po(spec) if spec else None
 
         return await self._repository.count_field_po(field, po_spec, distinct)
-
