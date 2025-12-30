@@ -199,11 +199,11 @@ def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callabl
     """
     try:
         from fastapi import Depends
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "FastAPI is required for create_handler_dependency. "
             "Install it with: pip install fastapi"
-        )
+        ) from e
 
     THandler = TypeVar("THandler", bound=HandlerProtocol)
 
@@ -298,11 +298,11 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
     """
     try:
         from fastapi import Depends, Request
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "FastAPI is required for handler_dependency. "
             "Install it with: pip install fastapi"
-        )
+        ) from e
 
     async def factory(request: Request):
         """Create handler with UoW from runtime."""
