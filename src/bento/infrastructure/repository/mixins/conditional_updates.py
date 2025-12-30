@@ -24,7 +24,8 @@ class ConditionalUpdateMixin:
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance
 
-    def _convert_spec_to_po(self, spec: Any) -> Any:  # type: ignore
+    def _convert_spec_to_po(self, spec: Any) -> Any:
+
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -60,8 +61,10 @@ class ConditionalUpdateMixin:
             await user_repo.update_by_spec(spec, {"is_active": False})
             ```
         """
-        po_spec = self._convert_spec_to_po(spec)  # type: ignore
-        return await self._repository.update_po_by_spec(po_spec, updates)  # type: ignore
+        po_spec = self._convert_spec_to_po(spec)
+
+        return await self._repository.update_po_by_spec(po_spec, updates)
+
 
     async def delete_by_spec(self, spec: Any) -> int:
         """Delete aggregates matching specification.
@@ -87,8 +90,10 @@ class ConditionalUpdateMixin:
             await order_repo.delete_by_spec(spec)
             ```
         """
-        po_spec = self._convert_spec_to_po(spec)  # type: ignore
-        return await self._repository.delete_po_by_spec(po_spec)  # type: ignore
+        po_spec = self._convert_spec_to_po(spec)
+
+        return await self._repository.delete_po_by_spec(po_spec)
+
 
     async def soft_delete_by_spec(self, spec: Any) -> int:
         """Soft delete aggregates matching specification.
@@ -113,8 +118,10 @@ class ConditionalUpdateMixin:
             await session_repo.soft_delete_by_spec(spec)
             ```
         """
-        po_spec = self._convert_spec_to_po(spec)  # type: ignore
-        return await self._repository.soft_delete_po_by_spec(po_spec)  # type: ignore
+        po_spec = self._convert_spec_to_po(spec)
+
+        return await self._repository.soft_delete_po_by_spec(po_spec)
+
 
     async def restore_by_spec(self, spec: Any) -> int:
         """Restore soft-deleted aggregates matching specification.
@@ -139,5 +146,7 @@ class ConditionalUpdateMixin:
             await order_repo.restore_by_spec(spec)
             ```
         """
-        po_spec = self._convert_spec_to_po(spec)  # type: ignore
-        return await self._repository.restore_po_by_spec(po_spec)  # type: ignore
+        po_spec = self._convert_spec_to_po(spec)
+
+        return await self._repository.restore_po_by_spec(po_spec)
+

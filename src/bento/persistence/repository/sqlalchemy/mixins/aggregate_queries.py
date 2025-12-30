@@ -60,7 +60,8 @@ class AggregateQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -75,11 +76,14 @@ class AggregateQueryMixin:
                 return cached
 
         # Execute query
-        stmt = select(func.sum(getattr(self._po_type, field)))  # type: ignore
-        if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+        stmt = select(func.sum(getattr(self._po_type, field)))
 
-        result = await self._session.execute(stmt)  # type: ignore
+        if spec:
+            stmt = spec.apply(stmt, self._po_type)
+
+
+        result = await self._session.execute(stmt)
+
         value = result.scalar()
         result_value = float(value) if value is not None else 0.0
 
@@ -114,7 +118,8 @@ class AggregateQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -129,11 +134,14 @@ class AggregateQueryMixin:
                 return cached
 
         # Execute query
-        stmt = select(func.avg(getattr(self._po_type, field)))  # type: ignore
-        if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+        stmt = select(func.avg(getattr(self._po_type, field)))
 
-        result = await self._session.execute(stmt)  # type: ignore
+        if spec:
+            stmt = spec.apply(stmt, self._po_type)
+
+
+        result = await self._session.execute(stmt)
+
         value = result.scalar()
         result_value = float(value) if value is not None else 0.0
 
@@ -168,7 +176,8 @@ class AggregateQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -183,11 +192,14 @@ class AggregateQueryMixin:
                 return cached
 
         # Execute query
-        stmt = select(func.min(getattr(self._po_type, field)))  # type: ignore
-        if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+        stmt = select(func.min(getattr(self._po_type, field)))
 
-        result = await self._session.execute(stmt)  # type: ignore
+        if spec:
+            stmt = spec.apply(stmt, self._po_type)
+
+
+        result = await self._session.execute(stmt)
+
         result_value = result.scalar()
 
         # Process result through interceptor (for caching)
@@ -221,7 +233,8 @@ class AggregateQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -236,11 +249,14 @@ class AggregateQueryMixin:
                 return cached
 
         # Execute query
-        stmt = select(func.max(getattr(self._po_type, field)))  # type: ignore
-        if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+        stmt = select(func.max(getattr(self._po_type, field)))
 
-        result = await self._session.execute(stmt)  # type: ignore
+        if spec:
+            stmt = spec.apply(stmt, self._po_type)
+
+
+        result = await self._session.execute(stmt)
+
         result_value = result.scalar()
 
         # Process result through interceptor (for caching)
@@ -277,7 +293,8 @@ class AggregateQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.AGGREGATE,
                 actor=self._actor,
@@ -292,16 +309,19 @@ class AggregateQueryMixin:
                 return cached
 
         # Execute query
-        field_obj = getattr(self._po_type, field)  # type: ignore
+        field_obj = getattr(self._po_type, field)
+
         if distinct:
             stmt = select(func.count(func.distinct(field_obj)))
         else:
             stmt = select(func.count(field_obj))
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         result_value = result.scalar() or 0
 
         # Process result through interceptor (for caching)

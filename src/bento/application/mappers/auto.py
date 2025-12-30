@@ -96,7 +96,8 @@ class TypeAnalyzer:
             # 移除 isinstance 过滤，统一在 _unwrap_optional 中处理
             # 这样可以正确处理 Optional[List[T]]、Annotated[T, ...] 等 typing 类型
             d = {
-                f.name: TypeAnalyzer._unwrap_optional(f.type)  # type: ignore[arg-type]
+                f.name: TypeAnalyzer._unwrap_optional(f.type)
+
                 for f in dataclass_fields(klass)
             }
             cache[klass] = d
@@ -145,14 +146,16 @@ class TypeAnalyzer:
         infos: dict[str, FieldInfo] = {}
         if is_dataclass(klass):
             for f in dataclass_fields(klass):
-                original = f.type  # type: ignore[attr-defined]
+                original = f.type
+
                 ann = TypeAnalyzer._unwrap_annotated(original)
                 unwrapped = TypeAnalyzer._unwrap_optional(original)
                 origin = get_origin(ann)
                 is_u = origin is Union or (
                     hasattr(types, "UnionType") and origin is types.UnionType
                 )
-                is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                is_opt = is_u and (type(None) in get_args(ann))
+
                 infos[f.name] = FieldInfo(f.name, original, unwrapped, is_opt)
             cache[klass] = infos
             return infos
@@ -172,7 +175,8 @@ class TypeAnalyzer:
                     is_u = origin is Union or (
                         hasattr(types, "UnionType") and origin is types.UnionType
                     )
-                    is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                    is_opt = is_u and (type(None) in get_args(ann))
+
                     infos[name] = FieldInfo(name, original, unwrapped, is_opt)
                 cache[klass] = infos
                 return infos
@@ -187,7 +191,8 @@ class TypeAnalyzer:
                 is_u = origin is Union or (
                     hasattr(types, "UnionType") and origin is types.UnionType
                 )
-                is_opt = is_u and (type(None) in get_args(ann))  # type: ignore[arg-type]
+                is_opt = is_u and (type(None) in get_args(ann))
+
                 infos[name] = FieldInfo(name, original, unwrapped, is_opt)
             cache[klass] = infos
             return infos
@@ -689,10 +694,12 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                 # Merge defaults with provided values
                 merged = {**field_defaults, **po_dict}
                 try:
-                    return self._po_type(**merged)  # type: ignore[misc]
+                    return self._po_type(**merged)
+
                 except TypeError:
                     # Last resort: create with minimal fields and setattr
-                    po = object.__new__(self._po_type)  # type: ignore[misc]
+                    po = object.__new__(self._po_type)
+
                     for k, v in merged.items():
                         setattr(po, k, v)
                     return po
@@ -748,10 +755,12 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                 # Merge defaults with provided values
                 merged = {**field_defaults, **domain_dict}
                 try:
-                    return self._domain_type(**merged)  # type: ignore[misc]
+                    return self._domain_type(**merged)
+
                 except TypeError:
                     # Last resort: create with minimal fields and setattr
-                    domain = object.__new__(self._domain_type)  # type: ignore[misc]
+                    domain = object.__new__(self._domain_type)
+
                     for k, v in merged.items():
                         setattr(domain, k, v)
                     return domain
@@ -925,7 +934,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                         and self._analyzer.is_enum_type(target_t)
                         and isinstance(po_value, (str, int))
                     ):
-                        domain_value = target_t(po_value)  # type: ignore[call-arg]
+                        domain_value = target_t(po_value)
+
                 except Exception:
                     pass
             domain_dict[mapping.domain_field] = domain_value
@@ -945,9 +955,11 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     if self._analyzer.is_id_type(info.unwrapped_type):
                         factory = getattr(self, "_id_factory", None)
                         domain_dict[fname] = (
-                            factory(domain_dict[fname])  # type: ignore[call-arg]
+                            factory(domain_dict[fname])
+
                             if callable(factory)
-                            else self._default_id_type(domain_dict[fname])  # type: ignore[misc]
+                            else self._default_id_type(domain_dict[fname])
+
                         )
             # Name-based fallback for *_id fields
             for fname, val in list(domain_dict.items()):
@@ -955,9 +967,11 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     # If already wrapped (unlikely, since it's str), skip
                     factory = getattr(self, "_id_factory", None)
                     domain_dict[fname] = (
-                        factory(val)  # type: ignore[call-arg]
+                        factory(val)
+
                         if callable(factory)
-                        else self._default_id_type(val)  # type: ignore[misc]
+                        else self._default_id_type(val)
+
                     )
         except Exception:
             # Best-effort normalization; ignore failures to avoid masking original errors
@@ -1018,7 +1032,8 @@ class AutoMapper[Domain, PO](BaseMapper[Domain, PO]):
                     current = list(events_fn())
                     remaining = [e for e in current if type(e) in exclude_types]
                     if hasattr(domain, "_events"):
-                        domain._events = remaining  # type: ignore[attr-defined]
+                        domain._events = remaining
+
                     else:
                         clear_fn()
                         add_fn_obj = getattr(domain, "add_event", None)

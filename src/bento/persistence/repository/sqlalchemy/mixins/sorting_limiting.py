@@ -68,7 +68,8 @@ class SortingLimitingMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.SORT_LIMIT,
                 actor=self._actor,
@@ -84,20 +85,25 @@ class SortingLimitingMixin:
                 return cached
 
         # Execute query
-        stmt = select(self._po_type)  # type: ignore
+        stmt = select(self._po_type)
+
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
+
 
         if order_by:
             if order_by.startswith("-"):
                 field_name = order_by[1:]
-                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))  # type: ignore
+                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))
+
             else:
-                stmt = stmt.order_by(getattr(self._po_type, order_by))  # type: ignore
+                stmt = stmt.order_by(getattr(self._po_type, order_by))
+
 
         stmt = stmt.limit(1)
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         result_value = result.scalar_one_or_none()
 
         # Process result through interceptor (for caching)
@@ -169,7 +175,8 @@ class SortingLimitingMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.SORT_LIMIT,
                 actor=self._actor,
@@ -185,20 +192,25 @@ class SortingLimitingMixin:
                 return cached
 
         # Execute query
-        stmt = select(self._po_type)  # type: ignore
+        stmt = select(self._po_type)
+
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
+
 
         if order_by:
             if order_by.startswith("-"):
                 field_name = order_by[1:]
-                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))  # type: ignore
+                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))
+
             else:
-                stmt = stmt.order_by(getattr(self._po_type, order_by))  # type: ignore
+                stmt = stmt.order_by(getattr(self._po_type, order_by))
+
 
         stmt = stmt.limit(n)
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         result_value = list(result.scalars().all())
 
         # Process result through interceptor (for caching)
@@ -247,7 +259,8 @@ class SortingLimitingMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.PAGINATE,
                 actor=self._actor,
@@ -264,33 +277,41 @@ class SortingLimitingMixin:
 
         # Execute query
         # Build base query
-        stmt = select(self._po_type)  # type: ignore
+        stmt = select(self._po_type)
+
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
+
 
         # Get total count
         from sqlalchemy import func
 
-        count_stmt = select(func.count()).select_from(self._po_type)  # type: ignore
+        count_stmt = select(func.count()).select_from(self._po_type)
+
         if spec:
-            count_stmt = spec.apply(count_stmt, self._po_type)  # type: ignore
-        count_result = await self._session.execute(count_stmt)  # type: ignore
+            count_stmt = spec.apply(count_stmt, self._po_type)
+
+        count_result = await self._session.execute(count_stmt)
+
         total = count_result.scalar() or 0
 
         # Apply sorting
         if order_by:
             if order_by.startswith("-"):
                 field_name = order_by[1:]
-                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))  # type: ignore
+                stmt = stmt.order_by(desc(getattr(self._po_type, field_name)))
+
             else:
-                stmt = stmt.order_by(getattr(self._po_type, order_by))  # type: ignore
+                stmt = stmt.order_by(getattr(self._po_type, order_by))
+
 
         # Apply pagination
         offset = (page - 1) * page_size
         stmt = stmt.offset(offset).limit(page_size)
 
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         entities = list(result.scalars().all())
         result_value = (entities, total)
 

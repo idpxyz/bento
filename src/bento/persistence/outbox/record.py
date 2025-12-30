@@ -108,7 +108,8 @@ class OutboxRecord(Base):
         if hasattr(evt, "to_payload"):
             payload = evt.to_payload()
         elif hasattr(evt, "to_dict"):
-            payload = evt.to_dict()  # type: ignore[attr-defined]
+            payload = evt.to_dict()
+
         else:
             from dataclasses import asdict, is_dataclass
 

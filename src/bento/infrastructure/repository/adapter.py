@@ -247,7 +247,8 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
             info = sync_sess.info if sync_sess is not None else session.info
             uow = info.get("uow")
             if uow and hasattr(uow, "track"):
-                uow.track(aggregate)  # type: ignore[no-any-return]
+                uow.track(aggregate)
+
         except Exception:
             # Best-effort: do not block persistence if UoW is not available
             pass
@@ -283,7 +284,8 @@ class RepositoryAdapter[AR: AggregateRoot, PO, ID: EntityId](
 
         if filtered_spec is None:
             # Query all
-            pos = await self._repository.query_po_by_spec(None)  # type: ignore[arg-type]
+            pos = await self._repository.query_po_by_spec(None)
+
         else:
             # Convert specification AR → PO
             po_spec = self._convert_spec_to_po(filtered_spec)

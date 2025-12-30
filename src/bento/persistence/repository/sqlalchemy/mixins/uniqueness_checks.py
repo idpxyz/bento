@@ -53,16 +53,20 @@ class UniquenessChecksMixin:
                 raise ValidationError("Email already taken")
             ```
         """
-        stmt = select(self._po_type).where(  # type: ignore
-            getattr(self._po_type, field) == value  # type: ignore
+        stmt = select(self._po_type).where(
+
+            getattr(self._po_type, field) == value
+
         )
 
         if exclude_id:
             id_value = str(exclude_id.value) if hasattr(exclude_id, "value") else str(exclude_id)
-            stmt = stmt.where(self._po_type.id != id_value)  # type: ignore
+            stmt = stmt.where(self._po_type.id != id_value)
+
 
         stmt = stmt.limit(1)
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         return result.scalar_one_or_none() is None
 
     async def find_po_by_field(self, field: str, value: Any) -> Any | None:
@@ -86,12 +90,15 @@ class UniquenessChecksMixin:
         """
         stmt = (
             select(self._po_type)
-            .where(  # type: ignore
-                getattr(self._po_type, field) == value  # type: ignore
+            .where(
+
+                getattr(self._po_type, field) == value
+
             )
             .limit(1)
         )
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         return result.scalar_one_or_none()
 
     async def find_all_po_by_field(self, field: str, value: Any) -> list[Any]:
@@ -113,8 +120,11 @@ class UniquenessChecksMixin:
             products_po = await repo.find_all_po_by_field("category_id", "cat-456")
             ```
         """
-        stmt = select(self._po_type).where(  # type: ignore
-            getattr(self._po_type, field) == value  # type: ignore
+        stmt = select(self._po_type).where(
+
+            getattr(self._po_type, field) == value
+
         )
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         return list(result.scalars().all())

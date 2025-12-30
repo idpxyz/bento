@@ -290,8 +290,10 @@ class OptimisticLockFieldMixin:
     # This generates: UPDATE ... WHERE id = ? AND version = ?
     # If no rows affected, raises StaleDataError
     @declared_attr.directive
-    def __mapper_args__(cls) -> dict:  # type: ignore[misc]
-        return {"version_id_col": cls.__table__.c.version}  # type: ignore[attr-defined]
+    def __mapper_args__(cls) -> dict:
+
+        return {"version_id_col": cls.__table__.c.version}
+
 
     version: Mapped[int] = mapped_column(
         Integer,

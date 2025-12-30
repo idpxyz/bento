@@ -105,7 +105,8 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         async def receive():
             return {"type": "http.request", "body": body_bytes, "more_body": False}
 
-        request._receive = receive  # type: ignore[attr-defined]
+        request._receive = receive
+
 
         # Parse request body for hashing
         try:
@@ -169,14 +170,16 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     # Try different ways to get response body
                     if hasattr(response, "body_iterator"):
                         # StreamingResponse - iterate through chunks
-                        async for chunk in response.body_iterator:  # type: ignore
+                        async for chunk in response.body_iterator:
+
                             if isinstance(chunk, bytes):
                                 response_body_bytes += chunk
                             else:
                                 response_body_bytes += bytes(chunk)
                     elif hasattr(response, "body"):
                         # Regular Response with body attribute
-                        body = response.body  # type: ignore
+                        body = response.body
+
                         if isinstance(body, bytes):
                             response_body_bytes = body
                         elif isinstance(body, (bytearray, memoryview)):

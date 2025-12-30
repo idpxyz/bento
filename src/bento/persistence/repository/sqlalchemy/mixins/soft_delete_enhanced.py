@@ -47,20 +47,26 @@ class SoftDeleteEnhancedMixin:
             recent_trashed = await repo.find_trashed_po(spec)
             ```
         """
-        if not hasattr(self._po_type, "deleted_at"):  # type: ignore
+        if not hasattr(self._po_type, "deleted_at"):
+
             raise AttributeError(
-                f"{self._po_type.__name__} does not support soft delete "  # type: ignore
+                f"{self._po_type.__name__} does not support soft delete "
+
                 "(missing 'deleted_at' field)"
             )
 
-        stmt = select(self._po_type).where(  # type: ignore
-            self._po_type.deleted_at.isnot(None)  # type: ignore
+        stmt = select(self._po_type).where(
+
+            self._po_type.deleted_at.isnot(None)
+
         )
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         return list(result.scalars().all())
 
     async def find_with_trashed_po(self, spec: Any | None = None) -> list[Any]:
@@ -82,12 +88,15 @@ class SoftDeleteEnhancedMixin:
             all_orders = await repo.find_with_trashed_po(spec)
             ```
         """
-        stmt = select(self._po_type)  # type: ignore
+        stmt = select(self._po_type)
+
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         return list(result.scalars().all())
 
     async def count_trashed_po(self, spec: Any | None = None) -> int:
@@ -109,24 +118,30 @@ class SoftDeleteEnhancedMixin:
             today_trashed = await repo.count_trashed_po(spec)
             ```
         """
-        if not hasattr(self._po_type, "deleted_at"):  # type: ignore
+        if not hasattr(self._po_type, "deleted_at"):
+
             raise AttributeError(
-                f"{self._po_type.__name__} does not support soft delete "  # type: ignore
+                f"{self._po_type.__name__} does not support soft delete "
+
                 "(missing 'deleted_at' field)"
             )
 
         stmt = (
             select(func.count())
             .select_from(self._po_type)
-            .where(  # type: ignore
-                self._po_type.deleted_at.isnot(None)  # type: ignore
+            .where(
+
+                self._po_type.deleted_at.isnot(None)
+
             )
         )
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         return result.scalar() or 0
 
     async def is_trashed_po(self, id: Any) -> bool:
@@ -144,18 +159,22 @@ class SoftDeleteEnhancedMixin:
                 print("User is in trash")
             ```
         """
-        if not hasattr(self._po_type, "deleted_at"):  # type: ignore
+        if not hasattr(self._po_type, "deleted_at"):
+
             return False
 
         id_value = str(id.value) if hasattr(id, "value") else str(id)
         stmt = (
             select(self._po_type.deleted_at)
-            .where(  # type: ignore
-                self._po_type.id == id_value  # type: ignore
+            .where(
+
+                self._po_type.id == id_value
+
             )
             .limit(1)
         )
 
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         deleted_at = result.scalar_one_or_none()
         return deleted_at is not None

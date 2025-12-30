@@ -186,7 +186,8 @@ class BaseRepository[PO, ID](
             to_cache_params = getattr(spec, "to_cache_params", None)
             if callable(to_cache_params):
                 try:
-                    params = to_cache_params()  # type: ignore[misc]
+                    params = to_cache_params()
+
                 except Exception:
                     params = None
             context = InterceptorContext(
@@ -317,7 +318,8 @@ class BaseRepository[PO, ID](
         # Trigger invalidation if needed
         if self._interceptor_chain:
             # pass through result None to allow invalidation logic in interceptors
-            await self._interceptor_chain.process_result(context, po)  # type: ignore[arg-type]
+            await self._interceptor_chain.process_result(context, po)
+
 
     # ==================== Batch Operations ====================
 

@@ -170,9 +170,12 @@ class ConnectionDrainer:
             pool = self.engine.pool
             # checkedout is a method, not an attribute
             # Note: Only available on QueuePool and AsyncAdaptedQueuePool, not StaticPool
-            if hasattr(pool, "checkedout") and callable(pool.checkedout):  # type: ignore[attr-defined]
-                count = pool.checkedout()  # type: ignore[attr-defined]
-                return int(count)  # type: ignore[arg-type]
+            if hasattr(pool, "checkedout") and callable(pool.checkedout):
+
+                count = pool.checkedout()
+
+                return int(count)
+
             else:
                 # Pool doesn't support connection tracking (e.g., StaticPool for SQLite)
                 return 0

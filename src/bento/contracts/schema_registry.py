@@ -25,7 +25,8 @@ try:
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
-    Draft202012Validator = None  # type: ignore[assignment]
+    Draft202012Validator = None
+
 
 
 class EventSchemaRegistry:

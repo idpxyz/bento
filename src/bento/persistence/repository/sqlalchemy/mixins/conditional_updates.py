@@ -64,25 +64,33 @@ class ConditionalUpdateMixin:
             from datetime import datetime
 
             updates_copy = updates.copy()
-            if hasattr(self._po_type, "updated_at"):  # type: ignore
+            if hasattr(self._po_type, "updated_at"):
+
                 updates_copy["updated_at"] = datetime.utcnow()
-            if hasattr(self._po_type, "updated_by"):  # type: ignore
-                updates_copy["updated_by"] = self._actor  # type: ignore
+            if hasattr(self._po_type, "updated_by"):
+
+                updates_copy["updated_by"] = self._actor
+
         else:
             updates_copy = updates
 
         # Build update statement
-        stmt = update(self._po_type).values(**updates_copy)  # type: ignore
+        stmt = update(self._po_type).values(**updates_copy)
+
 
         # Apply specification filter
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
+
 
         # Execute update
-        result = await self._session.execute(stmt)  # type: ignore
-        await self._session.flush()  # type: ignore
+        result = await self._session.execute(stmt)
 
-        return result.rowcount  # type: ignore
+        await self._session.flush()
+
+
+        return result.rowcount
+
 
     async def delete_po_by_spec(self, spec: Any) -> int:
         """Delete entities matching specification.
@@ -109,17 +117,22 @@ class ConditionalUpdateMixin:
             ```
         """
         # Build delete statement
-        stmt = delete(self._po_type)  # type: ignore
+        stmt = delete(self._po_type)
+
 
         # Apply specification filter
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
+
 
         # Execute delete
-        result = await self._session.execute(stmt)  # type: ignore
-        await self._session.flush()  # type: ignore
+        result = await self._session.execute(stmt)
 
-        return result.rowcount  # type: ignore
+        await self._session.flush()
+
+
+        return result.rowcount
+
 
     async def soft_delete_po_by_spec(self, spec: Any) -> int:
         """Soft delete entities matching specification.
@@ -143,15 +156,19 @@ class ConditionalUpdateMixin:
         from datetime import datetime
 
         # Check if soft delete fields exist
-        if not hasattr(self._po_type, "deleted_at"):  # type: ignore
+        if not hasattr(self._po_type, "deleted_at"):
+
             raise AttributeError(
-                f"{self._po_type.__name__} does not support soft delete "  # type: ignore
+                f"{self._po_type.__name__} does not support soft delete "
+
                 "(missing 'deleted_at' field)"
             )
 
         updates = {"deleted_at": datetime.utcnow()}
-        if hasattr(self._po_type, "deleted_by") and hasattr(self, "_actor"):  # type: ignore
-            updates["deleted_by"] = self._actor  # type: ignore
+        if hasattr(self._po_type, "deleted_by") and hasattr(self, "_actor"):
+
+            updates["deleted_by"] = self._actor
+
 
         return await self.update_po_by_spec(spec, updates)
 
@@ -175,14 +192,17 @@ class ConditionalUpdateMixin:
             ```
         """
         # Check if soft delete fields exist
-        if not hasattr(self._po_type, "deleted_at"):  # type: ignore
+        if not hasattr(self._po_type, "deleted_at"):
+
             raise AttributeError(
-                f"{self._po_type.__name__} does not support soft delete "  # type: ignore
+                f"{self._po_type.__name__} does not support soft delete "
+
                 "(missing 'deleted_at' field)"
             )
 
         updates = {"deleted_at": None}
-        if hasattr(self._po_type, "deleted_by"):  # type: ignore
+        if hasattr(self._po_type, "deleted_by"):
+
             updates["deleted_by"] = None
 
         return await self.update_po_by_spec(spec, updates)

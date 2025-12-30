@@ -98,7 +98,8 @@ class CascadeMixin:
         """
         # 1. 保存聚合根 (需要子类实现)
         if hasattr(super(), "save"):
-            await super().save(aggregate)  # type: ignore
+            await super().save(aggregate)
+
         else:
             raise NotImplementedError("save method must be implemented")
 

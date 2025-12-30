@@ -74,8 +74,10 @@ def command_handler[TCommandHandler: "CommandHandler[Any, Any]"](
         raise TypeError(msg)
 
     # Add metadata
-    cls.__handler_type__ = "command"  # type: ignore[attr-defined]
-    cls.__is_handler__ = True  # type: ignore[attr-defined]
+    cls.__handler_type__ = "command"
+
+    cls.__is_handler__ = True
+
 
     # Register in global registry
     handler_name = cls.__name__
@@ -128,8 +130,10 @@ def query_handler[TQueryHandler: "QueryHandler[Any, Any]"](
         raise TypeError(msg)
 
     # Add metadata
-    cls.__handler_type__ = "query"  # type: ignore[attr-defined]
-    cls.__is_handler__ = True  # type: ignore[attr-defined]
+    cls.__handler_type__ = "query"
+
+    cls.__is_handler__ = True
+
 
     # Register in global registry
     handler_name = cls.__name__
@@ -285,7 +289,8 @@ def state_transition(
 
     def decorator(cls: type[TCommandHandler]) -> type[TCommandHandler]:
         # Store metadata on the class
-        cls.__state_transition__ = {  # type: ignore[attr-defined]
+        cls.__state_transition__ = {
+
             "aggregate": aggregate,
             "command": command,
             "state_field": state_field,
@@ -341,7 +346,8 @@ def state_transition(
             # Execute original handler
             return await original_handle(self, cmd)
 
-        cls.handle = wrapped_handle  # type: ignore[method-assign]
+        cls.handle = wrapped_handle
+
         return cls
 
     return decorator
@@ -450,7 +456,8 @@ def idempotent(
 
     def decorator(cls: type[TCommandHandler]) -> type[TCommandHandler]:
         # Store metadata
-        cls.__idempotent__ = {  # type: ignore[attr-defined]
+        cls.__idempotent__ = {
+
             "key_field": key_field,
             "hash_fields": hash_fields,
         }
@@ -491,7 +498,8 @@ def idempotent(
 
             return result
 
-        cls.handle = wrapped_handle  # type: ignore[method-assign]
+        cls.handle = wrapped_handle
+
         return cls
 
     return decorator

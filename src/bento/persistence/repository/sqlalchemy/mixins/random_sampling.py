@@ -47,15 +47,18 @@ class RandomSamplingMixin:
             ```
         """
         stmt = (
-            select(self._po_type)  # type: ignore
+            select(self._po_type)
+
             .order_by(func.random())
             .limit(1)
         )
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         return result.scalar_one_or_none()
 
     async def find_random_n_po(self, n: int, spec: Any | None = None) -> list[Any]:
@@ -82,15 +85,18 @@ class RandomSamplingMixin:
             return []
 
         stmt = (
-            select(self._po_type)  # type: ignore
+            select(self._po_type)
+
             .order_by(func.random())
             .limit(n)
         )
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         return list(result.scalars().all())
 
     async def sample_percentage_po(
@@ -128,14 +134,17 @@ class RandomSamplingMixin:
 
         # First get total count
         count_stmt = (
-            select(func.count()).select_from(self._po_type)  # type: ignore
+            select(func.count()).select_from(self._po_type)
+
         )
         if spec:
-            count_stmt = spec.apply(  # type: ignore
+            count_stmt = spec.apply(
+
                 count_stmt, self._po_type
             )
 
-        count_result = await self._session.execute(  # type: ignore
+        count_result = await self._session.execute(
+
             count_stmt
         )
         total_count = count_result.scalar() or 0

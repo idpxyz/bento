@@ -92,7 +92,8 @@ class FastAPIIntegration:
         """Register middleware from all modules."""
         all_middleware: list[Any] = []
         for module in self.runtime.registry.resolve_order():
-            all_middleware.extend(module.get_middleware())  # type: ignore[attr-defined]
+            all_middleware.extend(module.get_middleware())
+
 
         # Add middleware (in reverse order for correct execution)
         for middleware in reversed(all_middleware):
@@ -101,7 +102,8 @@ class FastAPIIntegration:
     def _register_routers(self, app: "FastAPI") -> None:
         """Register routers from all modules."""
         for module in self.runtime.registry.resolve_order():
-            for item in module.get_routers():  # type: ignore[attr-defined]
+            for item in module.get_routers():
+
                 if isinstance(item, tuple):
                     router, prefix = item
                     app.include_router(router, prefix=prefix)

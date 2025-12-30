@@ -16,12 +16,14 @@ class Result[T, E]:
     def unwrap(self) -> T:
         if self.is_err:
             raise RuntimeError(f"Unwrap error: {self._err}")
-        return self._ok  # type: ignore
+        return self._ok
+
 
     def unwrap_err(self) -> E:
         if self.is_ok:
             raise RuntimeError("Tried to unwrap_err on Ok")
-        return self._err  # type: ignore
+        return self._err
+
 
 
 def Ok[T, E](value: T) -> Result[T, E]:

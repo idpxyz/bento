@@ -155,7 +155,8 @@ class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](
         Returns:
             List of matching aggregate roots
         """
-        return await self._repository.query_po_by_spec(specification)  # type: ignore[arg-type]
+        return await self._repository.query_po_by_spec(specification)
+
 
     # ==================== Extended Query Methods ====================
 

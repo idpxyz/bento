@@ -152,7 +152,8 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 async def receive():
                     return {"type": "http.request", "body": body, "more_body": False}
 
-                request._receive = receive  # type: ignore[attr-defined]
+                request._receive = receive
+
             except Exception:
                 log_data["request_body"] = "<unable to parse>"
 

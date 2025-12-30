@@ -23,7 +23,8 @@ class UniquenessChecksMixin:
     _repository: Any  # BaseRepository instance
     _mapper: Any  # Mapper instance
 
-    def _convert_spec_to_po(self, spec: Any) -> Any:  # type: ignore
+    def _convert_spec_to_po(self, spec: Any) -> Any:
+
         """Convert AR spec to PO spec (provided by RepositoryAdapter)."""
         ...
 
@@ -49,7 +50,8 @@ class UniquenessChecksMixin:
                 raise ValidationError("Email already taken")
             ```
         """
-        return await self._repository.is_field_unique_po(field, value, exclude_id)  # type: ignore
+        return await self._repository.is_field_unique_po(field, value, exclude_id)
+
 
     async def find_by_field(self, field: str, value: Any) -> Any | None:
         """Find a single aggregate by field value.
@@ -70,10 +72,12 @@ class UniquenessChecksMixin:
             product = await product_repo.find_by_field("sku", "PROD-001")
             ```
         """
-        po = await self._repository.find_po_by_field(field, value)  # type: ignore
+        po = await self._repository.find_po_by_field(field, value)
+
         if po is None:
             return None
-        return self._mapper.map_reverse(po)  # type: ignore
+        return self._mapper.map_reverse(po)
+
 
     async def find_all_by_field(self, field: str, value: Any) -> list[Any]:
         """Find all aggregates by field value.
@@ -94,5 +98,7 @@ class UniquenessChecksMixin:
             products = await product_repo.find_all_by_field("category_id", "cat-456")
             ```
         """
-        pos = await self._repository.find_all_po_by_field(field, value)  # type: ignore
-        return self._mapper.map_reverse_list(pos)  # type: ignore
+        pos = await self._repository.find_all_po_by_field(field, value)
+
+        return self._mapper.map_reverse_list(pos)
+

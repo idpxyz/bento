@@ -106,7 +106,8 @@ def _create_handler_with_dependencies[THandler](
         if runtime:
             try:
                 observability = runtime.container.get("observability")
-                handler = handler_cls(uow, observability)  # type: ignore[call-arg]
+                handler = handler_cls(uow, observability)
+
 
                 elapsed = (time.perf_counter() - start_time) * 1000
                 logger.debug(
@@ -119,7 +120,8 @@ def _create_handler_with_dependencies[THandler](
         # Fallback to NoOp if not available
         from bento.adapters.observability.noop import NoOpObservabilityProvider
 
-        handler = handler_cls(uow, NoOpObservabilityProvider())  # type: ignore[call-arg]
+        handler = handler_cls(uow, NoOpObservabilityProvider())
+
 
         elapsed = (time.perf_counter() - start_time) * 1000
         logger.debug(
@@ -128,7 +130,8 @@ def _create_handler_with_dependencies[THandler](
         return handler
     else:
         # Standard handler with only uow
-        handler = handler_cls(uow)  # type: ignore[call-arg]
+        handler = handler_cls(uow)
+
 
         elapsed = (time.perf_counter() - start_time) * 1000
         logger.debug(f"Created Standard Handler {handler_cls.__name__} in {elapsed:.2f}ms")

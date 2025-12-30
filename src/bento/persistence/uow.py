@@ -246,8 +246,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         if self._inbox is None:
             from bento.persistence.inbox import SqlAlchemyInbox
 
-            self._inbox = SqlAlchemyInbox(self._session, self._tenant_id)  # type: ignore[assignment]
-        return self._inbox  # type: ignore[return-value]
+            self._inbox = SqlAlchemyInbox(self._session, self._tenant_id)
+
+        return self._inbox
+
 
     @property
     def idempotency(self) -> IdempotencyStore:
@@ -261,8 +263,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         if self._idempotency is None:
             from bento.persistence.idempotency import SqlAlchemyIdempotency
 
-            self._idempotency = SqlAlchemyIdempotency(self._session, self._tenant_id)  # type: ignore[assignment]
-        return self._idempotency  # type: ignore[return-value]
+            self._idempotency = SqlAlchemyIdempotency(self._session, self._tenant_id)
+
+        return self._idempotency
+
 
     def set_tenant_id(self, tenant_id: str) -> None:
         """Set the tenant ID for multi-tenant operations.

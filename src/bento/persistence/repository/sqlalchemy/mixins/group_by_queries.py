@@ -61,7 +61,8 @@ class GroupByQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -75,13 +76,16 @@ class GroupByQueryMixin:
                 return cached
 
         # Execute query
-        field_obj = getattr(self._po_type, field)  # type: ignore
+        field_obj = getattr(self._po_type, field)
+
         stmt = select(field_obj, func.count().label("count")).group_by(field_obj)
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         rows = result.all()
         result_value = {row[0]: row[1] for row in rows}
 
@@ -121,7 +125,8 @@ class GroupByQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -136,7 +141,8 @@ class GroupByQueryMixin:
                 return cached
 
         # Execute query
-        field_obj = getattr(self._po_type, date_field)  # type: ignore
+        field_obj = getattr(self._po_type, date_field)
+
 
         if granularity == "day":
             # Group by date (YYYY-MM-DD) using strftime for SQLite compatibility
@@ -166,9 +172,11 @@ class GroupByQueryMixin:
             )
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         rows = result.all()
 
         # Format results based on granularity
@@ -220,7 +228,8 @@ class GroupByQueryMixin:
             from bento.persistence.interceptor import InterceptorContext, OperationType
 
             context = InterceptorContext(
-                session=self._session,  # type: ignore
+                session=self._session,
+
                 entity_type=self._po_type,
                 operation=OperationType.GROUP_BY,
                 actor=self._actor,
@@ -236,15 +245,18 @@ class GroupByQueryMixin:
         # Execute query
         field_objs = [
             getattr(self._po_type, f)
-            for f in fields  # type: ignore
+            for f in fields
+
         ]
 
         stmt = select(*field_objs, func.count().label("count")).group_by(*field_objs)
 
         if spec:
-            stmt = spec.apply(stmt, self._po_type)  # type: ignore
+            stmt = spec.apply(stmt, self._po_type)
 
-        result = await self._session.execute(stmt)  # type: ignore
+
+        result = await self._session.execute(stmt)
+
         rows = result.all()
         result_value = {tuple(row[:-1]): row[-1] for row in rows}
 

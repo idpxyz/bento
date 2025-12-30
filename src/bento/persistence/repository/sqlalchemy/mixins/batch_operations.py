@@ -49,8 +49,10 @@ class BatchOperationsMixin:
         # Convert IDs to strings for query
         id_values = [str(id.value) if hasattr(id, "value") else str(id) for id in ids]
 
-        stmt = select(self._po_type).where(self._po_type.id.in_(id_values))  # type: ignore
-        result = await self._session.execute(stmt)  # type: ignore
+        stmt = select(self._po_type).where(self._po_type.id.in_(id_values))
+
+        result = await self._session.execute(stmt)
+
         return list(result.scalars().all())
 
     async def exists_po_by_id(self, id: Any) -> bool:
@@ -71,12 +73,15 @@ class BatchOperationsMixin:
         id_value = str(id.value) if hasattr(id, "value") else str(id)
         stmt = (
             select(self._po_type.id)
-            .where(  # type: ignore
-                self._po_type.id == id_value  # type: ignore
+            .where(
+
+                self._po_type.id == id_value
+
             )
             .limit(1)
         )
-        result = await self._session.execute(stmt)  # type: ignore
+        result = await self._session.execute(stmt)
+
         return result.scalar_one_or_none() is not None
 
     async def delete_po_by_ids(self, ids: list[Any]) -> int:
@@ -102,7 +107,11 @@ class BatchOperationsMixin:
             return 0
 
         id_values = [str(id.value) if hasattr(id, "value") else str(id) for id in ids]
-        stmt = delete(self._po_type).where(self._po_type.id.in_(id_values))  # type: ignore
-        result = await self._session.execute(stmt)  # type: ignore
-        await self._session.flush()  # type: ignore
-        return result.rowcount  # type: ignore
+        stmt = delete(self._po_type).where(self._po_type.id.in_(id_values))
+
+        result = await self._session.execute(stmt)
+
+        await self._session.flush()
+
+        return result.rowcount
+

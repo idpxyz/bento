@@ -423,7 +423,8 @@ class OpenTelemetryProvider:
                 # Fallback to no-op
                 from bento.adapters.observability.noop import NoOpTracer
 
-                self._tracers[name] = NoOpTracer()  # type: ignore
+                self._tracers[name] = NoOpTracer()
+
 
         return self._tracers[name]
 
@@ -439,7 +440,8 @@ class OpenTelemetryProvider:
                 # Fallback to no-op
                 from bento.adapters.observability.noop import NoOpMeter
 
-                self._meters[name] = NoOpMeter()  # type: ignore
+                self._meters[name] = NoOpMeter()
+
 
         return self._meters[name]
 

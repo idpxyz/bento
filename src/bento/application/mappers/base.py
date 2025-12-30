@@ -423,8 +423,10 @@ class BaseMapper[Domain, PO](MapperStrategy[Domain, PO]):
             try:
                 return enum_type[str_value]  # match name
             except KeyError as e:
-                allowed_values = ", ".join(repr(m.value) for m in enum_type)  # type: ignore
-                allowed_names = ", ".join(m.name for m in enum_type)  # type: ignore
+                allowed_values = ", ".join(repr(m.value) for m in enum_type)
+
+                allowed_names = ", ".join(m.name for m in enum_type)
+
                 raise ValueError(
                     f"Invalid {enum_type.__name__}: {str_value!r}. "
                     f"Allowed values: [{allowed_values}]; names: [{allowed_names}]"
@@ -544,7 +546,8 @@ class BaseMapper[Domain, PO](MapperStrategy[Domain, PO]):
         if isinstance(domain, HasEvents):
             domain.clear_events()
         elif hasattr(domain, "clear_events"):
-            domain.clear_events()  # type: ignore[attr-defined]
+            domain.clear_events()
+
 
 
 __all__ = ["BaseMapper", "MappingContext"]

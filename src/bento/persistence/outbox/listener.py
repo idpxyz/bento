@@ -128,7 +128,8 @@ def _before_commit_persist(session: OutboxSession) -> None:
     event_ids: list[str] = []
     for evt in events:
         try:
-            eid = evt.event_id  # type: ignore[attr-defined]
+            eid = evt.event_id
+
         except AttributeError:
             continue
         if eid is not None:
@@ -140,7 +141,8 @@ def _before_commit_persist(session: OutboxSession) -> None:
         existing_ids = {row[0] for row in result}
     for evt in events:
         try:
-            eid = evt.event_id  # type: ignore[attr-defined]
+            eid = evt.event_id
+
         except AttributeError:
             eid = None
         eid_str = str(eid) if eid is not None else None

@@ -84,7 +84,8 @@ class RedisCache:
         """
         try:
             client = Redis.from_url(
-                self.config.redis_url,  # type: ignore[arg-type]
+                self.config.redis_url,
+
                 encoding="utf-8",
                 decode_responses=False,  # We use custom serialization
             )

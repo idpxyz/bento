@@ -59,7 +59,8 @@ class InProcessMessageBus(MessageBus):
                 try:
                     res = handler(ev)
                     if asyncio.iscoroutine(res):
-                        await res  # type: ignore[arg-type]
+                        await res
+
                 except Exception as exc:  # noqa: BLE001
                     logger.error(
                         "Handler error for %s on bus[%s]: %s", et, self._source, exc, exc_info=True
