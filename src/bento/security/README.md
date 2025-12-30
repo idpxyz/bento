@@ -1,51 +1,85 @@
-# Security Module
+# Bento Security Module
 
-This module provides authentication and authorization utilities for Bento applications.
+**Provides mechanisms, NOT policies.**
 
-## Architecture
+This module provides authentication and authorization **mechanisms** for Bento applications.
+It does NOT include concrete authentication implementations.
+
+## Architecture Philosophy
 
 ```
-Request
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  SecurityMiddleware                 │
-│  - Calls IAuthenticator             │
-│  - Sets SecurityContext             │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  SecurityContext (ContextVar)       │
-│  - Async-safe user storage          │
-│  - Request-scoped                   │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  Business Logic                     │
-│  - SecurityContext.require_user()   │
-│  - SecurityContext.has_permission() │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  Application Layer                                       │
+│  - Chooses authentication strategy                      │
+│  - Implements IAuthenticator/ITenantResolver            │
+│  - Injects into Framework                               │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────┐
+│  Bento Framework (THIS MODULE)                          │
+│                                                          │
+│  ✅ Provides:                                            │
+│     - Interfaces (IAuthenticator, IAuthorizer, etc.)    │
+│     - Context (SecurityContext)                         │
+│     - Middleware (add_security_middleware)              │
+│     - Decorators (@require_auth, @require_permission)   │
+│                                                          │
+│  ❌ Does NOT provide:                                    │
+│     - Concrete authenticators (JWT, OAuth, etc.)        │
+│     - Authentication providers (Logto, Auth0, etc.)     │
+│     - M2M authentication                                │
+│     - Multi-framework support                           │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ## Design Principles
 
 | Principle | Description |
 |-----------|-------------|
-| **Framework provides mechanisms** | Interfaces, context, utilities |
-| **Application provides strategies** | JWT, OAuth, specific implementations |
-| **Zero dependencies** | No dependency on specific auth providers |
-| **Pluggable** | Applications can replace any component |
+| **Framework provides mechanisms** | Interfaces, context, middleware, decorators |
+| **Application provides strategies** | Concrete implementations (JWT, OAuth, custom) |
+| **Zero dependencies** | No external auth libraries (PyJWT, httpx, etc.) |
+| **Pluggable** | Applications can use ANY authentication solution |
+| **Framework purity** | No coupling to specific auth providers |
 
-## Quick Start
+## Where to Get Concrete Implementations?
 
-### 1. Implement Authenticator
+### Option 1: bento-security (Recommended for Enterprise)
+
+Official extension with full-featured authentication providers:
+
+```bash
+pip install bento-security[fastapi]
+```
+
+```python
+from bento_security.providers import LogtoAuthProvider
+from bento.security import add_security_middleware
+
+authenticator = LogtoAuthProvider(
+    endpoint="https://your-app.logto.app",
+    app_id="app-id",
+    app_secret="app-secret",  # M2M support
+)
+
+add_security_middleware(app, authenticator)
+```
+
+**Features**:
+- ✅ Logto, Auth0, Keycloak providers
+- ✅ M2M authentication
+- ✅ CQRS integration (@secured_command_handler)
+- ✅ Multi-framework support (FastAPI, Django, Flask)
+
+### Option 2: Custom Implementation (Recommended for Flexibility)
+
+Implement `IAuthenticator` interface yourself:
 
 ```python
 from bento.security import IAuthenticator, CurrentUser
 
-class JWTAuthenticator(IAuthenticator):
+class JWTAuthenticator:
     def __init__(self, jwks_url: str, audience: str):
         self.jwks_url = jwks_url
         self.audience = audience
@@ -150,6 +184,33 @@ user.has_all_permissions(["orders:read", "orders:write"])  # True
 user.has_role("admin")  # True
 user.has_any_role(["admin", "superadmin"])  # True
 ```
+
+#### Wildcard Permission Support
+
+Permissions support fnmatch wildcard patterns for flexible permission management:
+
+```python
+user = CurrentUser(
+    id="user-123",
+    permissions=["orders:*", "products:read", "*:admin"],
+)
+
+# Wildcard matching
+user.has_permission("orders:read")      # True (matches "orders:*")
+user.has_permission("orders:write")     # True (matches "orders:*")
+user.has_permission("products:read")    # True (exact match)
+user.has_permission("products:write")   # False
+user.has_permission("users:admin")      # True (matches "*:admin")
+
+# Supported patterns:
+# - "orders:*"     → matches "orders:read", "orders:write", etc.
+# - "*:read"       → matches "orders:read", "products:read", etc.
+# - "*"            → matches all permissions
+# - "order?"       → matches "orders" (single char wildcard)
+# - "[op]rders:*"  → matches "orders:*" or "prders:*" (bracket pattern)
+```
+
+**Performance Note**: Exact matches are checked first (fast path), then wildcard patterns are evaluated.
 
 ### IAuthenticator
 
@@ -548,3 +609,265 @@ async def update_order(order: Order):
     # order.owner_id == user.id OR user has 'admin' role
     ...
 ```
+
+很好的问题！让我详细解释 `get_current_user` 能获取到用户的完整原理。
+
+让我查看 `get_current_user` 的实现，以及 `SecurityContext` 的工作原理：
+
+现在让我查看 `SecurityContext` 的实现，这是关键：
+
+现在让我查看安全中间件的实现，了解用户是如何被设置到 [SecurityContext](cci:2://file:///workspace/bento/src/bento/security/context.py:29:0-173:42) 中的：
+
+完美！现在我可以给你详细解释 [get_current_user](cci:1://file:///workspace/bento/src/bento/security/depends.py:32:0-51:15) 能获取到用户的完整原理。
+
+## 🔍 完整的用户获取原理
+
+### 📊 整个流程图
+
+```
+请求到达
+  ↓
+安全中间件 (middleware.py)
+  ├─ 检查路径是否排除
+  ├─ 调用 authenticator.authenticate(request)
+  ├─ 设置 SecurityContext.set_user(user)  ← 关键！
+  └─ 继续处理请求
+  ↓
+FastAPI 依赖注入 (depends.py)
+  ├─ get_current_user() 调用
+  ├─ 从 SecurityContext.get_user() 获取用户
+  └─ 返回给 Handler
+  ↓
+业务代码获得用户
+```
+
+### 🔑 三个关键组件
+
+#### 1️⃣ **SecurityContext** - 请求作用域存储
+
+```python
+# context.py
+class SecurityContext:
+    # 使用 ContextVar 存储用户（async-safe）
+    _current_user: ContextVar["CurrentUser | None"] = ContextVar(
+        'current_user', default=None
+    )
+
+    @classmethod
+    def set_user(cls, user: "CurrentUser | None") -> None:
+        """设置当前用户"""
+        cls._current_user.set(user)  # ← 存储到 ContextVar
+
+    @classmethod
+    def get_user(cls) -> "CurrentUser | None":
+        """获取当前用户"""
+        return cls._current_user.get()  # ← 从 ContextVar 读取
+```
+
+**关键特性**：
+- ✅ **ContextVar** - Python 的上下文变量，每个异步任务有独立的值
+- ✅ **请求隔离** - 不同请求的用户不会相互干扰
+- ✅ **Async-safe** - 安全用于异步代码
+
+#### 2️⃣ **安全中间件** - 设置用户
+
+```python
+# middleware.py
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # 1. 检查是否排除
+    if any(path.startswith(ep) for ep in exclude_paths):
+        return await call_next(request)
+
+    # 2. 调用认证器
+    user = await authenticator.authenticate(request)  # ← 获取用户
+
+    # 3. 检查是否需要认证
+    if require_auth and not user:
+        return JSONResponse(status_code=401, ...)
+
+    # 4. 设置 SecurityContext ← 关键！
+    SecurityContext.set_user(user)
+
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        # 5. 清理上下文
+        SecurityContext.clear()
+```
+
+**执行顺序**：
+1. 中间件拦截请求
+2. 调用 [authenticator.authenticate()](cci:1://file:///workspace/bento/applications/my-shop/shared/auth/stub_authenticator.py:29:4-54:9) 获取用户
+3. 将用户存储到 [SecurityContext](cci:2://file:///workspace/bento/src/bento/security/context.py:29:0-173:42)
+4. 继续处理请求（此时用户已在上下文中）
+5. 请求完成后清理上下文
+
+#### 3️⃣ **FastAPI 依赖注入** - 获取用户
+
+```python
+# depends.py
+async def get_current_user() -> "CurrentUser":
+    """FastAPI 依赖"""
+    user = SecurityContext.get_user()  # ← 从上下文读取
+    if not user:
+        raise DomainException(reason_code="UNAUTHORIZED")
+    return user
+```
+
+**使用方式**：
+```python
+@app.get("/api/v1/auth/me")
+async def get_me(
+    current_user: CurrentUser = Depends(get_current_user)  # ← 依赖注入
+):
+    return current_user
+```
+
+### 🔄 完整的执行流程
+
+```
+1. 请求: GET /api/v1/auth/me
+   ↓
+2. 安全中间件拦截
+   ├─ 路径不在排除列表中
+   ├─ 调用 StubAuthenticator.authenticate(request)
+   │  └─ 返回 CurrentUser(id="demo-user", permissions=["*"], ...)
+   ├─ 调用 SecurityContext.set_user(user)
+   │  └─ 将用户存储到 ContextVar 中
+   └─ 继续处理请求
+   ↓
+3. FastAPI 路由处理
+   ├─ 识别到 current_user: CurrentUser = Depends(get_current_user)
+   ├─ 调用 get_current_user() 依赖
+   │  └─ 调用 SecurityContext.get_user()
+   │     └─ 从 ContextVar 读取用户（之前由中间件设置）
+   └─ 将用户注入到 Handler
+   ↓
+4. Handler 执行
+   ├─ 接收到 current_user 参数
+   ├─ 返回用户信息
+   └─ 响应 200 OK
+   ↓
+5. 中间件清理
+   └─ SecurityContext.clear() 清理上下文
+```
+
+### 💡 为什么这样设计？
+
+#### ✅ **ContextVar 的优势**
+
+```python
+# 问题：全局变量不安全
+_current_user = None  # ❌ 多个请求会相互干扰
+
+# 解决：ContextVar 隔离每个请求
+_current_user: ContextVar = ContextVar('current_user', default=None)  # ✅
+```
+
+#### ✅ **中间件 + 依赖注入的优势**
+
+```
+中间件负责：设置用户（一次）
+  ↓
+依赖注入负责：获取用户（多次）
+
+这样分离关注点：
+- 中间件：认证逻辑（一次性）
+- 业务代码：使用用户（多次）
+```
+
+### 📋 三种获取用户的方式
+
+#### 方式 1: FastAPI 依赖注入（推荐）
+
+```python
+@app.get("/api/v1/auth/me")
+async def get_me(user: CurrentUser = Depends(get_current_user)):
+    return user
+```
+
+**优点**：
+- ✅ FastAPI 自动注入
+- ✅ 类型检查
+- ✅ OpenAPI 文档自动生成
+
+#### 方式 2: 直接从 SecurityContext 获取
+
+```python
+from bento.security import SecurityContext
+
+class CreateOrderHandler(CommandHandler):
+    async def handle(self, command):
+        user = SecurityContext.get_user()  # 直接获取
+        if user:
+            # 使用用户信息
+            pass
+```
+
+**优点**：
+- ✅ 在任何地方都能用
+- ✅ 不需要依赖注入
+
+#### 方式 3: 可选用户
+
+```python
+@app.get("/public")
+async def public_endpoint(
+    user: CurrentUser | None = Depends(get_optional_user)
+):
+    if user:
+        return {"message": f"Hello, {user.id}"}
+    return {"message": "Hello, guest"}
+```
+
+### 🎯 当前 my-shop 的实现
+
+```python
+# shared/api/auth_routes.py
+@router.get("/me", response_model=CurrentUserResponse)
+async def get_current_user_endpoint(
+    current_user: CurrentUser | None = Depends(get_current_user),
+):
+    # 1. FastAPI 调用 get_current_user()
+    # 2. get_current_user() 从 SecurityContext.get_user() 读取
+    # 3. SecurityContext 返回之前由中间件设置的用户
+    # 4. 返回给客户端
+    return CurrentUserResponse(...)
+```
+
+### 🔐 安全性保证
+
+```
+请求 A                          请求 B
+  ↓                              ↓
+ContextVar 隔离                ContextVar 隔离
+  ├─ user_A                      ├─ user_B
+  └─ 互不干扰                     └─ 互不干扰
+```
+
+**即使在并发请求中**：
+- ✅ 请求 A 的用户不会泄露给请求 B
+- ✅ 每个请求都有独立的 ContextVar 副本
+- ✅ 完全线程安全和异步安全
+
+### 📊 总结
+
+| 组件 | 职责 | 时机 |
+|------|------|------|
+| **SecurityContext** | 存储用户（ContextVar） | 全程 |
+| **安全中间件** | 设置用户 | 请求开始 |
+| **FastAPI 依赖** | 获取用户 | 路由处理 |
+| **业务代码** | 使用用户 | 任何时候 |
+
+**核心原理**：
+1. 中间件拦截请求，调用认证器获取用户
+2. 中间件将用户存储到 [SecurityContext](cci:2://file:///workspace/bento/src/bento/security/context.py:29:0-173:42)（ContextVar）
+3. 依赖注入从 [SecurityContext](cci:2://file:///workspace/bento/src/bento/security/context.py:29:0-173:42) 读取用户
+4. 业务代码接收到用户对象
+5. 请求完成后清理上下文
+
+这就是为什么 [get_current_user](cci:1://file:///workspace/bento/src/bento/security/depends.py:32:0-51:15) 能获取到用户的完整原理！🎉

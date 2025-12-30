@@ -67,7 +67,11 @@ async def test_order_creation_persists_outbox_events(db_session):
     product_catalog = MockProductCatalog()
     uow.register_port(IProductCatalogService, lambda s: product_catalog)
 
-    use_case = CreateOrderHandler(uow)
+    # Create observability provider (NoOp for testing)
+    from bento.adapters.observability.noop import NoOpObservabilityProvider
+    observability = NoOpObservabilityProvider()
+
+    handler = CreateOrderHandler(uow, observability)
 
     command = CreateOrderCommand(
         customer_id="test-customer-123",
@@ -82,7 +86,7 @@ async def test_order_creation_persists_outbox_events(db_session):
     )
 
     async with uow:
-        order = await use_case.handle(command)
+        order = await handler.handle(command)
         await uow.commit()
 
     order_id = order.id

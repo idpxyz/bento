@@ -54,6 +54,18 @@ class Settings(BaseSettings):
     kubernetes_namespace: str = "default"
     kubernetes_service_suffix: str = "svc.cluster.local"
 
+    # Observability settings
+    observability_enabled: bool = False
+    observability_provider: str = "noop"  # noop or otel
+
+    # OpenTelemetry settings
+    otel_service_name: str = "my-shop"
+    otel_trace_exporter: str = "console"  # console, jaeger, otlp
+    otel_jaeger_host: str = "localhost"
+    otel_jaeger_port: int = 6831
+    otel_metrics_exporter: str = "console"  # console, prometheus, otlp
+    otel_prometheus_port: int = 9090
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

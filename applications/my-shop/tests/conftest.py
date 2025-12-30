@@ -1,11 +1,15 @@
 """Pytest Configuration and Fixtures"""
 
 import asyncio
+import os
 import sys
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
+
+# Set testing environment variable to disable rate limiting
+os.environ["TESTING"] = "true"
 
 # Import Base from Bento Framework
 from bento.persistence import Base

@@ -1,9 +1,9 @@
 """Order API routes (FastAPI) - Thin Interface Layer"""
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from contexts.ordering.application.commands.cancel_order import (
@@ -127,8 +127,8 @@ class ListOrdersResponse(BaseModel):
 )
 async def create_order(
     request: CreateOrderRequest,
-    handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
-) -> dict[str, Any]:
+    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),
+) -> OrderResponse:
     """Create a new order with items.
 
     Supports idempotency via X-Idempotency-Key HTTP Header.
@@ -160,7 +160,7 @@ async def create_order(
     order = await handler.execute(command)
 
     # Domain → Response
-    return order_to_dict(order)
+    return OrderResponse(**order_to_dict(order))
 
 
 @router.get(
@@ -169,18 +169,18 @@ async def create_order(
     summary="List orders",
 )
 async def list_orders(
-    handler: Annotated[ListOrdersHandler, handler_dependency(ListOrdersHandler)],
-    customer_id: str | None = None,
-) -> dict[str, Any]:
+    handler: ListOrdersHandler = handler_dependency(ListOrdersHandler),
+    customer_id: str | None = Query(None, description="Filter by customer ID"),
+) -> ListOrdersResponse:
     """List orders with optional customer filter."""
     query = ListOrdersQuery(customer_id=customer_id)
 
     result = await handler.execute(query)
 
-    return {
-        "items": [order.model_dump() for order in result.orders],  # ✅ 使用 DTO 内置序列化
-        "total": result.total,
-    }
+    return ListOrdersResponse(
+        items=[OrderResponse(**order.model_dump()) for order in result.orders],
+        total=result.total,
+    )
 
 
 @router.get(
@@ -190,12 +190,12 @@ async def list_orders(
 )
 async def get_order(
     order_id: str,
-    handler: Annotated[GetOrderHandler, handler_dependency(GetOrderHandler)],
-) -> dict[str, Any]:
+    handler: GetOrderHandler = handler_dependency(GetOrderHandler),
+) -> OrderResponse:
     """Get an order by ID."""
     query = GetOrderQuery(order_id=order_id)
-    order = await handler.execute(query)  # 返回 OrderDTO
-    return order.model_dump()  # ✅ 使用 DTO 内置序列化
+    order = await handler.execute(query)
+    return OrderResponse(**order.model_dump())
 
 
 @router.post(
@@ -206,8 +206,8 @@ async def get_order(
 async def pay_order(
     order_id: str,
     request: PayOrderRequest,
-    handler: Annotated[PayOrderHandler, handler_dependency(PayOrderHandler)],
-) -> dict[str, Any]:
+    handler: PayOrderHandler = handler_dependency(PayOrderHandler),
+) -> OrderResponse:
     """Confirm payment for an order.
 
     Supports idempotency via X-Idempotency-Key HTTP Header to prevent duplicate payments.
@@ -220,7 +220,7 @@ async def pay_order(
         order_id=order_id,
     )
     order = await handler.execute(command)
-    return order_to_dict(order)
+    return OrderResponse(**order_to_dict(order))
 
 
 @router.post(
@@ -231,8 +231,8 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    handler: Annotated[ShipOrderHandler, handler_dependency(ShipOrderHandler)],
-) -> dict[str, Any]:
+    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),
+) -> OrderResponse:
     """Ship an order.
 
     Supports idempotency via X-Idempotency-Key HTTP Header to prevent duplicate shipments.
@@ -251,7 +251,7 @@ async def ship_order(
             tracking_number=request.tracking_number,
         )
         order = await handler.execute(command)
-        return order_to_dict(order)
+        return OrderResponse(**order_to_dict(order))
     except ApplicationException as e:
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail="Order not found") from e
@@ -266,12 +266,12 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    handler: Annotated[CancelOrderHandler, handler_dependency(CancelOrderHandler)],
-) -> dict[str, Any]:
+    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),
+) -> OrderResponse:
     """Cancel an order."""
     command = CancelOrderCommand(
         order_id=order_id,
         reason=request.reason,
     )
     order = await handler.execute(command)
-    return order_to_dict(order)
+    return OrderResponse(**order_to_dict(order))

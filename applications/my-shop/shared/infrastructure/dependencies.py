@@ -38,7 +38,7 @@ def _get_container():
     Raises:
         RuntimeError: If runtime is not initialized
     """
-    from runtime.bootstrap_v2 import get_runtime
+    from runtime.config import get_runtime
 
     runtime = get_runtime()
     return runtime.container

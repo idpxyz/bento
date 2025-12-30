@@ -1,6 +1,6 @@
 """Product API routes (FastAPI) - Thin Interface Layer - Complete Version"""
 
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -96,8 +96,8 @@ class ListProductsResponse(BaseModel):
 )
 async def create_product(
     request: CreateProductRequest,
-    handler: Annotated[CreateProductHandler, handler_dependency(CreateProductHandler)],
-) -> dict[str, Any]:
+    handler: CreateProductHandler = handler_dependency(CreateProductHandler),
+) -> ProductResponse:
     """Create a new product."""
     command = CreateProductCommand(
         name=request.name,
@@ -111,7 +111,7 @@ async def create_product(
     )
 
     product = await handler.execute(command)
-    return product_to_dict(product)
+    return ProductResponse(**product_to_dict(product))
 
 
 @router.get(
@@ -120,11 +120,11 @@ async def create_product(
     summary="List products",
 )
 async def list_products(
-    handler: Annotated[ListProductsHandler, handler_dependency(ListProductsHandler)],
+    handler: ListProductsHandler = handler_dependency(ListProductsHandler),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     category_id: str | None = Query(None),
-) -> dict[str, Any]:
+) -> ListProductsResponse:
     """List products with pagination."""
     query = ListProductsQuery(
         page=page,
@@ -134,12 +134,12 @@ async def list_products(
 
     result = await handler.execute(query)
 
-    return {
-        "items": [p.model_dump() for p in result.products],  # ✅ 使用 DTO 内置序列化
-        "total": result.total,
-        "page": result.page,
-        "page_size": result.page_size,
-    }
+    return ListProductsResponse(
+        items=[ProductResponse(**p.model_dump()) for p in result.products],
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+    )
 
 
 @router.get(
@@ -149,7 +149,7 @@ async def list_products(
 )
 async def get_product(
     product_id: str,
-    handler: Annotated[GetProductHandler, handler_dependency(GetProductHandler)],
+    handler: GetProductHandler = handler_dependency(GetProductHandler),
 ) -> dict[str, Any]:
     """Get a product by ID."""
     from bento.core.exceptions import ApplicationException
@@ -173,7 +173,7 @@ async def get_product(
 async def update_product(
     product_id: str,
     request: UpdateProductRequest,
-    handler: Annotated[UpdateProductHandler, handler_dependency(UpdateProductHandler)],
+    handler: UpdateProductHandler = handler_dependency(UpdateProductHandler),
 ) -> dict[str, Any]:
     """Update a product."""
     command = UpdateProductCommand(
@@ -208,7 +208,7 @@ async def ping() -> dict[str, str]:
 )
 async def delete_product(
     product_id: str,
-    handler: Annotated[DeleteProductHandler, handler_dependency(DeleteProductHandler)],
+    handler: DeleteProductHandler = handler_dependency(DeleteProductHandler),
 ) -> None:
     """Delete a product (soft delete)."""
     from bento.core.exceptions import ApplicationException

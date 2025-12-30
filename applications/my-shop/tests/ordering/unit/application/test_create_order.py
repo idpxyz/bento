@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from bento.adapters.observability.noop import NoOpObservabilityProvider
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
     CreateOrderHandler,
@@ -38,10 +39,15 @@ class TestCreateOrderHandler:
         return AsyncMock()
 
     @pytest.fixture
-    def usecase(self, mock_uow):
+    def mock_observability(self):
+        """Mock observability provider"""
+        return NoOpObservabilityProvider()
+
+    @pytest.fixture
+    def usecase(self, mock_uow, mock_observability):
         """用例实例"""
-        # Handler 只需要 uow 参数，product_catalog 通过 uow.port() 获取
-        return CreateOrderHandler(uow=mock_uow)
+        # Handler 需要 uow 和 observability 参数
+        return CreateOrderHandler(uow=mock_uow, observability=mock_observability)
 
     @pytest.mark.asyncio
     async def test_create_order_success(self, usecase, mock_product_catalog, mock_uow):

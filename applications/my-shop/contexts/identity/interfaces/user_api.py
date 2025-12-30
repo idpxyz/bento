@@ -8,7 +8,7 @@ This layer only handles HTTP concerns:
 
 All business logic is in the Application layer (Handlers)."""
 
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
@@ -85,8 +85,8 @@ class ListUsersResponse(BaseModel):
 )
 async def create_user(
     request: CreateUserRequest,
-    handler: Annotated[CreateUserHandler, handler_dependency(CreateUserHandler)],
-) -> dict[str, Any]:
+    handler: CreateUserHandler = handler_dependency(CreateUserHandler),
+) -> UserResponse:
     """Create a new user."""
     # 1. Convert Request → Command
     command = CreateUserCommand(
@@ -98,7 +98,7 @@ async def create_user(
     user = await handler.execute(command)
 
     # 3. Convert Domain → Response
-    return user_to_dict(user)
+    return UserResponse(**user_to_dict(user))
 
 
 @router.get(
@@ -108,10 +108,10 @@ async def create_user(
     description="List users with pagination",
 )
 async def list_users(
-    handler: Annotated[ListUsersHandler, handler_dependency(ListUsersHandler)],
+    handler: ListUsersHandler = handler_dependency(ListUsersHandler),
     page: int = 1,
     page_size: int = 10,
-) -> dict[str, Any]:
+) -> ListUsersResponse:
     """List users with pagination."""
     # 1. Convert Request → Query
     query = ListUsersQuery(
@@ -123,12 +123,12 @@ async def list_users(
     result = await handler.execute(query)
 
     # 3. Convert DTO → Response (使用 model_dump)
-    return {
-        "items": [user.model_dump() for user in result.users],
-        "total": result.total,
-        "page": result.page,
-        "page_size": result.page_size,
-    }
+    return ListUsersResponse(
+        items=[UserResponse(**user.model_dump()) for user in result.users],
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+    )
 
 
 @router.get(
@@ -139,8 +139,8 @@ async def list_users(
 )
 async def get_user(
     user_id: str,
-    handler: Annotated[GetUserHandler, handler_dependency(GetUserHandler)],
-) -> dict[str, Any]:
+    handler: GetUserHandler = handler_dependency(GetUserHandler),
+) -> UserResponse:
     """Get a user by ID."""
     # 1. Convert Request → Query
     query = GetUserQuery(user_id=user_id)
@@ -149,7 +149,7 @@ async def get_user(
     user = await handler.execute(query)
 
     # 3. Convert DTO → Response (使用 model_dump)
-    return user.model_dump()
+    return UserResponse(**user.model_dump())
 
 
 @router.put(
@@ -161,8 +161,8 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    handler: Annotated[UpdateUserHandler, handler_dependency(UpdateUserHandler)],
-) -> dict[str, Any]:
+    handler: UpdateUserHandler = handler_dependency(UpdateUserHandler),
+) -> UserResponse:
     """Update a user."""
     # 1. Convert Request → Command
     command = UpdateUserCommand(
@@ -175,7 +175,7 @@ async def update_user(
     user = await handler.execute(command)
 
     # 3. Convert Domain → Response
-    return user_to_dict(user)
+    return UserResponse(**user_to_dict(user))
 
 
 @router.delete(
@@ -186,7 +186,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: str,
-    handler: Annotated[DeleteUserHandler, handler_dependency(DeleteUserHandler)],
+    handler: DeleteUserHandler = handler_dependency(DeleteUserHandler),
 ) -> None:
     """Delete a user (soft delete)."""
     # 1. Convert Request → Command

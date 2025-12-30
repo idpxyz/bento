@@ -28,21 +28,26 @@ if TYPE_CHECKING:
 
 
 class SecurityContext:
-    """Security context - stores current request's authenticated user.
+    """Security context - stores current request's authenticated user and tenant.
 
-    Uses ContextVar for async-safe, request-scoped user storage.
+    Uses ContextVar for async-safe, request-scoped storage.
 
     Example:
         ```python
         from bento.security import SecurityContext, CurrentUser
 
-        # Set user (usually in middleware)
+        # Set user and tenant (usually in middleware)
         user = CurrentUser(id="user-123", permissions=["orders:read"])
         SecurityContext.set_user(user)
+        SecurityContext.set_tenant("tenant-456")
 
         # Get user (in business code)
         user = SecurityContext.get_user()  # May be None
         user = SecurityContext.require_user()  # Raises UNAUTHORIZED if None
+
+        # Get tenant
+        tenant_id = SecurityContext.get_tenant()  # May be None
+        tenant_id = SecurityContext.require_tenant()  # Raises if None
 
         # Check permissions via context
         if SecurityContext.has_permission("orders:read"):
@@ -52,6 +57,9 @@ class SecurityContext:
 
     _current_user: ContextVar["CurrentUser | None"] = ContextVar(
         'current_user', default=None
+    )
+    _current_tenant: ContextVar[str | None] = ContextVar(
+        'current_tenant', default=None
     )
 
     @classmethod
@@ -89,8 +97,23 @@ class SecurityContext:
 
     @classmethod
     def clear(cls) -> None:
-        """Clear current user."""
+        """Clear current user and tenant.
+
+        This clears both the authenticated user and tenant context.
+        Use clear_user() or clear_tenant() if you need to clear only one.
+        """
         cls._current_user.set(None)
+        cls._current_tenant.set(None)
+
+    @classmethod
+    def clear_user(cls) -> None:
+        """Clear only current user, keeping tenant."""
+        cls._current_user.set(None)
+
+    @classmethod
+    def clear_tenant(cls) -> None:
+        """Clear only current tenant, keeping user."""
+        cls._current_tenant.set(None)
 
     @classmethod
     def is_authenticated(cls) -> bool:
@@ -130,3 +153,37 @@ class SecurityContext:
         if not user:
             return False
         return user.has_role(role)
+
+    # Tenant methods
+    @classmethod
+    def get_tenant(cls) -> str | None:
+        """Get current tenant ID.
+
+        Returns:
+            Current tenant ID or None if not set
+        """
+        return cls._current_tenant.get()
+
+    @classmethod
+    def require_tenant(cls) -> str:
+        """Get current tenant ID, raising if not set.
+
+        Returns:
+            Current tenant ID
+
+        Raises:
+            DomainException: If tenant not set (TENANT_REQUIRED)
+        """
+        tenant_id = cls._current_tenant.get()
+        if not tenant_id:
+            raise DomainException(reason_code="TENANT_REQUIRED")
+        return tenant_id
+
+    @classmethod
+    def set_tenant(cls, tenant_id: str | None) -> None:
+        """Set current tenant ID.
+
+        Args:
+            tenant_id: Tenant ID to set, or None to clear
+        """
+        cls._current_tenant.set(tenant_id)

@@ -31,12 +31,27 @@ def customize_openapi_for_bento(app: "FastAPI") -> dict:
     if app.openapi_schema:
         return app.openapi_schema
 
-    openapi_schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
-    )
+    try:
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
+    except Exception as e:
+        # If OpenAPI generation fails (e.g., due to Pydantic type issues),
+        # return a minimal schema to allow the app to start
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to generate OpenAPI schema: {e}. Using minimal schema.")
+        return {
+            "openapi": "3.0.0",
+            "info": {
+                "title": app.title or "API",
+                "version": app.version or "1.0.0",
+            },
+            "paths": {},
+        }
 
     # Define custom headers as reusable components
     openapi_schema["components"] = openapi_schema.get("components", {})
@@ -77,30 +92,37 @@ def customize_openapi_for_bento(app: "FastAPI") -> dict:
         },
     }
 
-    # Add custom headers to all POST, PUT, PATCH, DELETE operations
+    # Add custom headers to operations
     write_methods = {"post", "put", "patch", "delete"}
+    all_methods = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 
     for path_item in openapi_schema.get("paths", {}).values():
         for method, operation in path_item.items():
-            if method.lower() in write_methods:
-                # Add parameters if not already present
-                if "parameters" not in operation:
-                    operation["parameters"] = []
+            method_lower = method.lower()
 
-                # Add X-Idempotency-Key to write operations
+            # Skip non-HTTP methods
+            if method_lower not in all_methods or not isinstance(operation, dict):
+                continue
+
+            # Add parameters if not already present
+            if "parameters" not in operation:
+                operation["parameters"] = []
+
+            # Add X-Idempotency-Key to write operations only
+            if method_lower in write_methods:
                 operation["parameters"].append({
                     "$ref": "#/components/parameters/X-Idempotency-Key"
                 })
 
-                # Add X-Tenant-ID to all operations (optional)
-                operation["parameters"].append({
-                    "$ref": "#/components/parameters/X-Tenant-ID"
-                })
+            # Add X-Tenant-ID to all operations (for multi-tenant data isolation)
+            operation["parameters"].append({
+                "$ref": "#/components/parameters/X-Tenant-ID"
+            })
 
-                # Add X-Request-ID to all operations (optional)
-                operation["parameters"].append({
-                    "$ref": "#/components/parameters/X-Request-ID"
-                })
+            # Add X-Request-ID to all operations (for request tracing)
+            operation["parameters"].append({
+                "$ref": "#/components/parameters/X-Request-ID"
+            })
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

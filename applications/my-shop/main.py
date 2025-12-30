@@ -5,7 +5,7 @@ which uses Bento Runtime with proper lifespan management.
 """
 
 from config import settings
-from runtime.bootstrap_v2 import create_app
+from runtime.bootstrap import create_app
 
 app = create_app()
 

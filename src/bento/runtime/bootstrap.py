@@ -327,42 +327,6 @@ class BentoRuntime:
         logger.debug(f"Mock module registered: {name}")
         return self
 
-    # OpenTelemetry integration
-    def with_otel_tracing(
-        self,
-        service_name: str | None = None,
-        trace_exporter: str = "console",
-        **exporter_kwargs: Any,
-    ) -> "BentoRuntime":
-        """Enable OpenTelemetry tracing for the runtime."""
-        from bento.runtime.observability import otel
-
-        service_name = service_name or self.config.service_name
-        tracer_provider = otel.setup_tracing(service_name, trace_exporter, **exporter_kwargs)
-
-        if tracer_provider:
-            self.container.set("otel.tracer_provider", tracer_provider)
-            from opentelemetry import trace
-            self.container.set("otel.tracer", trace.get_tracer(__name__))
-
-        return self
-
-    def with_otel_metrics(
-        self,
-        metrics_exporter: str = "console",
-        **exporter_kwargs: Any,
-    ) -> "BentoRuntime":
-        """Enable OpenTelemetry metrics for the runtime."""
-        from bento.runtime.observability import otel
-
-        meter_provider = otel.setup_metrics(metrics_exporter, **exporter_kwargs)
-
-        if meter_provider:
-            self.container.set("otel.meter_provider", meter_provider)
-            from opentelemetry import metrics
-            self.container.set("otel.meter", metrics.get_meter(__name__))
-
-        return self
 
     # Module assertion methods
     def assert_module_loaded(self, name: str) -> bool:

@@ -1,6 +1,6 @@
 """Category API routes (FastAPI) - Thin Interface Layer"""
 
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
@@ -79,8 +79,8 @@ class ListCategoriesResponse(BaseModel):
 )
 async def create_category(
     request: CreateCategoryRequest,
-    handler: Annotated[CreateCategoryHandler, handler_dependency(CreateCategoryHandler)],
-) -> dict[str, Any]:
+    handler: CreateCategoryHandler = handler_dependency(CreateCategoryHandler),
+) -> CategoryResponse:
     """Create a new category."""
     command = CreateCategoryCommand(
         name=request.name,
@@ -89,7 +89,7 @@ async def create_category(
     )
 
     category = await handler.execute(command)
-    return category_to_dict(category)
+    return CategoryResponse(**category_to_dict(category))
 
 
 @router.get(
@@ -98,18 +98,18 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    handler: Annotated[ListCategoriesHandler, handler_dependency(ListCategoriesHandler)],
+    handler: ListCategoriesHandler = handler_dependency(ListCategoriesHandler),
     parent_id: str | None = Query(None, description="Filter by parent category"),
-) -> dict[str, Any]:
+) -> ListCategoriesResponse:
     """List categories with optional parent filter."""
     query = ListCategoriesQuery(parent_id=parent_id)
 
     result = await handler.execute(query)
 
-    return {
-        "items": [c.model_dump() for c in result.categories],  # ✅ 使用 DTO 内置序列化
-        "total": result.total,
-    }
+    return ListCategoriesResponse(
+        items=[CategoryResponse(**c.model_dump()) for c in result.categories],
+        total=result.total,
+    )
 
 
 @router.get(
@@ -119,12 +119,12 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    handler: Annotated[GetCategoryHandler, handler_dependency(GetCategoryHandler)],
-) -> dict[str, Any]:
+    handler: GetCategoryHandler = handler_dependency(GetCategoryHandler),
+) -> CategoryResponse:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
     category = await handler.execute(query)  # 返回 CategoryDTO
-    return category.model_dump()  # ✅ 使用 DTO 内置序列化
+    return CategoryResponse(**category.model_dump())  # ✅ 使用 DTO 内置序列化
 
 
 @router.put(
@@ -135,8 +135,8 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    handler: Annotated[UpdateCategoryHandler, handler_dependency(UpdateCategoryHandler)],
-) -> dict[str, Any]:
+    handler: UpdateCategoryHandler = handler_dependency(UpdateCategoryHandler),
+) -> CategoryResponse:
     """Update a category."""
     command = UpdateCategoryCommand(
         category_id=category_id,
@@ -146,7 +146,7 @@ async def update_category(
     )
 
     category = await handler.execute(command)
-    return category_to_dict(category)
+    return CategoryResponse(**category_to_dict(category))
 
 
 @router.delete(
@@ -156,7 +156,7 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    handler: Annotated[DeleteCategoryHandler, handler_dependency(DeleteCategoryHandler)],
+    handler: DeleteCategoryHandler = handler_dependency(DeleteCategoryHandler),
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)
@@ -169,7 +169,7 @@ async def delete_category(
     summary="Get category tree structure",
 )
 async def get_category_tree(
-    handler: Annotated[GetCategoryTreeHandler, handler_dependency(GetCategoryTreeHandler)],
+    handler: GetCategoryTreeHandler = handler_dependency(GetCategoryTreeHandler),
 ) -> list[CategoryTreeNodeDTO]:
     """Get all categories in tree structure.
 
@@ -186,7 +186,7 @@ async def get_category_tree(
 )
 async def get_category_subtree(
     root_id: str,
-    handler: Annotated[GetCategoryTreeHandler, handler_dependency(GetCategoryTreeHandler)],
+    handler: GetCategoryTreeHandler = handler_dependency(GetCategoryTreeHandler),
 ) -> list[CategoryTreeNodeDTO]:
     """Get a specific category and its subtree.
 

@@ -1,219 +1,94 @@
-"""Application bootstrap for my-shop.
+"""Application bootstrap for my-shop using BentoRuntime.
 
-Provides FastAPI application creation and lifespan management.
+This is the new composition root using the unified bento.runtime module.
+Refactored for better maintainability with separated concerns:
+- runtime_config.py: Runtime and module configuration
+- middleware_config.py: Middleware stack configuration
+- app_config.py: Routes, exception handlers, and OpenAPI setup
 
-This is the composition root for the my-shop application:
-- Configures FastAPI (title, docs, middleware)
-- Registers global exception handlers
-- Aggregates routers via router_registry
-- Provides an async lifespan hook for future startup/shutdown logic
+Best Practices Applied:
+- Async runtime initialization with build_async()
+- Proper lifecycle management with FastAPI lifespan
+- Graceful shutdown handling
+- Separated configuration concerns
+
+Example:
+    from runtime.bootstrap_v2 import create_app
+    app = create_app()
 """
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
 import logging
-from contextlib import asynccontextmanager
+import sys
 
-from bento.adapters.cache import CacheBackend, CacheConfig, CacheFactory
-from bento.adapters.messaging.inprocess import InProcessMessageBus
-from bento.infrastructure.projection.projector import OutboxProjector
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError, ResponseValidationError
-from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings  # Config package exports settings from top-level config.py
-from config.warmup_config import setup_cache_warmup
-from contexts.catalog.infrastructure.repositories.category_repository_impl import (
-    CategoryRepository,
+from config import settings
+from runtime.config import (
+    build_runtime,
+    configure_exception_handlers,
+    configure_middleware,
+    configure_openapi,
+    configure_routes,
 )
-from contexts.catalog.infrastructure.repositories.product_repository_impl import (
-    ProductRepository,
-)
-from contexts.ordering.domain.events.ordercancelled_event import (  # noqa: F401
-    OrderCancelledEvent,
-)
-from contexts.ordering.domain.events.ordercreated_event import (  # noqa: F401
-    OrderCreatedEvent,
-)
-from contexts.ordering.domain.events.orderdelivered_event import (  # noqa: F401
-    OrderDeliveredEvent,
-)
-from contexts.ordering.domain.events.orderpaid_event import (  # noqa: F401
-    OrderPaidEvent,
-)
-from contexts.ordering.domain.events.ordershipped_event import (  # noqa: F401
-    OrderShippedEvent,
-)
-from shared.api.router_registry import create_api_router
-from shared.exceptions.handlers import (
-    generic_exception_handler,
-    response_validation_exception_handler,
-    validation_exception_handler,
-)
-from shared.infrastructure.dependencies import session_factory
 
-# Explicitly reference event classes to satisfy linter (imports are needed for registration)
-_REGISTERED_EVENTS = (
-    OrderCancelledEvent,
-    OrderCreatedEvent,
-    OrderDeliveredEvent,
-    OrderPaidEvent,
-    OrderShippedEvent,
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
 )
 
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):  # pragma: no cover - thin wiring layer
-    """Application lifespan manager.
-
-    Currently used for structured startup/shutdown logging and as a hook for
-    background workers (e.g. Outbox consumers / projection workers).
-
-    The default implementation starts a lightweight background task that can be
-    extended later to:
-    - Poll the Outbox table for NEW events
-    - Dispatch events to a message bus or projection handlers
-    - Mark events as PUBLISHED / FAILED with retry
-    """
-    logger.info("Starting my-shop application ...")
-
-    # Create in-process bus and projector
-    bus = InProcessMessageBus(source="my-shop")
-    projector = OutboxProjector(
-        session_factory=session_factory,
-        message_bus=bus,
-        tenant_id="default",
-    )
-
-    # Initialize OrderProjection and register event handlers
-    from contexts.ordering.application.projections.order_projection import OrderProjection
-    from contexts.ordering.domain.events.ordercreated_event import OrderCreatedEvent
-    from contexts.ordering.domain.events.orderpaid_event import OrderPaidEvent
-    from contexts.ordering.domain.events.ordershipped_event import OrderShippedEvent
-
-    # Create a new session for the projection
-    session = session_factory()
-    order_projection = OrderProjection(session)
-
-    # Register event handlers with their corresponding event types
-    logger.info("Registering event handlers...")
-    await bus.subscribe(OrderCreatedEvent, order_projection.handle_order_created)
-    logger.info(f"Registered handler for {OrderCreatedEvent.__name__}")
-    await bus.subscribe(OrderPaidEvent, order_projection.handle_order_paid)
-    logger.info(f"Registered handler for {OrderPaidEvent.__name__}")
-    await bus.subscribe(OrderShippedEvent, order_projection.handle_order_shipped)
-    logger.info(f"Registered handler for {OrderShippedEvent.__name__}")
-
-    # Start bus and projector loop
-    await bus.start()
-    projector_task = asyncio.create_task(projector.run_forever())
-
-    # Setup cache and warmup (production-ready)
-    cache = await CacheFactory.create(
-        CacheConfig(
-            backend=CacheBackend.MEMORY,  # 生产环境改为 REDIS
-            ttl=300,
-        )
-    )
-
-    # Create repositories for warmup (use dependency injection in production)
-    async with session_factory() as session:
-        from contexts.catalog.domain.ports.repositories.i_category_repository import (
-            ICategoryRepository,
-        )
-        from contexts.catalog.domain.ports.repositories.i_product_repository import (
-            IProductRepository,
-        )
-
-        product_repo: IProductRepository = ProductRepository(session, actor="system")
-        category_repo: ICategoryRepository = CategoryRepository(session, actor="system")
-
-        # Setup and execute cache warmup
-        warmup_coordinator = await setup_cache_warmup(
-            cache,
-            product_repository=product_repo,
-            category_repository=category_repo,
-            warmup_on_startup=True,  # 启动时立即预热
-            max_concurrency=20,
-        )
-
-    # Store in app state for later use (e.g., manual warmup endpoints)
-    app.state.cache = cache
-    app.state.warmup_coordinator = warmup_coordinator
-
-    try:
-        # Startup logic hook (keep light here; heavy work should be offloaded)
-        yield
-    finally:
-        # Graceful shutdown of projector and bus
-        await projector.stop()
-        projector_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await projector_task
-
-        # Close the projection session
-        if "session" in locals():
-            await session.close()
-
-        await bus.stop()
-
-        logger.info("Shutting down my-shop application ...")
-
-
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application with lifespan."""
-    app = FastAPI(
+    """Create and configure FastAPI application using BentoRuntime.
+
+    Best Practice Version:
+    - Runtime's built-in lifespan handles startup/shutdown
+    - Async runtime initialization via build_async()
+    - Graceful resource cleanup via lifecycle manager
+    - Separated configuration concerns for better maintainability
+
+    Returns:
+        Configured FastAPI application
+    """
+    logger.info(f"Creating FastAPI application: {settings.app_name}")
+    logger.debug(f"Environment: {settings.app_env}, Database: {settings.database_url}")
+
+    # Build runtime with all modules
+    runtime = build_runtime()
+    logger.debug("BentoRuntime configured with modules: infra, catalog, identity, ordering, service_discovery, observability")
+
+    # Create FastAPI app with BentoRuntime's built-in lifespan
+    app = runtime.create_fastapi_app(
         title=settings.app_name,
-        description="完整测试项目",
-        version="0.1.0",
+        description="Complete test project - Powered by BentoRuntime (Best Practice)",
+        version="0.2.0",
         docs_url="/docs",
         redoc_url="/redoc",
-        lifespan=lifespan,
     )
+    logger.debug("FastAPI app created with BentoRuntime's built-in lifespan")
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Store runtime in app.state for middleware access
+    app.state.bento_runtime = runtime
+    logger.debug("BentoRuntime stored in app.state for middleware access")
 
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ResponseValidationError, response_validation_exception_handler)
-    app.add_exception_handler(Exception, generic_exception_handler)
+    # Configure middleware stack (order matters!)
+    configure_middleware(app, runtime)
 
-    api_router = create_api_router()
-    app.include_router(api_router, prefix="/api/v1")
+    # Configure exception handlers
+    configure_exception_handlers(app)
 
-    @app.get("/")
-    async def root():  # type: ignore[func-returns-value]
-        return {
-            "message": f"Welcome to {settings.app_name}",
-            "status": "running",
-            "docs": "/docs",
-        }
+    # Configure routes
+    configure_routes(app)
 
-    @app.get("/ping")
-    async def ping():  # type: ignore[func-returns-value]
-        return {"message": "pong"}
+    # Configure OpenAPI customization
+    configure_openapi(app)
 
-    @app.get("/health")
-    async def health():  # type: ignore[func-returns-value]
-        return {"status": "healthy", "service": "my-shop"}
-
-    logger.info("FastAPI application created successfully")
+    logger.info(f"FastAPI application created successfully: {settings.app_name} (Best Practice)")
+    logger.info(f"API documentation available at: /docs")
 
     return app
-
-
-# 在 lifespan 里挂 定时 job / outbox 消费器 / projection worker，我们可以直接在
-# runtime/bootstrap.py 上加，不会影响现有 API 结构。
-
-# 1. 定时 job
-# 2. outbox 消费器
-# 3. projection worker

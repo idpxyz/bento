@@ -49,6 +49,12 @@ from bento.security.depends import (
     require_permissions,
     require_roles,
 )
+from bento.security.authorization import (
+    OwnershipAuthorizer,
+    AdminBypassAuthorizer,
+    check_resource_access,
+    authorize_resource,
+)
 
 __all__ = [
     # Context
@@ -74,5 +80,15 @@ __all__ = [
     "get_optional_user",
     "require_permissions",
     "require_roles",
+    # Resource-based Authorization
+    "OwnershipAuthorizer",
+    "AdminBypassAuthorizer",
+    "check_resource_access",
+    "authorize_resource",
 ]
+
+# Note: SecurityContext now has additional methods:
+# - clear_user() - Clear only user, keeping tenant
+# - clear_tenant() - Clear only tenant, keeping user
+# - clear() - Now clears both user and tenant (breaking change from previous behavior)
 

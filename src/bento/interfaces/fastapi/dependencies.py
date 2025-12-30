@@ -102,8 +102,33 @@ def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callabl
         Returns:
             A FastAPI Depends instance
         """
-        def factory(uow: Annotated[UnitOfWork, Depends(get_uow_dependency)]) -> THandler:
-            return handler_cls(uow)
+        from fastapi import Request
+
+        def factory(
+            uow: Annotated[UnitOfWork, Depends(get_uow_dependency)],
+            request: Request,
+        ) -> THandler:
+            # Check if handler needs observability (Observable Handler pattern)
+            import inspect
+            sig = inspect.signature(handler_cls.__init__)
+            params = list(sig.parameters.keys())
+
+            if 'observability' in params:
+                # Get observability from runtime
+                runtime = getattr(request.app.state, 'bento_runtime', None)
+                if runtime:
+                    try:
+                        observability = runtime.container.get('observability')
+                        return handler_cls(uow, observability)  # type: ignore
+                    except KeyError:
+                        pass
+                # Fallback to NoOp if not available
+                from bento.adapters.observability.noop import NoOpObservabilityProvider
+                noop_observability = NoOpObservabilityProvider()
+                return handler_cls(uow, noop_observability)  # type: ignore
+            else:
+                # Standard handler with only uow
+                return handler_cls(uow)
         return Depends(factory)
 
     return handler_dependency
