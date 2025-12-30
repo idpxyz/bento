@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     ]
 
     # Logging
-    log_level: str = "INFO"
+    log_level: str = "DEBUG"  # 改为 DEBUG 以看到更详细的追踪信息
 
     # Service Discovery
     service_discovery_backend: str = "env"
