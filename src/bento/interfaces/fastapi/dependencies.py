@@ -132,7 +132,7 @@ def create_handler_dependency(get_uow_dependency: Callable[..., Any]) -> Callabl
                 return handler_cls(uow, noop_observability)  # type: ignore
             else:
                 # Standard handler with only uow
-                return handler_cls(uow)
+                return handler_cls(uow)  # type: ignore
         return Depends(factory)
 
     return handler_dependency
@@ -251,6 +251,22 @@ def handler_dependency(handler_cls: type[THandler]) -> Any:
             for port_type, adapter_cls in get_port_registry().items():
                 uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
 
-            yield handler_cls(uow)
+            # Check if handler needs observability (Observable Handler pattern)
+            import inspect
+            sig = inspect.signature(handler_cls.__init__)
+            params = list(sig.parameters.keys())
+
+            if 'observability' in params:
+                # Get observability from runtime
+                try:
+                    observability = runtime.container.get('observability')
+                except (KeyError, AttributeError):
+                    # Fallback to NoOp if not available
+                    from bento.adapters.observability.noop import NoOpObservabilityProvider
+                    observability = NoOpObservabilityProvider()
+                yield handler_cls(uow, observability)  # type: ignore
+            else:
+                # Standard handler with only uow
+                yield handler_cls(uow)  # type: ignore
 
     return Depends(factory)
