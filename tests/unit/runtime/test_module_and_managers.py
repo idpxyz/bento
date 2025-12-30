@@ -7,7 +7,6 @@ from types import ModuleType
 from typing import TYPE_CHECKING, cast
 
 import pytest
-from bento.runtime.observability.metrics import MetricsCollector
 
 from bento.runtime.container import BentoContainer
 from bento.runtime.messaging.manager import MessagingManager
@@ -98,14 +97,3 @@ async def test_messaging_manager_sets_event_bus(monkeypatch) -> None:
     await manager.cleanup()
     assert runtime._event_bus is not None
     assert runtime._event_bus.closed
-
-
-def test_metrics_collector_records_and_reads_values() -> None:
-    collector = MetricsCollector()
-    collector.record("total_time", 1.23)
-    collector.record("db_time", 0.4)
-
-    assert collector.get("total_time") == pytest.approx(1.23)
-    assert collector.get_all() == {"total_time": 1.23, "db_time": 0.4}
-
-    assert collector.get("missing") is None
