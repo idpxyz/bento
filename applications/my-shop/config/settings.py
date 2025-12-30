@@ -55,15 +55,15 @@ class Settings(BaseSettings):
     kubernetes_service_suffix: str = "svc.cluster.local"
 
     # Observability settings
-    observability_enabled: bool = False
-    observability_provider: str = "noop"  # noop or otel
+    observability_enabled: bool = True  # 启用 Observability
+    observability_provider: str = "otel"  # noop or otel
 
     # OpenTelemetry settings
     otel_service_name: str = "my-shop"
-    otel_trace_exporter: str = "console"  # console, jaeger, otlp
+    otel_trace_exporter: str = "console"  # console, jaeger, otlp - 使用控制台输出
     otel_jaeger_host: str = "localhost"
     otel_jaeger_port: int = 6831
-    otel_metrics_exporter: str = "console"  # console, prometheus, otlp
+    otel_metrics_exporter: str = "console"  # console, prometheus, otlp - 使用控制台输出
     otel_prometheus_port: int = 9090
 
     model_config = SettingsConfigDict(
