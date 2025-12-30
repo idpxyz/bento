@@ -25,14 +25,15 @@ from contexts.identity.application.queries import (
     ListUsersHandler,
     ListUsersQuery,
 )
-from contexts.identity.interfaces.presenters import user_to_dict
+from contexts.identity.interfaces.dto import UserResponse, ListUsersResponse
+from contexts.identity.interfaces.mappers import user_to_response
 from shared.infrastructure.dependencies import handler_dependency
 
 # Create router
 router = APIRouter()
 
 
-# ==================== Request/Response Models ====================
+# ==================== Request Models ====================
 
 
 class CreateUserRequest(BaseModel):
@@ -47,23 +48,6 @@ class UpdateUserRequest(BaseModel):
 
     name: str | None = None
     email: EmailStr | None = None
-
-
-class UserResponse(BaseModel):
-    """User response model."""
-
-    id: str
-    name: str
-    email: str
-
-
-class ListUsersResponse(BaseModel):
-    """List users response model."""
-
-    items: list[UserResponse]
-    total: int
-    page: int
-    page_size: int
 
 
 # ==================== Dependency Injection ====================
@@ -96,7 +80,7 @@ async def create_user(
     user = await handler.execute(command)
 
     # 3. Convert Domain → Response
-    return UserResponse(**user_to_dict(user))
+    return user_to_response(user)
 
 
 @router.get(
@@ -120,9 +104,9 @@ async def list_users(
     # 2. Execute Handler
     result = await handler.execute(query)
 
-    # 3. Convert DTO → Response (使用 model_dump)
+    # 3. Convert DTO → Response
     return ListUsersResponse(
-        items=[UserResponse(**user.model_dump()) for user in result.users],
+        items=[user_to_response(user) for user in result.users],
         total=result.total,
         page=result.page,
         page_size=result.page_size,
@@ -146,8 +130,8 @@ async def get_user(
     # 2. Execute Handler
     user = await handler.execute(query)
 
-    # 3. Convert DTO → Response (使用 model_dump)
-    return UserResponse(**user.model_dump())
+    # 3. Convert DTO → Response
+    return user_to_response(user)
 
 
 @router.put(
@@ -173,7 +157,7 @@ async def update_user(
     user = await handler.execute(command)
 
     # 3. Convert Domain → Response
-    return UserResponse(**user_to_dict(user))
+    return user_to_response(user)
 
 
 @router.delete(
