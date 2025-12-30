@@ -21,13 +21,14 @@ from contexts.catalog.application.queries import (
     ListCategoriesQuery,
 )
 from contexts.catalog.application.queries.get_category_tree import CategoryTreeNodeDTO
-from contexts.catalog.interfaces.category_presenters import category_to_dict
+from contexts.catalog.interfaces.dto import CategoryResponse, ListCategoriesResponse
+from contexts.catalog.interfaces.mappers import category_to_response
 from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
 
-# ==================== Request/Response Models ====================
+# ==================== Request Models ====================
 
 
 class CreateCategoryRequest(BaseModel):
@@ -44,23 +45,6 @@ class UpdateCategoryRequest(BaseModel):
     name: str | None = None
     description: str | None = None
     parent_id: str | None = None
-
-
-class CategoryResponse(BaseModel):
-    """Category response model."""
-
-    id: str
-    name: str
-    description: str
-    parent_id: str | None
-    is_root: bool
-
-
-class ListCategoriesResponse(BaseModel):
-    """List categories response model."""
-
-    items: list[CategoryResponse]
-    total: int
 
 
 # ==================== API Routes ====================
@@ -88,7 +72,7 @@ async def create_category(
     )
 
     category = await handler.execute(command)
-    return CategoryResponse(**category_to_dict(category))
+    return category_to_response(category)
 
 
 @router.get(
@@ -106,7 +90,7 @@ async def list_categories(
     result = await handler.execute(query)
 
     return ListCategoriesResponse(
-        items=[CategoryResponse(**c.model_dump()) for c in result.categories],
+        items=[category_to_response(category) for category in result.categories],
         total=result.total,
     )
 
@@ -123,7 +107,7 @@ async def get_category(
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
     category = await handler.execute(query)  # 返回 CategoryDTO
-    return CategoryResponse(**category.model_dump())  # ✅ 使用 DTO 内置序列化
+    return category_to_response(category)
 
 
 @router.put(
@@ -145,7 +129,7 @@ async def update_category(
     )
 
     category = await handler.execute(command)
-    return CategoryResponse(**category_to_dict(category))
+    return category_to_response(category)
 
 
 @router.delete(

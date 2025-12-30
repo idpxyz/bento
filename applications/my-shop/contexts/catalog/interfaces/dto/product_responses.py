@@ -24,3 +24,5 @@ class ListProductsResponse(BaseModel):
 
     items: list[ProductResponse] = Field(..., description="List of products")
     total: int = Field(..., ge=0, description="Total number of products")
+    page: int = Field(..., ge=1, description="Current page")
+    page_size: int = Field(..., ge=1, description="Page size")

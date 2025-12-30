@@ -19,13 +19,14 @@ from contexts.catalog.application.queries import (
     ListProductsHandler,
     ListProductsQuery,
 )
-from contexts.catalog.interfaces.presenters import product_to_dict
+from contexts.catalog.interfaces.dto import ProductResponse, ListProductsResponse
+from contexts.catalog.interfaces.mappers import product_to_response
 from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
 
-# ==================== Request/Response Models ====================
+# ==================== Request Models ====================
 
 
 class CreateProductRequest(BaseModel):
@@ -54,31 +55,6 @@ class UpdateProductRequest(BaseModel):
     sku: str | None = None
     brand: str | None = None
     is_active: bool | None = None
-
-
-class ProductResponse(BaseModel):
-    """Product response model."""
-
-    id: str
-    name: str
-    description: str
-    price: float
-    stock: int
-    sku: str | None = None
-    brand: str | None = None
-    is_active: bool
-    sales_count: int
-    category_id: str | None = None
-    is_categorized: bool
-
-
-class ListProductsResponse(BaseModel):
-    """List products response model."""
-
-    items: list[ProductResponse]
-    total: int
-    page: int
-    page_size: int
 
 
 # ==================== API Routes ====================
@@ -111,7 +87,7 @@ async def create_product(
     )
 
     product = await handler.execute(command)
-    return ProductResponse(**product_to_dict(product))
+    return product_to_response(product)
 
 
 @router.get(
