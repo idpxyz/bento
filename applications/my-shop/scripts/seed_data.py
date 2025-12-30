@@ -15,8 +15,8 @@ from contexts.identity.domain.user import User
 from sqlalchemy import select
 
 from api.deps import engine, session_factory
-from contexts.catalog.domain.category import Category
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.category import Category
+from contexts.catalog.domain.models.product import Product
 from contexts.catalog.infrastructure.mappers.category_mapper import CategoryMapper
 from contexts.catalog.infrastructure.mappers.product_mapper import ProductMapper
 from contexts.catalog.infrastructure.models.category_po import CategoryPO

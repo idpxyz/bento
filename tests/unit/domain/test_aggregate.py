@@ -8,14 +8,14 @@ from bento.domain.domain_event import DomainEvent
 
 
 @dataclass(frozen=True)
-class TestEvent(DomainEvent):
-    """Test domain event."""
+class MockEvent(DomainEvent):
+    """Mock domain event for testing."""
 
     message: str = "test"
 
 
-class TestAggregate(AggregateRoot):
-    """Test aggregate for testing."""
+class MockAggregate(AggregateRoot):
+    """Mock aggregate for testing."""
 
     def __init__(self, aggregate_id):
         super().__init__(aggregate_id)
@@ -25,9 +25,9 @@ class TestAggregate(AggregateRoot):
         """Increment value and raise event."""
         self.value += 1
         self.add_event(
-            TestEvent(
+            MockEvent(
                 event_id=uuid4(),
-                name="TestEvent",
+                topic="MockEvent",
                 tenant_id="test",
                 aggregate_id=str(self.id),
                 message=f"Incremented to {self.value}",
@@ -41,17 +41,17 @@ class TestAggregateRoot:
     def test_aggregate_initialization(self):
         """Test that aggregate can be initialized."""
         aggregate_id = "test-123"
-        aggregate = TestAggregate(aggregate_id)
+        aggregate = MockAggregate(aggregate_id)
 
         assert aggregate.id == aggregate_id
         assert len(aggregate.events) == 0
 
     def test_add_event(self):
         """Test adding domain events."""
-        aggregate = TestAggregate("test-123")
-        event = TestEvent(
+        aggregate = MockAggregate("test-123")
+        event = MockEvent(
             event_id=uuid4(),
-            name="TestEvent",
+            topic="MockEvent",
             tenant_id="test",
             aggregate_id="test-123",
         )
@@ -63,7 +63,7 @@ class TestAggregateRoot:
 
     def test_add_multiple_events(self):
         """Test adding multiple events."""
-        aggregate = TestAggregate("test-123")
+        aggregate = MockAggregate("test-123")
 
         # Increment 3 times, should create 3 events
         aggregate.increment()
@@ -72,11 +72,11 @@ class TestAggregateRoot:
 
         assert len(aggregate.events) == 3
         assert aggregate.value == 3
-        assert all(isinstance(e, TestEvent) for e in aggregate.events)
+        assert all(isinstance(e, MockEvent) for e in aggregate.events)
 
     def test_clear_events(self):
         """Test clearing domain events."""
-        aggregate = TestAggregate("test-123")
+        aggregate = MockAggregate("test-123")
 
         # Add some events
         aggregate.increment()
@@ -91,7 +91,7 @@ class TestAggregateRoot:
 
     def test_events_property_returns_copy(self):
         """Test that events property returns a copy, not the original list."""
-        aggregate = TestAggregate("test-123")
+        aggregate = MockAggregate("test-123")
         aggregate.increment()
 
         events1 = aggregate.events
@@ -109,30 +109,30 @@ class TestAggregateRoot:
         """Test that AggregateRoot inherits from Entity."""
         from bento.domain.entity import Entity
 
-        aggregate = TestAggregate("test-123")
+        aggregate = MockAggregate("test-123")
         assert isinstance(aggregate, Entity)
 
     def test_event_order_preserved(self):
         """Test that events are stored in the order they were added."""
-        aggregate = TestAggregate("test-123")
+        aggregate = MockAggregate("test-123")
 
-        event1 = TestEvent(
+        event1 = MockEvent(
             event_id=uuid4(),
-            name="Event1",
+            topic="Event1",
             tenant_id="test",
             aggregate_id="test-123",
             message="first",
         )
-        event2 = TestEvent(
+        event2 = MockEvent(
             event_id=uuid4(),
-            name="Event2",
+            topic="Event2",
             tenant_id="test",
             aggregate_id="test-123",
             message="second",
         )
-        event3 = TestEvent(
+        event3 = MockEvent(
             event_id=uuid4(),
-            name="Event3",
+            topic="Event3",
             tenant_id="test",
             aggregate_id="test-123",
             message="third",

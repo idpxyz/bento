@@ -20,7 +20,8 @@
   ],
   "extraPaths": [
     ".",
-    "src"
+    "src",
+    "applications/contract-governance/src"
   ],
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
@@ -29,6 +30,7 @@
   "reportUnusedImport": true,
   "reportUnusedClass": true,
   "reportUnusedFunction": true,
-  "reportUnusedVariable": true
+  "reportUnusedVariable": true,
+  "reportAssignmentType": false
 }
 

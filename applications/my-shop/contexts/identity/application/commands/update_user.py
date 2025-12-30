@@ -2,10 +2,10 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+from bento.application.ports.uow import UnitOfWork
+from bento.application.cqrs import CommandHandler
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
 from contexts.identity.domain.models.user import User
 
@@ -25,34 +25,34 @@ class UpdateUserCommand:
     email: str | None = None
 
 
-class UpdateUserUseCase(BaseUseCase[UpdateUserCommand, User]):
+class UpdateUserHandler(CommandHandler[UpdateUserCommand, User]):
     """Update user use case.
 
     Handles user updates with validation.
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: UpdateUserCommand) -> None:
         """Validate command."""
         if not command.user_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "user_id", "reason": "cannot be empty"},
             )
 
         # At least one field must be provided
         if not command.name and not command.email:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"reason": "at least one field (name or email) must be provided"},
             )
 
         # Email format validation
         if command.email and "@" not in command.email:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "email", "reason": "invalid email format"},
             )
 
@@ -62,7 +62,7 @@ class UpdateUserUseCase(BaseUseCase[UpdateUserCommand, User]):
             existing = await user_repo.find_by_email(command.email)
             if existing and existing.id != command.user_id:
                 raise ApplicationException(
-                    error_code=CommonErrors.ALREADY_EXISTS,
+                    reason_code="ALREADY_EXISTS",
                     details={"field": "email", "reason": f"email '{command.email}' already exists"},
                 )
 
@@ -74,7 +74,7 @@ class UpdateUserUseCase(BaseUseCase[UpdateUserCommand, User]):
         user = await user_repo.get(command.user_id)  # type: ignore[arg-type]
         if not user:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "user", "id": command.user_id},
             )
 

@@ -2,7 +2,7 @@
 
 from bento.core.ids import ID
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 class TestCategory:

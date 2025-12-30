@@ -1,10 +1,12 @@
-"""List users query and use case."""
+"""List users query and handler."""
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
+from bento.application import QueryHandler, query_handler
+from bento.application.ports.uow import UnitOfWork
 
+from contexts.identity.application.dto.user_dto import UserDTO
+from contexts.identity.application.mappers.user_dto_mapper import UserDTOMapper
 from contexts.identity.domain.models.user import User
 
 
@@ -13,13 +15,13 @@ class ListUsersResult:
     """List users result.
 
     Attributes:
-        users: List of users
+        users: List of user DTOs
         total: Total count of users
         page: Current page number
         page_size: Items per page
     """
 
-    users: list[User]
+    users: list[UserDTO]
     total: int
     page: int
     page_size: int
@@ -38,14 +40,16 @@ class ListUsersQuery:
     page_size: int = 10
 
 
-class ListUsersUseCase(BaseUseCase[ListUsersQuery, ListUsersResult]):
-    """List users use case.
+@query_handler
+class ListUsersHandler(QueryHandler[ListUsersQuery, ListUsersResult]):
+    """List users handler.
 
-    Retrieves a paginated list of users.
+    Retrieves a paginated list of users and returns DTOs.
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self.mapper = UserDTOMapper()
 
     async def validate(self, query: ListUsersQuery) -> None:
         """Validate query."""
@@ -53,24 +57,18 @@ class ListUsersUseCase(BaseUseCase[ListUsersQuery, ListUsersResult]):
         pass  # Validation can be added if needed
 
     async def handle(self, query: ListUsersQuery) -> ListUsersResult:
-        """Handle query execution."""
+        """Handle query execution and return DTOs."""
         user_repo = self.uow.repository(User)
 
-        # Calculate offset
-        offset = (query.page - 1) * query.page_size
+        # ✅ 使用 Framework 的 paginate() 便捷方法（性能提升 10-100x）
+        page_result = await user_repo.paginate(page=query.page, size=query.page_size)
 
-        # Get users with pagination
-        users = await user_repo.list_paginated(
-            limit=query.page_size,
-            offset=offset,
-        )
-
-        # Get total count
-        total = await user_repo.total_count()
+        # Convert to DTOs
+        user_dtos = self.mapper.to_dto_list(page_result.items)
 
         return ListUsersResult(
-            users=users,
-            total=total,
-            page=query.page,
-            page_size=query.page_size,
+            users=user_dtos,
+            total=page_result.total,
+            page=page_result.page,
+            page_size=page_result.size,
         )

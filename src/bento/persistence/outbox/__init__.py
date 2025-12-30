@@ -8,20 +8,15 @@ Pattern:
 2. A separate process (Projector) polls the outbox and publishes events
 3. Events are marked as published after successful delivery
 
-Benefits:
-- Exactly-once event delivery
-- Transactional consistency between data and events
-- Resilience to message broker failures
-
-Components:
-- OutboxRecord: SQLAlchemy model for the outbox table
-- SqlAlchemyOutbox: Outbox implementation
-- Outbox Listener: SQLAlchemy event listener (optional)
 """
 
-from bento.persistence.outbox.record import OutboxRecord, SqlAlchemyOutbox
+from .record import OutboxRecord, SqlAlchemyOutbox
 
 __all__ = [
+    # Core components（Outbox 只负责存储）
     "OutboxRecord",
     "SqlAlchemyOutbox",
 ]
+
+# 注意：Outbox 事件处理由 OutboxProjector 负责
+# 位置：bento.infrastructure.projection.projector.OutboxProjector

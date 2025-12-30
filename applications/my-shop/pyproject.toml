@@ -47,6 +47,13 @@ packages = ["contexts", "api"]
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "-v --tb=short --strict-markers -ra"
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (database, etc.)",
+    "e2e: End-to-end tests (full application)",
+    "slow: Slow tests",
+]
 
 [tool.ruff]
 line-length = 100

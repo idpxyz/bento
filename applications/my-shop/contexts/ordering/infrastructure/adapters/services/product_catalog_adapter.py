@@ -16,6 +16,7 @@
    Ordering BC 的其他代码无需修改（开闭原则）
 """
 
+from bento.infrastructure.ports import port_for
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +27,7 @@ from contexts.ordering.domain.ports.services.i_product_catalog_service import (
 from contexts.ordering.domain.vo.product_info import ProductInfo
 
 
+@port_for(IProductCatalogService)
 class ProductCatalogAdapter(IProductCatalogService):
     """产品目录适配器（Secondary Adapter - 被驱动适配器）
 

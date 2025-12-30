@@ -1,7 +1,7 @@
 """my-shop - Main FastAPI application entry point.
 
-This module now delegates application creation to runtime.bootstrap.create_app,
-which wires lifespan, middleware, exception handlers and routes.
+This module delegates application creation to runtime.bootstrap_v2.create_app,
+which uses Bento Runtime with proper lifespan management.
 """
 
 from config import settings

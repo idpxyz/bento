@@ -37,6 +37,19 @@ async def main():
 
     print(f"  UserPO: {UserPO}")
 
+    # ✅ Import Ordering models
+    from contexts.ordering.infrastructure.models.order_po import OrderPO
+
+    print(f"  OrderPO: {OrderPO}")
+    from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
+
+    print(f"  OrderItemPO: {OrderItemPO}")
+
+    # ✅ Import OutboxRecord to create outbox table
+    from bento.persistence.outbox.record import OutboxRecord
+
+    print(f"  OutboxRecord: {OutboxRecord}")
+
     # Import Base AFTER models
     from bento.persistence import Base
 
@@ -46,8 +59,10 @@ async def main():
     print(f"📊 Registered tables: {len(Base.metadata.tables)}")
     print(f"   Tables: {list(Base.metadata.tables.keys())}")
 
-    # Get database config
-    from api.deps import engine
+    # Get database config (standalone mode for scripts)
+    from shared.infrastructure.standalone_db import get_standalone_engine
+
+    engine = get_standalone_engine()
 
     try:
         # Create all tables

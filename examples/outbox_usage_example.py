@@ -145,12 +145,12 @@ async def start_projector_example():
 
     message_bus = MockMessageBus()
 
-    # Create Projector for each tenant
+    # Create Projector for each tenant (using default configuration)
     projector_tenant1 = OutboxProjector(
         session_factory=session_factory,
         message_bus=message_bus,  # type: ignore[arg-type]
-        tenant_id="tenant-123",
-        batch_size=200,
+        tenant_id="tenant-123"
+        # config parameter omitted - will use default configuration from environment
     )
 
     # Start projector in background

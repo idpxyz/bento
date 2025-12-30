@@ -5,25 +5,25 @@ This module contains the core business entities, value objects, and domain servi
 
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.domain_event import DomainEvent
+from bento.domain.domain_service import DomainService
 from bento.domain.entity import Entity
 from bento.domain.event_registry import (
     deserialize_event,
     get_event_class,
     register_event,
 )
-from bento.domain.ports.repository import (  # Repository for backward compatibility
+from bento.domain.ports.repository import (
     IRepository,
 )
-from bento.domain.service import DomainService
 from bento.domain.specification import Specification
-from bento.domain.value_object import ValueObject
+from bento.domain.value_object import CompositeValueObject, ValueObject
 
 __all__ = [
     "AggregateRoot",
+    "CompositeValueObject",
     "DomainEvent",
     "Entity",
     "IRepository",
-    "Repository",  # Backward compatibility
     "DomainService",
     "Specification",
     "ValueObject",

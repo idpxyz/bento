@@ -20,6 +20,8 @@ from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
 from bento.application.ports.message_bus import MessageBus
 from bento.application.ports.uow import UnitOfWork as IUnitOfWork
 from bento.domain.domain_event import DomainEvent
+from bento.messaging.idempotency import IdempotencyStore
+from bento.messaging.inbox import Inbox
 from bento.messaging.outbox import Outbox
 from bento.persistence.config import is_outbox_listener_enabled
 
@@ -78,6 +80,9 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         outbox: Outbox,
         repository_factories: dict[type, Callable[[AsyncSession], Any]] | None = None,
         event_bus: MessageBus | None = None,  # Optional: for dual publishing strategy
+        inbox: Inbox | None = None,  # Optional: for message deduplication
+        idempotency: IdempotencyStore | None = None,  # Optional: for command idempotency
+        tenant_id: str = "default",
     ) -> None:
         """Initialize unit of work with Outbox pattern support.
 
@@ -86,6 +91,9 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             outbox: Outbox for transactional event publishing
             repository_factories: Dictionary mapping aggregate types to repository factory functions
             event_bus: Optional event bus for immediate publishing (dual publishing strategy)
+            inbox: Optional Inbox for message deduplication
+            idempotency: Optional IdempotencyStore for command idempotency
+            tenant_id: Tenant identifier for multi-tenant operations
         """
         self._session = session
         self._outbox = outbox
@@ -95,9 +103,16 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             repository_factories or {}
         )
         self._repositories: dict[type, Any] = {}
+        # Port container: manages outbound port implementations (adapters)
+        self._port_factories: dict[type, Callable[[AsyncSession], Any]] = {}
+        self._ports: dict[type, Any] = {}
         self.pending_events: list[DomainEvent] = []
         self._tracked_aggregates: list[Any] = []  # Track aggregates for event collection
         self._ctx_token: contextvars.Token | None = None
+        # Inbox and Idempotency (injected or lazy-loaded)
+        self._inbox: Inbox | None = inbox
+        self._idempotency: IdempotencyStore | None = idempotency
+        self._tenant_id: str = tenant_id
         logger.debug(
             "UoW initialized with outbox: %s, event_bus: %s",
             outbox.__class__.__name__ if outbox else "None",
@@ -146,10 +161,119 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
             )
         return self._repositories[aggregate_type]
 
+    def register_port(self, port_type: type, factory: Callable[[AsyncSession], Any]) -> None:
+        """Register an outbound port implementation (adapter) factory.
+
+        Ports are interfaces defined in the domain layer that the application layer
+        depends on. This method registers the infrastructure implementation (adapter)
+        that will be provided when the application requests the port.
+
+        This follows the Hexagonal Architecture pattern:
+        - Port: Interface defined by the domain/application (what we need)
+        - Adapter: Infrastructure implementation (how we implement it)
+
+        Args:
+            port_type: The port interface type (e.g., IProductCatalogService)
+            factory: Function that creates the adapter instance from session
+
+        Example:
+            ```python
+            # Register adapter for cross-BC service
+            uow.register_port(
+                IProductCatalogService,
+                lambda s: ProductCatalogAdapter(s)
+            )
+            ```
+
+        Note:
+            - Only register ports that are relevant to the current BC's transaction context
+            - Don't use this for global infrastructure services (logging, caching, etc.)
+            - The port interface should be defined in the domain/application layer
+        """
+        self._port_factories[port_type] = factory
+
+    def port(self, port_type: type[T]) -> T:
+        """Get the implementation (adapter) for an outbound port.
+
+        This method provides lazy-loaded adapter instances for ports defined by
+        the application layer. The adapter is created only on first access and
+        then cached for the lifetime of the UoW.
+
+        Args:
+            port_type: The port interface type
+
+        Returns:
+            Adapter instance implementing the port interface
+
+        Raises:
+            ValueError: If no adapter registered for the port type
+
+        Example:
+            ```python
+            # In application handler
+            product_catalog = self.uow.port(IProductCatalogService)
+            available, unavailable = await product_catalog.check_products_available([...])
+            ```
+
+        Architecture:
+            Application Layer → depends on → Port Interface (IProductCatalogService)
+                                                ↑
+            Infrastructure Layer → implements → Adapter (ProductCatalogAdapter)
+        """
+        if port_type not in self._ports:
+            if port_type not in self._port_factories:
+                raise ValueError(
+                    f"No adapter registered for port {port_type.__name__}. "
+                    f"Register it using uow.register_port({port_type.__name__}, factory)"
+                )
+            self._ports[port_type] = self._port_factories[port_type](self._session)
+        return self._ports[port_type]
+
     @property
     def session(self) -> AsyncSession:
         """Get underlying session."""
         return self._session
+
+    @property
+    def inbox(self) -> Inbox:
+        """Get the Inbox for message deduplication.
+
+        Lazily creates SqlAlchemyInbox on first access.
+
+        Returns:
+            Inbox instance for the current transaction
+        """
+        if self._inbox is None:
+            from bento.persistence.inbox import SqlAlchemyInbox
+
+            self._inbox = SqlAlchemyInbox(self._session, self._tenant_id)  # type: ignore[assignment]
+        return self._inbox  # type: ignore[return-value]
+
+    @property
+    def idempotency(self) -> IdempotencyStore:
+        """Get the IdempotencyStore for command deduplication.
+
+        Lazily creates SqlAlchemyIdempotency on first access.
+
+        Returns:
+            IdempotencyStore instance for the current transaction
+        """
+        if self._idempotency is None:
+            from bento.persistence.idempotency import SqlAlchemyIdempotency
+
+            self._idempotency = SqlAlchemyIdempotency(self._session, self._tenant_id)  # type: ignore[assignment]
+        return self._idempotency  # type: ignore[return-value]
+
+    def set_tenant_id(self, tenant_id: str) -> None:
+        """Set the tenant ID for multi-tenant operations.
+
+        Args:
+            tenant_id: The tenant identifier
+        """
+        self._tenant_id = tenant_id
+        # Reset lazy-loaded instances to use new tenant_id
+        self._inbox = None
+        self._idempotency = None
 
     def track(self, aggregate: Any) -> None:
         """Track an aggregate for event collection.
@@ -168,6 +292,10 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         # Transaction starts automatically on first operation
         self.pending_events.clear()
         self._tracked_aggregates.clear()
+        # Reset lazy-loaded instances for new transaction (if not injected)
+        # This ensures each transaction gets fresh instances
+        self._inbox = None
+        self._idempotency = None
 
         # Register UoW in session.info for Event Listener access
         # For AsyncSession, we need to set it on the sync_session

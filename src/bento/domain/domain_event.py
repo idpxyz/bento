@@ -21,7 +21,7 @@ class DomainEvent:
 
     Attributes:
         event_id: Unique identifier for this event (for idempotency)
-        name: Event type name (e.g., "OrderCreated")
+        topic: Event type/topic (e.g., "OrderCreated")
         occurred_at: Timestamp when the event occurred
         tenant_id: Tenant identifier for multi-tenancy support
         aggregate_id: ID of the aggregate that produced this event (智能处理 ID/str)
@@ -51,7 +51,7 @@ class DomainEvent:
 
     # Core fields - aligned with Legend implementation
     event_id: UUID = field(default_factory=uuid4)
-    name: str = ""
+    topic: str = ""
     occurred_at: datetime = field(default_factory=now_utc)
 
     # Multi-tenancy support

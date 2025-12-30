@@ -31,7 +31,7 @@ class OrderCreated(DomainEvent):
         total_amount: float,
         *,
         event_id: UUID | None = None,
-        name: str = "OrderCreated",
+        topic: str = "OrderCreated",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -44,7 +44,7 @@ class OrderCreated(DomainEvent):
         cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(oid),
             "schema_version": schema_version,
         }
@@ -66,7 +66,7 @@ class OrderCreated(DomainEvent):
         """Serialize event to dictionary for storage."""
         return {
             "event_id": str(self.event_id),
-            "name": self.name,
+            "topic": self.topic,
             "occurred_at": self.occurred_at.isoformat(),
             "tenant_id": self.tenant_id,
             "aggregate_id": self.aggregate_id,
@@ -105,7 +105,7 @@ class OrderPaid(DomainEvent):
         paid_at: datetime | None = None,
         *,
         event_id: UUID | None = None,
-        name: str = "OrderPaid",
+        topic: str = "OrderPaid",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -118,7 +118,7 @@ class OrderPaid(DomainEvent):
         cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(oid),
             "schema_version": schema_version,
         }
@@ -141,7 +141,7 @@ class OrderPaid(DomainEvent):
         """Serialize event to dictionary for storage."""
         return {
             "event_id": str(self.event_id),
-            "name": self.name,
+            "topic": self.topic,
             "occurred_at": self.occurred_at.isoformat(),
             "tenant_id": self.tenant_id,
             "aggregate_id": self.aggregate_id,
@@ -178,7 +178,7 @@ class OrderCancelled(DomainEvent):
         reason: str | None = None,
         *,
         event_id: UUID | None = None,
-        name: str = "OrderCancelled",
+        topic: str = "OrderCancelled",
         occurred_at: datetime | None = None,
         tenant_id: str | None = None,
         aggregate_id: str | None = None,
@@ -191,7 +191,7 @@ class OrderCancelled(DomainEvent):
         cid = customer_id if isinstance(customer_id, ID) else ID(customer_id)
 
         _super_kwargs: dict[str, object] = {
-            "name": name,
+            "topic": topic,
             "aggregate_id": aggregate_id or str(oid),
             "schema_version": schema_version,
         }
@@ -213,7 +213,7 @@ class OrderCancelled(DomainEvent):
         """Serialize event to dictionary for storage."""
         return {
             "event_id": str(self.event_id),
-            "name": self.name,
+            "topic": self.topic,
             "occurred_at": self.occurred_at.isoformat(),
             "tenant_id": self.tenant_id,
             "aggregate_id": self.aggregate_id,

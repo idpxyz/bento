@@ -1,43 +1,72 @@
-"""API Dependencies - Uses Bento Framework
+"""API Dependencies - Bento Framework Best Practice
 
-This module provides FastAPI dependencies using Bento's infrastructure:
-- Database session management
-- Unit of Work pattern
-- Repository access
+This module provides FastAPI dependencies using Bento's infrastructure.
+Follows Bento Framework best practice: all database resources come from
+BentoRuntime's container.
+
+Architecture:
+- Database engine and session_factory are managed by BentoRuntime
+- No duplicate resource creation
+- Single source of truth: BentoRuntime container
+
+Usage:
+    from shared.infrastructure.dependencies import get_uow
+
+    @router.post("/items")
+    async def create_item(
+        uow: SQLAlchemyUnitOfWork = Depends(get_uow)
+    ):
+        async with uow:
+            ...
 """
 
 from collections.abc import AsyncGenerator
 
-from bento.infrastructure.database import create_async_engine_from_config
+from bento.interfaces.fastapi import create_handler_dependency
 from bento.persistence.outbox.record import SqlAlchemyOutbox
 from bento.persistence.uow import SQLAlchemyUnitOfWork
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 
-# Create database engine using Bento's configuration
-db_config = settings.get_database_config()
-engine = create_async_engine_from_config(db_config)
+def _get_container():
+    """Get BentoRuntime container.
 
-# Create session factory
-session_factory = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
+    Returns:
+        BentoContainer instance
+
+    Raises:
+        RuntimeError: If runtime is not initialized
+    """
+    from runtime.config import get_runtime
+
+    runtime = get_runtime()
+    return runtime.container
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Get database session.
+    """Get database session from BentoRuntime container.
+
+    Best Practice: Uses session_factory from BentoRuntime container.
+    The session_factory is set by BentoRuntime's DatabaseManager during build_async().
 
     Usage:
         @router.get("/items")
         async def get_items(session: AsyncSession = Depends(get_db_session)):
             ...
     """
+    container = _get_container()
+
+    # Get session_factory from container
+    # It's set by BentoRuntime's DatabaseManager during build_async()
+    try:
+        session_factory = container.get("db.session_factory")
+    except KeyError:
+        # If not in container, use standalone factory as fallback
+        # This can happen during testing or if runtime initialization is delayed
+        from shared.infrastructure.standalone_db import get_standalone_session_factory
+        session_factory = get_standalone_session_factory()
+
     async with session_factory() as session:
         try:
             yield session
@@ -76,28 +105,17 @@ async def get_uow(
     outbox = SqlAlchemyOutbox(session)
     uow = SQLAlchemyUnitOfWork(session, outbox)
 
-    # Register all domain repositories upfront
-    from contexts.catalog.domain.category import Category
-    from contexts.catalog.domain.product import Product
-    from contexts.catalog.infrastructure.repositories.category_repository_impl import (
-        CategoryRepository,
-    )
-    from contexts.catalog.infrastructure.repositories.product_repository_impl import (
-        ProductRepository,
-    )
-    from contexts.identity.domain.models.user import User
-    from contexts.identity.infrastructure.repositories.user_repository_impl import (
-        UserRepository,
-    )
-    from contexts.ordering.domain.order import Order
-    from contexts.ordering.infrastructure.repositories.order_repository_impl import (
-        OrderRepository,
-    )
+    # Auto-register all discovered repositories and ports
+    # - Production: scanned by BentoModule.scan_packages during startup
+    # - Tests: scanned by conftest.py
+    from bento.infrastructure.ports import get_port_registry
+    from bento.infrastructure.repository import get_repository_registry
 
-    uow.register_repository(User, lambda s: UserRepository(s))
-    uow.register_repository(Product, lambda s: ProductRepository(s))
-    uow.register_repository(Category, lambda s: CategoryRepository(s))
-    uow.register_repository(Order, lambda s: OrderRepository(s))
+    for ar_type, repo_cls in get_repository_registry().items():
+        uow.register_repository(ar_type, lambda s, cls=repo_cls: cls(s))
+
+    for port_type, adapter_cls in get_port_registry().items():
+        uow.register_port(port_type, lambda s, cls=adapter_cls: cls(s))
 
     try:
         yield uow
@@ -106,18 +124,83 @@ async def get_uow(
         pass
 
 
-# ==================== DEPRECATED ====================
-# The following function has been removed due to Session lifecycle issues.
-# Use get_uow() with Depends() instead.
+# Create handler_dependency using Bento Framework's factory
+# This provides clean DI for all CQRS handlers
+handler_dependency = create_handler_dependency(get_uow)
+
+
+# ==================== Public API ====================
+# This module exports:
+# - get_db_session: Get database session
+# - get_uow: Get Unit of Work
+# - handler_dependency: Inject CQRS handlers
 #
-# Old pattern (INCORRECT - Session closes before use):
-#     async def get_create_order_use_case() -> CreateOrderUseCase:
-#         uow = await get_unit_of_work()  # ❌ Session already closed
-#         return CreateOrderUseCase(uow)
+# Usage in FastAPI routes:
 #
-# New pattern (CORRECT):
-#     async def get_create_order_use_case(
-#         uow: SQLAlchemyUnitOfWork = Depends(get_uow)
-#     ) -> CreateOrderUseCase:
-#         return CreateOrderUseCase(uow)  # ✅ Session managed by FastAPI
+# 1. Direct database access:
+#    @router.get("/items")
+#    async def get_items(session: AsyncSession = Depends(get_db_session)):
+#        ...
+#
+# 2. Unit of Work pattern:
+#    @router.post("/items")
+#    async def create_item(uow: SQLAlchemyUnitOfWork = Depends(get_uow)):
+#        async with uow:
+#            ...
+#
+# 3. CQRS Handler injection (recommended):
+#    @router.post("/orders")
+#    async def create_order(
+#        handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)]
+#    ):
+#        return await handler.execute(command)
+
+
+# Legacy get_handler() function has been removed.
+# All APIs now use handler_dependency() for clean OpenAPI schemas.
+
+
+# ==================== Usage Examples ====================
+#
+# Elegant way (recommended):
+# @router.post("/orders")
+# async def create_order(
+#     request: CreateOrderRequest,
+#     handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
+# ):
+#     return await handler.execute(command)
+#
+# ❌ Old way (DEPRECATED - exposes handler_cls parameter):
+# handler: Annotated[CreateOrderHandler, Depends(get_handler)]  # DON'T USE
+
+
+# ==================== ARCHITECTURAL NOTES ====================
+# UnitOfWork Port Container Pattern:
+#
+# UoW is NOT a Service Locator anti-pattern. It's a Transaction Context
+# that provides resources relevant to the current request/transaction:
+#
+# 1. Repositories: uow.repository(AggregateType)
+#    - Data access for aggregate roots
+#
+# 2. Outbound Ports: uow.port(PortType)
+#    - Cross-BC communication interfaces
+#    - External service adapters
+#
+# Scope:
+# Register: Resources tied to current BC and transaction
+# Don't register: Global services (logging, caching, etc.)
+#
+# Benefits:
+# - Handlers have unified dependency (only UoW)
+# - Clean architecture boundaries (Port/Adapter pattern)
+# - Easy testing (mock UoW)
+# - Lazy loading of resources
+#
+# New pattern (CORRECT - using universal handler factory):
+#     @router.post("/orders")
+#     async def create_order(
+#         handler: Annotated[CreateOrderHandler, handler_dependency(CreateOrderHandler)],
+#     ):
+#         return await handler.execute(command)  # Session managed by FastAPI
 # ===================================================

@@ -4,14 +4,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from bento.adapters.observability.noop import NoOpObservabilityProvider
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 
 
-class TestCreateOrderUseCase:
+class TestCreateOrderHandler:
     """CreateOrder 用例单元测试
 
     测试用例的业务流程编排逻辑。
@@ -38,12 +39,15 @@ class TestCreateOrderUseCase:
         return AsyncMock()
 
     @pytest.fixture
-    def usecase(self, mock_uow, mock_product_catalog):
+    def mock_observability(self):
+        """Mock observability provider"""
+        return NoOpObservabilityProvider()
+
+    @pytest.fixture
+    def usecase(self, mock_uow, mock_observability):
         """用例实例"""
-        return CreateOrderUseCase(
-            uow=mock_uow,
-            product_catalog=mock_product_catalog,
-        )
+        # Handler 需要 uow 和 observability 参数
+        return CreateOrderHandler(uow=mock_uow, observability=mock_observability)
 
     @pytest.mark.asyncio
     async def test_create_order_success(self, usecase, mock_product_catalog, mock_uow):
@@ -61,11 +65,12 @@ class TestCreateOrderUseCase:
             ],
         )
 
-        # Mock 产品目录服务返回所有产品可用
-        mock_product_catalog.check_products_available.return_value = (
+        # Mock product_catalog 通过 uow.port() 获取
+        mock_product_catalog.check_products_available = AsyncMock(return_value=(
             ["product-001"],  # available
             [],  # unavailable
-        )
+        ))
+        mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Mock 仓储
         mock_repo = AsyncMock()
@@ -83,7 +88,7 @@ class TestCreateOrderUseCase:
         mock_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_order_product_not_found(self, usecase, mock_product_catalog):
+    async def test_create_order_product_not_found(self, usecase, mock_product_catalog, mock_uow):
         """测试产品不存在的场景"""
         # Arrange
         command = CreateOrderCommand(
@@ -98,14 +103,15 @@ class TestCreateOrderUseCase:
             ],
         )
 
-        # Mock 产品目录服务返回产品不可用
-        mock_product_catalog.check_products_available.return_value = (
+        # Mock product_catalog 通过 uow.port() 获取
+        mock_product_catalog.check_products_available = AsyncMock(return_value=(
             [],  # available
             ["nonexistent-product"],  # unavailable
-        )
+        ))
+        mock_uow.port = MagicMock(return_value=mock_product_catalog)
 
         # Act & Assert
-        from bento.core.errors import ApplicationException
+        from bento.core.exceptions import ApplicationException
 
         with pytest.raises(ApplicationException) as exc_info:
             await usecase.execute(command)
@@ -122,7 +128,7 @@ class TestCreateOrderUseCase:
         )
 
         # Act & Assert
-        from bento.core.errors import ApplicationException
+        from bento.core.exceptions import ApplicationException
 
         with pytest.raises(ApplicationException) as exc_info:
             await usecase.execute(invalid_command)

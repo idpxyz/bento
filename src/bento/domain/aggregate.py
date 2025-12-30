@@ -4,6 +4,7 @@ Aggregates are clusters of domain objects that can be treated as a single unit.
 An aggregate root is the entry point to the aggregate.
 """
 
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -14,18 +15,24 @@ from bento.domain.domain_event import DomainEvent
 from bento.domain.entity import Entity
 
 
+@dataclass
 class AggregateRoot(Entity):
     """Base class for aggregate roots.
 
     An aggregate root is an entity that serves as the entry point to an aggregate.
     All operations on the aggregate must go through the aggregate root.
 
+    ✅ 支持 @dataclass 继承：
+    - 使用延迟初始化 _events，无需手动调用 __post_init__
+    - 子类只需定义字段和业务方法
+
     Example:
         ```python
+        @dataclass
         class Order(AggregateRoot):
-            def __init__(self, order_id: ID):
-                super().__init__(order_id)
-                self._items = []
+            id: ID
+            customer_id: ID
+            total: Decimal
 
             def add_item(self, item: OrderItem):
                 self._items.append(item)
@@ -33,35 +40,24 @@ class AggregateRoot(Entity):
         ```
     """
 
-    def __init__(self, id):
-        """Initialize aggregate root.
-
-        Args:
-            id: Entity identifier
-        """
-        super().__init__(id=id)
-        self._events: list[DomainEvent] = []
+    def _ensure_events(self) -> list[DomainEvent]:
+        """Ensure _events list exists (lazy initialization for @dataclass support)."""
+        if not hasattr(self, "_events") or self._events is None:
+            self._events = []
+        return self._events
 
     def add_event(self, event: DomainEvent) -> None:
-        """Add a domain event.
-
-        Args:
-            event: Domain event to add
-        """
-        self._events.append(event)
+        """Add a domain event."""
+        self._ensure_events().append(event)
 
     def clear_events(self) -> None:
         """Clear all domain events."""
-        self._events.clear()
+        self._ensure_events().clear()
 
     @property
     def events(self) -> list[DomainEvent]:
-        """Get all domain events.
-
-        Returns:
-            List of domain events
-        """
-        return self._events.copy()
+        """Get all domain events."""
+        return self._ensure_events().copy()
 
     def to_cache_dict(self) -> dict[str, Any]:
         """Convert aggregate root to cacheable dictionary.

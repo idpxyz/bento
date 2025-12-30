@@ -1,161 +1,50 @@
 """Order API routes (FastAPI) - Thin Interface Layer"""
 
-from typing import Annotated, Any
-
-from bento.persistence.uow import SQLAlchemyUnitOfWork
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Query
 
 from contexts.ordering.application.commands.cancel_order import (
     CancelOrderCommand,
-    CancelOrderUseCase,
+    CancelOrderHandler,
 )
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
 from contexts.ordering.application.commands.pay_order import (
     PayOrderCommand,
-    PayOrderUseCase,
+    PayOrderHandler,
 )
 from contexts.ordering.application.commands.ship_order import (
     ShipOrderCommand,
-    ShipOrderUseCase,
+    ShipOrderHandler,
 )
 from contexts.ordering.application.queries.get_order import (
+    GetOrderHandler,
     GetOrderQuery,
-    GetOrderUseCase,
 )
 from contexts.ordering.application.queries.list_orders import (
+    ListOrdersHandler,
     ListOrdersQuery,
-    ListOrdersUseCase,
 )
-from contexts.ordering.interfaces.order_presenters import order_to_dict
-from shared.infrastructure.dependencies import get_uow
+from contexts.ordering.interfaces.dto import (
+    # Request Models
+    CreateOrderRequest,
+    PayOrderRequest,
+    ShipOrderRequest,
+    CancelOrderRequest,
+    # Response Models
+    OrderResponse,
+    ListOrdersResponse,
+)
+from contexts.ordering.interfaces.mappers import order_to_response
+from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
 
-# ==================== Request/Response Models ====================
-
-
-class OrderItemRequest(BaseModel):
-    """Order item request model."""
-
-    product_id: str
-    product_name: str
-    quantity: int
-    unit_price: float
-
-
-class CreateOrderRequest(BaseModel):
-    """Create order request model."""
-
-    customer_id: str
-    items: list[OrderItemRequest]
-
-
-class PayOrderRequest(BaseModel):
-    """Pay order request model."""
-
-    pass  # 只需要 order_id（从路径获取）
-
-
-class ShipOrderRequest(BaseModel):
-    """Ship order request model."""
-
-    tracking_number: str | None = None
-
-
-class CancelOrderRequest(BaseModel):
-    """Cancel order request model."""
-
-    reason: str
-
-
-class OrderItemResponse(BaseModel):
-    """Order item response model."""
-
-    id: str
-    product_id: str
-    product_name: str
-    quantity: int
-    unit_price: float
-    subtotal: float
-
-
-class OrderResponse(BaseModel):
-    """Order response model."""
-
-    id: str
-    customer_id: str
-    items: list[OrderItemResponse]
-    total: float
-    status: str
-    created_at: str | None
-    paid_at: str | None
-    shipped_at: str | None
-
-
-class ListOrdersResponse(BaseModel):
-    """List orders response model."""
-
-    items: list[OrderResponse]
-    total: int
-
-
 # ==================== Dependency Injection ====================
-
-
-async def get_create_order_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateOrderUseCase:
-    """Get create order use case (dependency)."""
-    from contexts.ordering.infrastructure.adapters.services.product_catalog_adapter import (
-        ProductCatalogAdapter,
-    )
-
-    # 创建反腐败层适配器
-    product_catalog = ProductCatalogAdapter(uow.session)
-    return CreateOrderUseCase(uow, product_catalog)
-
-
-async def get_list_orders_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListOrdersUseCase:
-    """Get list orders use case (dependency)."""
-    return ListOrdersUseCase(uow)
-
-
-async def get_get_order_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetOrderUseCase:
-    """Get get order use case (dependency)."""
-    return GetOrderUseCase(uow)
-
-
-async def get_pay_order_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> PayOrderUseCase:
-    """Get pay order use case (dependency)."""
-    return PayOrderUseCase(uow)
-
-
-async def get_ship_order_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ShipOrderUseCase:
-    """Get ship order use case (dependency)."""
-    return ShipOrderUseCase(uow)
-
-
-async def get_cancel_order_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CancelOrderUseCase:
-    """Get cancel order use case (dependency)."""
-    return CancelOrderUseCase(uow)
-
-
+#
 # ==================== API Routes ====================
 
 
@@ -167,9 +56,19 @@ async def get_cancel_order_use_case(
 )
 async def create_order(
     request: CreateOrderRequest,
-    use_case: Annotated[CreateOrderUseCase, Depends(get_create_order_use_case)],
-) -> dict[str, Any]:
-    """Create a new order with items."""
+    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),
+) -> OrderResponse:
+    """Create a new order with items.
+
+    Supports idempotency via X-Idempotency-Key HTTP Header.
+    If the same key is sent twice, the second request will return
+    the cached response from the first request.
+
+    Example:
+        curl -X POST /api/v1/orders/ \\
+          -H "X-Idempotency-Key: order-20251229-001" \\
+          -d '{"customer_id": "cust-001", "items": [...]}'
+    """
     # Request → Command
     items = [
         OrderItemInput(
@@ -186,11 +85,11 @@ async def create_order(
         items=items,
     )
 
-    # Execute Use Case
-    order = await use_case.execute(command)
+    # Execute Command
+    order = await handler.execute(command)
 
-    # Domain → Response
-    return order_to_dict(order)
+    # Domain → DTO → Response
+    return order_to_response(order)
 
 
 @router.get(
@@ -199,18 +98,18 @@ async def create_order(
     summary="List orders",
 )
 async def list_orders(
-    use_case: Annotated[ListOrdersUseCase, Depends(get_list_orders_use_case)],
-    customer_id: str | None = None,
-) -> dict[str, Any]:
+    handler: ListOrdersHandler = handler_dependency(ListOrdersHandler),
+    customer_id: str | None = Query(None, description="Filter by customer ID"),
+) -> ListOrdersResponse:
     """List orders with optional customer filter."""
     query = ListOrdersQuery(customer_id=customer_id)
 
-    result = await use_case.execute(query)
+    result = await handler.execute(query)
 
-    return {
-        "items": [order_to_dict(order) for order in result.orders],
-        "total": result.total,
-    }
+    return ListOrdersResponse(
+        items=[order_to_response(order) for order in result.orders],
+        total=result.total,
+    )
 
 
 @router.get(
@@ -220,12 +119,12 @@ async def list_orders(
 )
 async def get_order(
     order_id: str,
-    use_case: Annotated[GetOrderUseCase, Depends(get_get_order_use_case)],
-) -> dict[str, Any]:
+    handler: GetOrderHandler = handler_dependency(GetOrderHandler),
+) -> OrderResponse:
     """Get an order by ID."""
     query = GetOrderQuery(order_id=order_id)
-    order = await use_case.execute(query)
-    return order_to_dict(order)
+    order = await handler.execute(query)
+    return order_to_response(order)
 
 
 @router.post(
@@ -235,12 +134,22 @@ async def get_order(
 )
 async def pay_order(
     order_id: str,
-    use_case: Annotated[PayOrderUseCase, Depends(get_pay_order_use_case)],
-) -> dict[str, Any]:
-    """Confirm payment for an order."""
-    command = PayOrderCommand(order_id=order_id)
-    order = await use_case.execute(command)
-    return order_to_dict(order)
+    request: PayOrderRequest,
+    handler: PayOrderHandler = handler_dependency(PayOrderHandler),
+) -> OrderResponse:
+    """Confirm payment for an order.
+
+    Supports idempotency via X-Idempotency-Key HTTP Header to prevent duplicate payments.
+
+    Example:
+        curl -X POST /api/v1/orders/{order_id}/pay \\
+          -H "X-Idempotency-Key: payment-{order_id}-001"
+    """
+    command = PayOrderCommand(
+        order_id=order_id,
+    )
+    order = await handler.execute(command)
+    return order_to_response(order)
 
 
 @router.post(
@@ -251,10 +160,18 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    use_case: Annotated[ShipOrderUseCase, Depends(get_ship_order_use_case)],
-) -> dict[str, Any]:
-    """Ship an order."""
-    from bento.core.errors import ApplicationException
+    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),
+) -> OrderResponse:
+    """Ship an order.
+
+    Supports idempotency via X-Idempotency-Key HTTP Header to prevent duplicate shipments.
+
+    Example:
+        curl -X POST /api/v1/orders/{order_id}/ship \\
+          -H "X-Idempotency-Key: shipment-{order_id}-001" \\
+          -d '{"tracking_number": "SF123456"}'
+    """
+    from bento.core.exceptions import ApplicationException
     from fastapi import HTTPException
 
     try:
@@ -262,12 +179,12 @@ async def ship_order(
             order_id=order_id,
             tracking_number=request.tracking_number,
         )
-        order = await use_case.execute(command)
-        return order_to_dict(order)
+        order = await handler.execute(command)
+        return order_to_response(order)
     except ApplicationException as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail="Order not found") from None
-        raise HTTPException(status_code=400, detail=str(e)) from None
+            raise HTTPException(status_code=404, detail="Order not found") from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post(
@@ -278,12 +195,12 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    use_case: Annotated[CancelOrderUseCase, Depends(get_cancel_order_use_case)],
-) -> dict[str, Any]:
+    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),
+) -> OrderResponse:
     """Cancel an order."""
     command = CancelOrderCommand(
         order_id=order_id,
         reason=request.reason,
     )
-    order = await use_case.execute(command)
-    return order_to_dict(order)
+    order = await handler.execute(command)
+    return order_to_response(order)

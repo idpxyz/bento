@@ -7,16 +7,24 @@ The Unit of Work pattern ensures that:
 1. Multiple changes are committed atomically
 2. Domain events are collected and published after successful commit
 3. Changes are rolled back on failure
+4. Message deduplication via Inbox pattern
+5. Command idempotency via Idempotency pattern
 """
 
-from typing import Protocol, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.domain_event import DomainEvent
 from bento.domain.ports.repository import IRepository
 
+if TYPE_CHECKING:
+    from bento.messaging.idempotency import IdempotencyStore
+    from bento.messaging.inbox import Inbox
+
 AR = TypeVar("AR", bound=AggregateRoot)
+T = TypeVar("T")
 
 
 class UnitOfWork(Protocol):
@@ -26,25 +34,41 @@ class UnitOfWork(Protocol):
     - Transaction boundaries (begin, commit, rollback)
     - Aggregate change tracking
     - Domain event collection and publishing
+    - Resource provisioning (repositories and outbound ports)
 
     This is a Protocol (not ABC), enabling structural subtyping.
+
+    UoW acts as a Transaction Context and Resource Provider:
+    - Repositories: uow.repository(AggregateType) for data access
+    - Ports: uow.port(PortType) for cross-BC services and external adapters
+
+    This is NOT a Service Locator anti-pattern because:
+    - Scope is limited to transaction-relevant resources
+    - Ports are interfaces defined by the application layer
+    - Dependencies are explicit via Port interfaces
 
     Type-safe usage with async context manager ensures proper resource cleanup.
 
     Example:
         ```python
-        # In a use case
-        class CreateUserUseCase:
-            def __init__(self, uow: UnitOfWork, repo: Repository):
+        # In a command handler
+        class CreateOrderHandler:
+            def __init__(self, uow: UnitOfWork):
                 self.uow = uow
-                self.repo = repo
 
-            async def execute(self, cmd: CreateUserCommand) -> Result:
+            async def execute(self, cmd: CreateOrderCommand) -> Order:
                 async with self.uow:
-                    user = User.create(...)
-                    await self.repo.save(user)
+                    # Get port for cross-BC service
+                    product_catalog = self.uow.port(IProductCatalogService)
+                    await product_catalog.check_products_available(...)
+
+                    # Get repository for data access
+                    order_repo = self.uow.repository(Order)
+                    order = Order.create(...)
+                    await order_repo.save(order)
+
                     await self.uow.commit()  # Auto-publishes events
-                return Ok(user.id)
+                return order
         ```
     """
 
@@ -147,6 +171,62 @@ class UnitOfWork(Protocol):
         """
         ...
 
+    def register_port(self, port_type: type, factory: Callable[[Any], Any]) -> None:
+        """Register an outbound port implementation (adapter) factory.
+
+        Ports are interfaces defined in the domain/application layer that the
+        application depends on. This method registers the infrastructure
+        implementation (adapter) that will be provided at runtime.
+
+        Args:
+            port_type: The port interface type (e.g., IProductCatalogService)
+            factory: Function that creates the adapter instance
+
+        Example:
+            ```python
+            # In composition root (dependencies.py)
+            uow.register_port(
+                IProductCatalogService,
+                lambda s: ProductCatalogAdapter(s)
+            )
+            ```
+
+        Note:
+            Only register ports relevant to the current BC's transaction context.
+            Don't use this for global infrastructure services.
+        """
+        ...
+
+    def port(self, port_type: type[T]) -> T:
+        """Get the implementation (adapter) for an outbound port.
+
+        This provides lazy-loaded adapter instances for ports defined by
+        the application layer. The adapter is created on first access and
+        cached for the lifetime of the UoW.
+
+        Args:
+            port_type: The port interface type
+
+        Returns:
+            Adapter instance implementing the port interface
+
+        Raises:
+            ValueError: If no adapter registered for the port type
+
+        Example:
+            ```python
+            # In application handler
+            product_catalog = self.uow.port(IProductCatalogService)
+            available, unavailable = await product_catalog.check_products_available([...])
+            ```
+
+        Architecture:
+            Application Layer → depends on → Port Interface (IProductCatalogService)
+                                                ↑
+            Infrastructure Layer → implements → Adapter (ProductCatalogAdapter)
+        """
+        ...
+
     def repository(self, aggregate_type: type[AR]) -> IRepository[AR, EntityId]:
         """Get repository for a specific aggregate type.
 
@@ -161,6 +241,64 @@ class UnitOfWork(Protocol):
             async with uow:
                 order_repo = uow.repository(Order)
                 order = await order_repo.find_by_id(order_id)
+                await uow.commit()
+            ```
+        """
+        ...
+
+    @property
+    def inbox(self) -> "Inbox":
+        """Get the Inbox for message deduplication.
+
+        The Inbox pattern ensures exactly-once processing of messages
+        by tracking which message IDs have already been processed.
+
+        Returns:
+            Inbox instance for the current transaction
+
+        Example:
+            ```python
+            async with uow:
+                # Check if already processed (idempotency)
+                if await uow.inbox.is_processed(event_id):
+                    return  # Skip duplicate
+
+                # Process message
+                await process_business_logic(payload)
+
+                # Mark as processed (same transaction)
+                await uow.inbox.mark_processed(event_id, "OrderCreated")
+                await uow.commit()
+            ```
+        """
+        ...
+
+    @property
+    def idempotency(self) -> "IdempotencyStore":
+        """Get the IdempotencyStore for command deduplication.
+
+        The Idempotency pattern ensures exactly-once command execution
+        by caching results keyed by client-provided idempotency keys.
+
+        Returns:
+            IdempotencyStore instance for the current transaction
+
+        Example:
+            ```python
+            async with uow:
+                # Check for cached response
+                cached = await uow.idempotency.get_response(idempotency_key)
+                if cached:
+                    return cached.response
+
+                # Lock the key
+                await uow.idempotency.lock(idempotency_key, "CreateOrder")
+
+                # Execute command
+                result = await handler.execute(command)
+
+                # Store response
+                await uow.idempotency.store_response(idempotency_key, result)
                 await uow.commit()
             ```
         """

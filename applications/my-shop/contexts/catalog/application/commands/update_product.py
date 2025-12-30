@@ -2,13 +2,13 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 
 
 @dataclass
@@ -26,17 +26,18 @@ class UpdateProductCommand:
     category_id: str | None = None  # 可选：更新分类
 
 
-class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
+@command_handler
+class UpdateProductHandler(CommandHandler[UpdateProductCommand, Product]):
     """Update product use case."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: UpdateProductCommand) -> None:
         """Validate command."""
         if not command.product_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "product_id", "reason": "cannot be empty"},
             )
 
@@ -52,14 +53,14 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
             and command.category_id is None
         ):
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"reason": "at least one field must be provided"},
             )
 
         # Price validation
         if command.price is not None and command.price <= 0:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "price", "reason": "must be greater than 0"},
             )
 
@@ -71,7 +72,7 @@ class UpdateProductUseCase(BaseUseCase[UpdateProductCommand, Product]):
         product = await product_repo.get(command.product_id)  # type: ignore[arg-type]
         if not product:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "product", "id": command.product_id},
             )
 

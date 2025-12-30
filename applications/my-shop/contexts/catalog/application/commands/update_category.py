@@ -2,13 +2,13 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 @dataclass
@@ -21,24 +21,25 @@ class UpdateCategoryCommand:
     parent_id: str | None = None
 
 
-class UpdateCategoryUseCase(BaseUseCase[UpdateCategoryCommand, Category]):
+@command_handler
+class UpdateCategoryHandler(CommandHandler[UpdateCategoryCommand, Category]):
     """Update category use case."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: UpdateCategoryCommand) -> None:
         """Validate command."""
         if not command.category_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "category_id", "reason": "cannot be empty"},
             )
 
         # At least one field must be provided
         if command.name is None and command.description is None and command.parent_id is None:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"reason": "at least one field must be provided"},
             )
 
@@ -50,7 +51,7 @@ class UpdateCategoryUseCase(BaseUseCase[UpdateCategoryCommand, Category]):
         category = await category_repo.get(command.category_id)  # type: ignore
         if not category:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "category", "id": command.category_id},
             )
 

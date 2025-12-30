@@ -89,8 +89,14 @@ class InProcessMessageBus(MessageBus):
 
     @staticmethod
     def _event_type_name(event: DomainEvent) -> str:
-        return f"{event.__class__.__module__}.{event.__class__.__name__}"
+        """Get the event type name from an event instance."""
+        if hasattr(event, "topic") and isinstance(event.topic, str):
+            return event.topic
+        return type(event).__name__
 
-    @staticmethod
-    def _event_type_name_from_cls(event_type: type[DomainEvent]) -> str:
-        return f"{event_type.__module__}.{event_type.__name__}"
+    @classmethod
+    def _event_type_name_from_cls(cls, event_type: type[DomainEvent]) -> str:
+        """Get the event type name from an event class."""
+        if hasattr(event_type, "topic") and isinstance(event_type.topic, str):
+            return event_type.topic
+        return event_type.__name__

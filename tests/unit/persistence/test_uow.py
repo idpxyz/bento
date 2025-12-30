@@ -152,8 +152,8 @@ class TestSQLAlchemyUnitOfWork:
                 self._events.clear()
 
         aggregate = MockAggregate()
-        event1 = DummyEvent(event_id=uuid4(), name="Event1", message="msg1")
-        event2 = DummyEvent(event_id=uuid4(), name="Event2", message="msg2")
+        event1 = DummyEvent(event_id=uuid4(), topic="Event1", message="msg1")
+        event2 = DummyEvent(event_id=uuid4(), topic="Event2", message="msg2")
         aggregate._events.append(event1)
         aggregate._events.append(event2)
 
@@ -259,7 +259,7 @@ class TestUnitOfWorkPatterns:
         assert uow.pending_events == []
 
         # Can use internal _register_event
-        event = DummyEvent(event_id=uuid4(), name="Test")
+        event = DummyEvent(event_id=uuid4(), topic="Test")
         uow._register_event(event)
 
         assert len(uow.pending_events) == 1

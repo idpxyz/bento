@@ -1,0 +1,1 @@
+# fulfillment_request Domain\n\n该目录存放该 BC 的聚合根/实体/值对象/领域事件/领域服务。\n

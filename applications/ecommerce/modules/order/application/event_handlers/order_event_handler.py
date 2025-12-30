@@ -46,7 +46,7 @@ class OrderEventHandler:
         Args:
             event: Domain event to handle
         """
-        event_name = event.name or event.__class__.__name__
+        event_name = event.topic or event.__class__.__name__
         handler = self._handlers.get(event_name)
 
         if handler:

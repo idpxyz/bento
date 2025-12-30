@@ -313,7 +313,7 @@ class CacheWarmer(Generic[T]):
 
 from bento.application.ports.cache_warmup import CacheWarmupStrategy
 from contexts.catalog.domain.product import Product
-from contexts.catalog.application.services import ProductService
+from contexts.catalog.application.cqrs import QueryHandler
 
 
 class HotProductsWarmupStrategy:

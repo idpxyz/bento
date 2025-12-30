@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.models.order_po import OrderPO
 
 
@@ -27,7 +27,7 @@ class IOrderMapper(Protocol):
 # ============================================================================
 #
 # from bento.application.mapper import AutoMapper
-# from contexts.ordering.domain.order import Order
+# from contexts.ordering.domain.models.order import Order
 # from contexts.ordering.infrastructure.models.order_po import OrderPO
 #
 # class OrderMapper(AutoMapper[Order, OrderPO]):

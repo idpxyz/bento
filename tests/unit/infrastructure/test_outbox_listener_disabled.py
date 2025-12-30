@@ -8,6 +8,7 @@ from bento.persistence.outbox.listener import persist_events_DISABLED
 
 @dataclass(frozen=True)
 class TestEvt(DomainEvent):
+    topic: str = "TestEvt"
     kind: str = "t"
 
 
@@ -39,4 +40,4 @@ def test_outbox_listener_manual_call_persists_event_via_fake_session():
     # One OutboxRecord should have been added
     assert len(sess.added) == 1
     rec = sess.added[0]
-    assert rec.type == "TestEvt"
+    assert rec.topic == "TestEvt"

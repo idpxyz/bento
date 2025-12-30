@@ -6,7 +6,7 @@ import bento.toolkit.cli as cli
 
 
 @pytest.mark.asyncio
-async def test_cli_gen_usecase_and_event(tmp_path, monkeypatch):
+async def test_cli_gen_command_and_event(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     def fake_render(src, **ctx):
@@ -20,19 +20,19 @@ async def test_cli_gen_usecase_and_event(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cli, "render", fake_render)
 
-    # usecase - 需要指定action前缀 (Create, Update, etc.)
-    # 测试 CreateBar usecase
-    monkeypatch.setattr(sys, "argv", ["omnia-ddd", "gen", "usecase", "CreateBar"])
+    # command - CQRS 架构使用 command 替代 usecase
+    # 测试 CreateBar command
+    monkeypatch.setattr(sys, "argv", ["bento", "gen", "command", "CreateBar"])
     cli.main()
-    out_usecase = tmp_path / "application" / "usecases" / "create_bar.py"
-    assert out_usecase.exists(), (
-        f"Expected usecase file not found. Files: {list(tmp_path.rglob('*'))}"
+    out_command = tmp_path / "application" / "commands" / "create_bar.py"
+    assert out_command.exists(), (
+        f"Expected command file not found. Files: {list(tmp_path.rglob('*'))}"
     )
-    content_usecase = out_usecase.read_text(encoding="utf-8")
-    assert "Name=Bar" in content_usecase
+    content_command = out_command.read_text(encoding="utf-8")
+    assert "Name=Bar" in content_command
 
     # event - 现在生成到 domain/events/ 目录
-    monkeypatch.setattr(sys, "argv", ["omnia-ddd", "gen", "event", "Baz"])
+    monkeypatch.setattr(sys, "argv", ["bento", "gen", "event", "Baz"])
     cli.main()
     out_event = tmp_path / "domain" / "events" / "baz_event.py"
     assert out_event.exists(), f"Expected event file not found. Files: {list(tmp_path.rglob('*'))}"

@@ -2,7 +2,7 @@
 
 import pytest
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 
 
 class TestOrder:

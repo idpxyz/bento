@@ -15,7 +15,8 @@ import json
 encode = json.dumps
 decode = json.loads
 
-# Re-export JsonCodec from submodule
+# Re-export codecs and interfaces
+from .base import MessageCodec  # noqa: E402,F401
 from .json import JsonCodec  # noqa: E402,F401
 
-__all__ = ["encode", "decode", "JsonCodec"]
+__all__ = ["encode", "decode", "MessageCodec", "JsonCodec"]

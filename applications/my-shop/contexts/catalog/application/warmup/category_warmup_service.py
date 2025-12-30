@@ -60,7 +60,7 @@ class CategoryWarmupStrategy:
             # 额外预热：分类列表（经常被访问）
             cache_keys.append("Category:list:all")
 
-            logger.info(f"Catalog BC - 准备预热 {len(cache_keys)} 个分类")
+            logger.info(f"Catalog BC - Preparing to warm up {len(cache_keys)} categories")
             return cache_keys
 
         except Exception as e:

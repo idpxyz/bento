@@ -9,13 +9,18 @@ Following Hexagonal Architecture:
 from __future__ import annotations
 
 from bento.core.ids import ID
-from bento.infrastructure.repository import CascadeConfig, CascadeMixin, RepositoryAdapter
+from bento.infrastructure.repository import (
+    CascadeConfig,
+    CascadeMixin,
+    RepositoryAdapter,
+    repository_for,
+)
 from bento.persistence.interceptor import create_default_chain
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 from contexts.ordering.infrastructure.mappers.order_mapper_impl import (
     OrderItemMapper,
     OrderMapper,
@@ -24,6 +29,7 @@ from contexts.ordering.infrastructure.models.order_po import OrderPO
 from contexts.ordering.infrastructure.models.orderitem_po import OrderItemPO
 
 
+@repository_for(Order)
 class OrderRepository(CascadeMixin, RepositoryAdapter[Order, OrderPO, ID]):
     """Order Repository - Secondary Adapter (Infrastructure Implementation)
 

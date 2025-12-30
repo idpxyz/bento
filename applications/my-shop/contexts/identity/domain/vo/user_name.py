@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from bento.domain import ValueObject
+
 
 @dataclass(frozen=True)
-class UserName:
+class UserName(ValueObject[str]):
     """UserName 值对象.
 
     封装用户名称的业务规则：
@@ -17,7 +19,7 @@ class UserName:
 
     使用示例：
         ```python
-        name = UserName("张三")
+        name = UserName.create("张三")
         print(name.value)  # "张三"
         print(len(name))   # 2
         ```
@@ -29,7 +31,7 @@ class UserName:
     MIN_LENGTH = 2
     MAX_LENGTH = 50
 
-    def __post_init__(self):
+    def validate(self) -> None:
         """验证用户名"""
         if not self.value:
             raise ValueError("User name cannot be empty")

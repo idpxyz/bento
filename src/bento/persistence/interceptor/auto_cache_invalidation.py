@@ -236,7 +236,7 @@ class DomainEventCacheInvalidator:
     async def on_domain_event(self, event: DomainEvent) -> None:
         """处理领域事件."""
         # 解析事件名称获取实体类型和操作
-        entity_type, operation = self._parse_event_name(event.name)
+        entity_type, operation = self._parse_event_name(event.topic)
 
         if not entity_type or not operation:
             return

@@ -61,7 +61,7 @@ class OrderEventListener:
             return
 
         # Handle single event
-        event_name = event.name or event.__class__.__name__
+        event_name = event.topic or event.__class__.__name__
 
         logger.info(
             f"📨 Publishing event: {event_name}",

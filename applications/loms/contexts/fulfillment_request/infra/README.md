@@ -1,0 +1,1 @@
+# fulfillment_request Infra\n\n该目录存放 ORM 模型、仓储实现、外部适配器（仅限本 BC）。\n

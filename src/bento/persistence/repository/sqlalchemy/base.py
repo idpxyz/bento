@@ -261,6 +261,16 @@ class BaseRepository[PO, ID](
 
         Returns:
             Updated persistence object
+
+        Raises:
+            StaleDataError: If version conflict detected (SQLAlchemy native)
+
+        Note:
+            Optimistic locking is handled by SQLAlchemy's version_id_col.
+            Enable it in your ORM model:
+            ```python
+            __mapper_args__ = {"version_id_col": "version"}
+            ```
         """
         if self._interceptor_chain:
             context = InterceptorContext(

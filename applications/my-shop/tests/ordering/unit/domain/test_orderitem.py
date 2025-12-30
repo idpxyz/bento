@@ -2,7 +2,7 @@
 
 import pytest
 
-from contexts.ordering.domain.orderitem import OrderItem
+from contexts.ordering.domain.models.orderitem import OrderItem
 
 
 class TestOrderItem:

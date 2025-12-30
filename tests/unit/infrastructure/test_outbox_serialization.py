@@ -9,6 +9,7 @@ from bento.persistence.outbox.record import OutboxRecord
 
 @dataclass(frozen=True, kw_only=True)
 class MyEvent(DomainEvent):
+    topic: str = "MyEvent"
     u: str
     when: datetime
     price: Decimal
@@ -37,9 +38,9 @@ def test_outboxrecord_from_domain_event_serialization():
     assert isinstance(rec.id, str) and len(rec.id) > 0
     assert rec.tenant_id == "t1"
     assert rec.aggregate_id == "agg-1"
-    assert rec.type == "MyEvent"
+    assert rec.topic == "MyEvent"
     assert rec.schema_id == "order"
-    assert rec.schema_ver == 2
+    assert rec.schema_version == 2
 
     # payload serialization checks
     payload = rec.payload

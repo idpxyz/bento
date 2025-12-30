@@ -2,22 +2,22 @@
 
 from contexts.identity.application.commands.create_user import (
     CreateUserCommand,
-    CreateUserUseCase,
+    CreateUserHandler,
 )
 from contexts.identity.application.commands.delete_user import (
     DeleteUserCommand,
-    DeleteUserUseCase,
+    DeleteUserHandler,
 )
 from contexts.identity.application.commands.update_user import (
     UpdateUserCommand,
-    UpdateUserUseCase,
+    UpdateUserHandler,
 )
 
 __all__ = [
     "CreateUserCommand",
-    "CreateUserUseCase",
+    "CreateUserHandler",
     "UpdateUserCommand",
-    "UpdateUserUseCase",
+    "UpdateUserHandler",
     "DeleteUserCommand",
-    "DeleteUserUseCase",
+    "DeleteUserHandler",
 ]

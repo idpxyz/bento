@@ -30,7 +30,7 @@ class OrderPaidEvent(DomainEvent):
     - 事件追踪（event_id, occurred_at）
     """
 
-    name: str = "order_paid"
+    topic: str = "order.paid"
 
     order_id: ID  # ✅ 支持 ID 类型
     customer_id: str  # 客户 ID 暂时保持字符串

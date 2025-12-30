@@ -2,13 +2,13 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 from bento.core.ids import ID
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 
 
 @dataclass
@@ -25,30 +25,33 @@ class CreateProductCommand:
     category_id: str | None = None  # 可选的分类ID
 
 
-class CreateProductUseCase(BaseUseCase[CreateProductCommand, Product]):
-    """Create product use case."""
+@command_handler
+class CreateProductHandler(CommandHandler[CreateProductCommand, Product]):
+    """Create product command handler."""
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: CreateProductCommand) -> None:
         """Validate command."""
         if not command.name or not command.name.strip():
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "name", "reason": "cannot be empty"},
             )
 
         if command.price <= 0:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "price", "reason": "must be greater than 0"},
             )
 
     async def handle(self, command: CreateProductCommand) -> Product:
         """Handle command execution."""
         product_id = ID.generate()
-        product = Product(
+
+        # 使用工厂方法创建产品，这会自动触发 ProductCreated 事件
+        product = Product.create(
             id=product_id,
             name=command.name.strip(),
             description=command.description.strip() if command.description else "",

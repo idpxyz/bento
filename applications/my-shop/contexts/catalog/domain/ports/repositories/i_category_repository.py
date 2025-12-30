@@ -11,7 +11,7 @@ from typing import Protocol
 from bento.core.ids import ID
 from bento.domain.ports.repository import IRepository
 
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 class ICategoryRepository(IRepository[Category, ID], Protocol):

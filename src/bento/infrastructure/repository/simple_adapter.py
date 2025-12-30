@@ -18,11 +18,15 @@ from __future__ import annotations
 from bento.core.ids import EntityId
 from bento.domain.aggregate import AggregateRoot
 from bento.domain.ports.repository import IRepository
+from bento.infrastructure.repository.mixins import TenantFilterMixin
 from bento.persistence.repository.sqlalchemy import BaseRepository
 from bento.persistence.specification import CompositeSpecification, Page, PageParams
 
 
-class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](IRepository[AR, ID]):
+class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](
+    TenantFilterMixin,
+    IRepository[AR, ID],
+):
     """Simple Repository Adapter for AR = PO scenarios.
 
     This adapter is designed for cases where the Aggregate Root and
@@ -211,15 +215,21 @@ class SimpleRepositoryAdapter[AR: AggregateRoot, ID: EntityId](IRepository[AR, I
             size=page_params.size,
         )
 
-    async def count(self, specification: CompositeSpecification[AR]) -> int:
+    async def count(self, specification: CompositeSpecification[AR] | None = None) -> int:
         """Count aggregate roots matching specification.
 
         Args:
-            specification: Specification to match
+            specification: Optional specification to match. If None, counts all entities.
 
         Returns:
             Count of matching entities
         """
+        if specification is None:
+            # 使用空 specification 计算所有项目
+            from bento.persistence.specification import CompositeSpecification
+
+            empty_spec = CompositeSpecification()
+            return await self._repository.count_po_by_spec(empty_spec)
         return await self._repository.count_po_by_spec(specification)
 
     async def exists(self, specification: CompositeSpecification[AR]) -> bool:

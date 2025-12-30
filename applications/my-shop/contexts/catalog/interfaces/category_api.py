@@ -1,40 +1,42 @@
 """Category API routes (FastAPI) - Thin Interface Layer"""
 
-from typing import Annotated, Any
 
-from bento.persistence.uow import SQLAlchemyUnitOfWork
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Query
+from pydantic import BaseModel, Field
 
 from contexts.catalog.application.commands import (
     CreateCategoryCommand,
-    CreateCategoryUseCase,
+    CreateCategoryHandler,
     DeleteCategoryCommand,
-    DeleteCategoryUseCase,
+    DeleteCategoryHandler,
     UpdateCategoryCommand,
-    UpdateCategoryUseCase,
+    UpdateCategoryHandler,
 )
 from contexts.catalog.application.queries import (
+    GetCategoryHandler,
     GetCategoryQuery,
-    GetCategoryUseCase,
+    GetCategoryTreeHandler,
+    GetCategoryTreeQuery,
+    ListCategoriesHandler,
     ListCategoriesQuery,
-    ListCategoriesUseCase,
 )
-from contexts.catalog.interfaces.category_presenters import category_to_dict
-from shared.infrastructure.dependencies import get_uow
+from contexts.catalog.application.queries.get_category_tree import CategoryTreeNodeDTO
+from contexts.catalog.interfaces.dto import CategoryResponse, ListCategoriesResponse
+from contexts.catalog.interfaces.mappers import category_to_response
+from shared.infrastructure.dependencies import handler_dependency
 
 router = APIRouter()
 
 
-# ==================== Request/Response Models ====================
+# ==================== Request Models ====================
 
 
 class CreateCategoryRequest(BaseModel):
     """Create category request model."""
 
-    name: str
-    description: str
-    parent_id: str | None = None
+    name: str = Field(..., min_length=1, max_length=100, description="Category name")
+    description: str = Field(..., min_length=1, max_length=500, description="Category description")
+    parent_id: str | None = Field(None, description="Parent category ID (UUID format)")
 
 
 class UpdateCategoryRequest(BaseModel):
@@ -45,62 +47,11 @@ class UpdateCategoryRequest(BaseModel):
     parent_id: str | None = None
 
 
-class CategoryResponse(BaseModel):
-    """Category response model."""
-
-    id: str
-    name: str
-    description: str
-    parent_id: str | None
-    is_root: bool
-
-
-class ListCategoriesResponse(BaseModel):
-    """List categories response model."""
-
-    items: list[CategoryResponse]
-    total: int
-
-
-# ==================== Dependency Injection ====================
-
-
-async def get_create_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> CreateCategoryUseCase:
-    """Get create category use case (dependency)."""
-    return CreateCategoryUseCase(uow)
-
-
-async def get_list_categories_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> ListCategoriesUseCase:
-    """get_list_categories_use_case (dependency)."""
-    return ListCategoriesUseCase(uow)
-
-
-async def get_get_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> GetCategoryUseCase:
-    """get_get_category_use_case (dependency)."""
-    return GetCategoryUseCase(uow)
-
-
-async def get_update_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> UpdateCategoryUseCase:
-    """get_update_category_use_case (dependency)."""
-    return UpdateCategoryUseCase(uow)
-
-
-async def get_delete_category_use_case(
-    uow: SQLAlchemyUnitOfWork = Depends(get_uow),
-) -> DeleteCategoryUseCase:
-    """get_delete_category_use_case (dependency)."""
-    return DeleteCategoryUseCase(uow)
-
-
 # ==================== API Routes ====================
+#
+# Note: All Handlers use handler_dependency() for clean OpenAPI schemas.
+# No need for individual DI functions - universal factory pattern!
+#
 
 
 @router.post(
@@ -111,8 +62,8 @@ async def get_delete_category_use_case(
 )
 async def create_category(
     request: CreateCategoryRequest,
-    use_case: Annotated[CreateCategoryUseCase, Depends(get_create_category_use_case)],
-) -> dict[str, Any]:
+    handler: CreateCategoryHandler = handler_dependency(CreateCategoryHandler),
+) -> CategoryResponse:
     """Create a new category."""
     command = CreateCategoryCommand(
         name=request.name,
@@ -120,8 +71,8 @@ async def create_category(
         parent_id=request.parent_id,
     )
 
-    category = await use_case.execute(command)
-    return category_to_dict(category)
+    category = await handler.execute(command)
+    return category_to_response(category)
 
 
 @router.get(
@@ -130,18 +81,18 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    use_case: Annotated[ListCategoriesUseCase, Depends(get_list_categories_use_case)],
+    handler: ListCategoriesHandler = handler_dependency(ListCategoriesHandler),
     parent_id: str | None = Query(None, description="Filter by parent category"),
-) -> dict[str, Any]:
+) -> ListCategoriesResponse:
     """List categories with optional parent filter."""
     query = ListCategoriesQuery(parent_id=parent_id)
 
-    result = await use_case.execute(query)
+    result = await handler.execute(query)
 
-    return {
-        "items": [category_to_dict(c) for c in result.categories],
-        "total": result.total,
-    }
+    return ListCategoriesResponse(
+        items=[category_to_response(category) for category in result.categories],
+        total=result.total,
+    )
 
 
 @router.get(
@@ -151,12 +102,12 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    use_case: Annotated[GetCategoryUseCase, Depends(get_get_category_use_case)],
-) -> dict[str, Any]:
+    handler: GetCategoryHandler = handler_dependency(GetCategoryHandler),
+) -> CategoryResponse:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
-    category = await use_case.execute(query)
-    return category_to_dict(category)
+    category = await handler.execute(query)  # 返回 CategoryDTO
+    return category_to_response(category)
 
 
 @router.put(
@@ -167,8 +118,8 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    use_case: Annotated[UpdateCategoryUseCase, Depends(get_update_category_use_case)],
-) -> dict[str, Any]:
+    handler: UpdateCategoryHandler = handler_dependency(UpdateCategoryHandler),
+) -> CategoryResponse:
     """Update a category."""
     command = UpdateCategoryCommand(
         category_id=category_id,
@@ -177,8 +128,8 @@ async def update_category(
         parent_id=request.parent_id,
     )
 
-    category = await use_case.execute(command)
-    return category_to_dict(category)
+    category = await handler.execute(command)
+    return category_to_response(category)
 
 
 @router.delete(
@@ -188,8 +139,41 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    use_case: Annotated[DeleteCategoryUseCase, Depends(get_delete_category_use_case)],
+    handler: DeleteCategoryHandler = handler_dependency(DeleteCategoryHandler),
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)
-    await use_case.execute(command)
+    await handler.execute(command)
+
+
+@router.get(
+    "/tree/all",
+    response_model=list[CategoryTreeNodeDTO],
+    summary="Get category tree structure",
+)
+async def get_category_tree(
+    handler: GetCategoryTreeHandler = handler_dependency(GetCategoryTreeHandler),
+) -> list[CategoryTreeNodeDTO]:
+    """Get all categories in tree structure.
+
+    Returns a hierarchical tree of all root categories with their children.
+    """
+    query = GetCategoryTreeQuery(root_id=None)
+    return await handler.execute(query)
+
+
+@router.get(
+    "/tree/{root_id}",
+    response_model=list[CategoryTreeNodeDTO],
+    summary="Get category subtree",
+)
+async def get_category_subtree(
+    root_id: str,
+    handler: GetCategoryTreeHandler = handler_dependency(GetCategoryTreeHandler),
+) -> list[CategoryTreeNodeDTO]:
+    """Get a specific category and its subtree.
+
+    Returns the specified category with all its descendants in tree structure.
+    """
+    query = GetCategoryTreeQuery(root_id=root_id)
+    return await handler.execute(query)

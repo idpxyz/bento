@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # API
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8007
     api_reload: bool = True
 
     # Security
@@ -38,7 +38,36 @@ class Settings(BaseSettings):
     ]
 
     # Logging
-    log_level: str = "INFO"
+    log_level: str = "DEBUG"  # 改为 DEBUG 以看到更详细的追踪信息
+
+    # Service Discovery
+    service_discovery_backend: str = "env"
+    service_discovery_timeout: int = 5
+    service_discovery_retry: int = 3
+    service_discovery_cache_ttl: int = 300
+
+    # Consul settings (if using Consul backend)
+    consul_url: str | None = None
+    consul_datacenter: str = "dc1"
+
+    # Kubernetes settings (if using Kubernetes backend)
+    kubernetes_namespace: str = "default"
+    kubernetes_service_suffix: str = "svc.cluster.local"
+
+    # Observability settings
+    observability_enabled: bool = True  # 启用 Observability
+    observability_provider: str = "otel"  # noop or otel
+
+    # OpenTelemetry settings
+    otel_service_name: str = "my-shop"
+    otel_trace_exporter: str = "console,jaeger,otlp"  # 同时输出到 console、jaeger、otlp
+    otel_jaeger_host: str = "localhost"
+    otel_jaeger_port: int = 6831
+    otel_otlp_endpoint: str = "http://localhost:4317"  # OTLP 收集器端点
+    otel_metrics_exporter: str = "console,prometheus,otlp"  # 同时输出到 console、prometheus、otlp
+    otel_prometheus_host: str = "0.0.0.0"  # Prometheus 绑定地址
+    otel_prometheus_port: int = 9090  # Prometheus 端口
+    otel_prometheus_prefix: str = "myshop_"  # Prometheus 指标前缀
 
     model_config = SettingsConfigDict(
         env_file=".env",

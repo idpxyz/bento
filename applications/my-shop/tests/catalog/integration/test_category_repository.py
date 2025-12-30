@@ -1,6 +1,6 @@
 """Category 仓储集成测试"""
 import pytest
-from contexts.catalog.domain.category import Category
+from contexts.catalog.domain.models.category import Category
 
 
 @pytest.mark.integration

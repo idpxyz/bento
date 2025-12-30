@@ -33,7 +33,7 @@ class TestDomainEvent:
         event_id = uuid4()
         event = TestCreatedEvent(
             event_id=event_id,
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             tenant_id="tenant-1",
             aggregate_id="agg-123",
             item_name="Widget",
@@ -41,7 +41,7 @@ class TestDomainEvent:
         )
 
         assert event.event_id == event_id
-        assert event.name == "TestCreatedEvent"
+        assert event.topic == "TestCreatedEvent"
         assert event.tenant_id == "tenant-1"
         assert event.aggregate_id == "agg-123"
         assert event.item_name == "Widget"
@@ -51,11 +51,11 @@ class TestDomainEvent:
         """Test domain event with default values."""
         event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
         )
 
         assert event.event_id is not None
-        assert event.name == "TestCreatedEvent"
+        assert event.topic == "TestCreatedEvent"
         assert event.tenant_id is None
         assert event.aggregate_id is None
         assert event.schema_id is None
@@ -66,7 +66,7 @@ class TestDomainEvent:
         before = datetime.now(UTC)
         event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
         )
         after = datetime.now(UTC)
 
@@ -76,7 +76,7 @@ class TestDomainEvent:
         """Test that domain events are immutable."""
         event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             item_name="Widget",
         )
 
@@ -93,7 +93,7 @@ class TestDomainEvent:
 
         event1 = TestCreatedEvent(
             event_id=event_id,
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             occurred_at=occurred_at,
             tenant_id="tenant-1",
             item_name="Widget",
@@ -102,7 +102,7 @@ class TestDomainEvent:
 
         event2 = TestCreatedEvent(
             event_id=event_id,
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             occurred_at=occurred_at,
             tenant_id="tenant-1",
             item_name="Widget",
@@ -116,13 +116,13 @@ class TestDomainEvent:
         """Test that events with different IDs are not equal."""
         event1 = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             item_name="Widget",
         )
 
         event2 = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             item_name="Widget",
         )
 
@@ -133,7 +133,7 @@ class TestDomainEvent:
         """Test converting domain event to payload."""
         event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             tenant_id="tenant-1",
             aggregate_id="agg-123",
             item_name="Widget",
@@ -151,7 +151,7 @@ class TestDomainEvent:
         """Test domain event with custom schema information."""
         event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             schema_id="test.created.v2",
             schema_version=2,
             item_name="Widget",
@@ -164,18 +164,18 @@ class TestDomainEvent:
         """Test creating different types of events."""
         created_event = TestCreatedEvent(
             event_id=uuid4(),
-            name="TestCreatedEvent",
+            topic="TestCreatedEvent",
             item_name="Widget",
             quantity=5,
         )
 
         updated_event = TestUpdatedEvent(
             event_id=uuid4(),
-            name="TestUpdatedEvent",
+            topic="TestUpdatedEvent",
             old_value="old",
             new_value="new",
         )
 
-        assert created_event.name == "TestCreatedEvent"
-        assert updated_event.name == "TestUpdatedEvent"
+        assert created_event.topic == "TestCreatedEvent"
+        assert updated_event.topic == "TestUpdatedEvent"
         assert created_event != updated_event

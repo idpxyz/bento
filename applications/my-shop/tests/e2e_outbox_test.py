@@ -7,19 +7,17 @@ This test verifies:
 3. Outbox events can be queried and have correct status
 """
 
-import asyncio
-
 import pytest
 from bento.core.ids import ID
 from sqlalchemy import text
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 from contexts.ordering.application.commands.create_order import (
     CreateOrderCommand,
-    CreateOrderUseCase,
+    CreateOrderHandler,
     OrderItemInput,
 )
-from contexts.ordering.domain.order import Order
+from contexts.ordering.domain.models.order import Order
 
 
 @pytest.mark.asyncio
@@ -64,8 +62,16 @@ async def test_order_creation_persists_outbox_events(db_session):
     uow.register_repository(Product, lambda s: ProductRepository(s))
     uow.register_repository(Order, lambda s: OrderRepository(s))
 
+    # Register product catalog as a port
+    from contexts.ordering.domain.ports.services import IProductCatalogService
     product_catalog = MockProductCatalog()
-    use_case = CreateOrderUseCase(uow, product_catalog)
+    uow.register_port(IProductCatalogService, lambda s: product_catalog)
+
+    # Create observability provider (NoOp for testing)
+    from bento.adapters.observability.noop import NoOpObservabilityProvider
+    observability = NoOpObservabilityProvider()
+
+    handler = CreateOrderHandler(uow, observability)
 
     command = CreateOrderCommand(
         customer_id="test-customer-123",
@@ -80,7 +86,7 @@ async def test_order_creation_persists_outbox_events(db_session):
     )
 
     async with uow:
-        order = await use_case.handle(command)
+        order = await handler.handle(command)
         await uow.commit()
 
     order_id = order.id
@@ -89,7 +95,7 @@ async def test_order_creation_persists_outbox_events(db_session):
     result = await db_session.execute(
         text(
             """
-            SELECT id, aggregate_id, type, status, payload
+            SELECT id, aggregate_id, topic, status, payload
             FROM outbox
             WHERE aggregate_id = :order_id
             ORDER BY created_at DESC
@@ -104,16 +110,15 @@ async def test_order_creation_persists_outbox_events(db_session):
 
     event = outbox_events[0]
     assert event.aggregate_id == str(order_id)
-    assert event.type == "OrderCreatedEvent"
+    assert event.topic == "order.created"  # topic 使用 snake_case 格式
     assert event.status == "NEW"
-    assert "customer_id" in event.payload
-    assert "items" in event.payload
+    assert "customer_id" in str(event.payload)
+    assert "items" in str(event.payload)
 
-    print(f"✅ Outbox event verified: {event.type} (status={event.status})")
+    print(f"✅ Outbox event verified: {event.topic} (status={event.status})")
 
 
 if __name__ == "__main__":
-    # Run the test standalone
-    from tests.conftest import db_session
-
-    asyncio.run(test_order_creation_persists_outbox_events(db_session))
+    # Run the test via pytest instead of standalone
+    # (db_session is a pytest fixture, not directly importable)
+    pytest.main([__file__, "-v"])

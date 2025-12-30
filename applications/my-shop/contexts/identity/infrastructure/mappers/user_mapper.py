@@ -7,7 +7,7 @@ AutoMapper 提供零配置的自动映射：
 4. 减少 90%+ 的样板代码
 """
 
-from bento.application.mapper import AutoMapper
+from bento.application.mappers.auto import AutoMapper
 
 from contexts.identity.domain.models.user import User
 from contexts.identity.infrastructure.models.user_po import UserPO

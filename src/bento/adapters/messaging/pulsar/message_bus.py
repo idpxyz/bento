@@ -18,6 +18,7 @@ from typing import Any, cast
 import pulsar
 from pulsar import ConsumerType
 
+from bento.application.ports.message_bus import MessageBus
 from bento.domain.domain_event import DomainEvent
 from bento.messaging.codec import JsonCodec, MessageCodec
 from bento.messaging.envelope import MessageEnvelope
@@ -25,7 +26,7 @@ from bento.messaging.envelope import MessageEnvelope
 from .config import PulsarConfig
 
 
-class PulsarMessageBus:
+class PulsarMessageBus(MessageBus):
     """Apache Pulsar implementation of MessageBus protocol.
 
     Provides asynchronous message publishing and subscription using Apache Pulsar.
@@ -164,24 +165,42 @@ class PulsarMessageBus:
 
     # ==================== MessageBus Protocol Implementation ====================
 
-    async def publish(self, event: DomainEvent) -> None:
-        """Publish a domain event to Pulsar.
+    async def publish(self, event: DomainEvent | list[DomainEvent]) -> None:
+        """Publish domain event(s) to Pulsar.
 
         Args:
-            event: Domain event to publish
+            event: Domain event or list of events to publish
 
         Raises:
             RuntimeError: If bus is not started
 
         Example:
             ```python
+            # Single event
             event = OrderCreatedEvent(order_id="123")
             await bus.publish(event)
+
+            # Multiple events
+            events = [event1, event2, event3]
+            await bus.publish(events)
             ```
         """
         if not self._running:
             raise RuntimeError("MessageBus is not started. Call start() first.")
 
+        # Handle both single event and list of events
+        events_to_publish = [event] if not isinstance(event, list) else event
+
+        # Publish each event
+        for single_event in events_to_publish:
+            await self._publish_single_event(single_event)
+
+    async def _publish_single_event(self, event: DomainEvent) -> None:
+        """Publish a single domain event to Pulsar.
+
+        Args:
+            event: Domain event to publish
+        """
         # Get event type name
         event_type = self._get_event_type(event)
 
@@ -413,15 +432,38 @@ class PulsarMessageBus:
 
     @staticmethod
     def _dict_to_event(payload: dict[str, Any], event_type_name: str) -> DomainEvent:
-        """Convert dictionary to domain event.
+        """Convert dictionary to domain event using Event Registry.
 
         Args:
             payload: Event payload
-            event_type_name: Event type name
+            event_type_name: Event type name (e.g., "module.ClassName")
 
         Returns:
-            Domain event instance (currently returns dict, TODO: proper reconstruction)
+            Domain event instance
         """
-        # TODO: Implement proper event reconstruction from registry
-        # For now, return the payload as-is (handlers will need to handle dict)
-        return payload  # type: ignore
+        from bento.domain.event_registry import deserialize_event
+
+        try:
+            # Extract class name from module.ClassName format
+            if "." in event_type_name:
+                class_name = event_type_name.split(".")[-1]
+            else:
+                class_name = event_type_name
+
+            # Use Event Registry to deserialize
+            return deserialize_event(class_name, payload)
+        except Exception as e:
+            # Fallback: create basic DomainEvent
+            from bento.domain.domain_event import DomainEvent
+
+            # This is a fallback and might not work perfectly
+            # but better than returning dict
+            fallback_event = DomainEvent(
+                **{
+                    k: v
+                    for k, v in payload.items()
+                    if k in ["event_id", "occurred_at", "topic", "tenant_id", "aggregate_id"]
+                }
+            )
+            print(f"Warning: Failed to deserialize {event_type_name}, using fallback: {e}")
+            return fallback_event

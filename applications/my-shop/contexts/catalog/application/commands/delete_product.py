@@ -2,12 +2,12 @@
 
 from dataclasses import dataclass
 
-from bento.application.ports import IUnitOfWork
-from bento.application.usecase import BaseUseCase
-from bento.core.error_codes import CommonErrors
-from bento.core.errors import ApplicationException
+from bento.application import CommandHandler, command_handler
+from bento.application.ports.uow import UnitOfWork
+# CommonErrors removed - use DomainException directly
+from bento.core.exceptions import ApplicationException
 
-from contexts.catalog.domain.product import Product
+from contexts.catalog.domain.models.product import Product
 
 
 @dataclass
@@ -17,20 +17,21 @@ class DeleteProductCommand:
     product_id: str
 
 
-class DeleteProductUseCase(BaseUseCase[DeleteProductCommand, None]):
+@command_handler
+class DeleteProductHandler(CommandHandler[DeleteProductCommand, None]):
     """Delete product use case.
 
     Handles product deletion (soft delete).
     """
 
-    def __init__(self, uow: IUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
     async def validate(self, command: DeleteProductCommand) -> None:
         """Validate command."""
         if not command.product_id:
             raise ApplicationException(
-                error_code=CommonErrors.INVALID_PARAMS,
+                reason_code="INVALID_PARAMS",
                 details={"field": "product_id", "reason": "cannot be empty"},
             )
 
@@ -42,7 +43,7 @@ class DeleteProductUseCase(BaseUseCase[DeleteProductCommand, None]):
         product = await product_repo.get(command.product_id)  # type: ignore[arg-type]
         if not product:
             raise ApplicationException(
-                error_code=CommonErrors.NOT_FOUND,
+                reason_code="NOT_FOUND",
                 details={"resource": "product", "id": command.product_id},
             )
 

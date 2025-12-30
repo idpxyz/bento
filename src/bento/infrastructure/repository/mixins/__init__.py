@@ -30,6 +30,7 @@ from .group_by_queries import GroupByQueryMixin
 from .random_sampling import RandomSamplingMixin
 from .soft_delete_enhanced import SoftDeleteEnhancedMixin
 from .sorting_limiting import SortingLimitingMixin
+from .tenant_filter import TenantFilterMixin
 from .uniqueness_checks import UniquenessChecksMixin
 
 __all__ = [
@@ -45,4 +46,6 @@ __all__ = [
     "SoftDeleteEnhancedMixin",
     # P3 Mixins
     "RandomSamplingMixin",
+    # Multi-tenant
+    "TenantFilterMixin",
 ]

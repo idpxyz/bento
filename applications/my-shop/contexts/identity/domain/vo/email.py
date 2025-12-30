@@ -5,11 +5,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from bento.domain import ValueObject
+
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 @dataclass(frozen=True)
-class Email:
+class Email(ValueObject[str]):
     """Email 值对象.
 
     值对象特征：
@@ -20,7 +22,7 @@ class Email:
 
     使用示例：
         ```python
-        email = Email("user@example.com")
+        email = Email.create("user@example.com")
         print(email.value)  # "user@example.com"
         print(email.domain)  # "example.com"
         print(email.local_part)  # "user"
@@ -29,7 +31,7 @@ class Email:
 
     value: str
 
-    def __post_init__(self):
+    def validate(self) -> None:
         """验证邮箱格式"""
         if not self.value:
             raise ValueError("Email cannot be empty")
