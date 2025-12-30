@@ -1,7 +1,6 @@
 """Order API routes (FastAPI) - Thin Interface Layer"""
 
 from datetime import datetime
-from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -127,7 +126,7 @@ class ListOrdersResponse(BaseModel):
 )
 async def create_order(
     request: CreateOrderRequest,
-    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),
+    handler: CreateOrderHandler = handler_dependency(CreateOrderHandler),  # type: ignore
 ) -> OrderResponse:
     """Create a new order with items.
 
@@ -206,7 +205,7 @@ async def get_order(
 async def pay_order(
     order_id: str,
     request: PayOrderRequest,
-    handler: PayOrderHandler = handler_dependency(PayOrderHandler),
+    handler: PayOrderHandler = handler_dependency(PayOrderHandler),  # type: ignore
 ) -> OrderResponse:
     """Confirm payment for an order.
 
@@ -231,7 +230,7 @@ async def pay_order(
 async def ship_order(
     order_id: str,
     request: ShipOrderRequest,
-    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),
+    handler: ShipOrderHandler = handler_dependency(ShipOrderHandler),  # type: ignore
 ) -> OrderResponse:
     """Ship an order.
 
@@ -266,7 +265,7 @@ async def ship_order(
 async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
-    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),
+    handler: CancelOrderHandler = handler_dependency(CancelOrderHandler),  # type: ignore
 ) -> OrderResponse:
     """Cancel an order."""
     command = CancelOrderCommand(

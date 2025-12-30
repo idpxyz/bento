@@ -8,8 +8,6 @@ This layer only handles HTTP concerns:
 
 All business logic is in the Application layer (Handlers)."""
 
-from typing import Any
-
 from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 
@@ -85,7 +83,7 @@ class ListUsersResponse(BaseModel):
 )
 async def create_user(
     request: CreateUserRequest,
-    handler: CreateUserHandler = handler_dependency(CreateUserHandler),
+    handler: CreateUserHandler = handler_dependency(CreateUserHandler),  # type: ignore
 ) -> UserResponse:
     """Create a new user."""
     # 1. Convert Request → Command
@@ -108,7 +106,7 @@ async def create_user(
     description="List users with pagination",
 )
 async def list_users(
-    handler: ListUsersHandler = handler_dependency(ListUsersHandler),
+    handler: ListUsersHandler = handler_dependency(ListUsersHandler),  # type: ignore
     page: int = 1,
     page_size: int = 10,
 ) -> ListUsersResponse:
@@ -139,7 +137,7 @@ async def list_users(
 )
 async def get_user(
     user_id: str,
-    handler: GetUserHandler = handler_dependency(GetUserHandler),
+    handler: GetUserHandler = handler_dependency(GetUserHandler),  # type: ignore
 ) -> UserResponse:
     """Get a user by ID."""
     # 1. Convert Request → Query
@@ -161,7 +159,7 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    handler: UpdateUserHandler = handler_dependency(UpdateUserHandler),
+    handler: UpdateUserHandler = handler_dependency(UpdateUserHandler),  # type: ignore
 ) -> UserResponse:
     """Update a user."""
     # 1. Convert Request → Command
@@ -186,7 +184,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: str,
-    handler: DeleteUserHandler = handler_dependency(DeleteUserHandler),
+    handler: DeleteUserHandler = handler_dependency(DeleteUserHandler),  # type: ignore
 ) -> None:
     """Delete a user (soft delete)."""
     # 1. Convert Request → Command

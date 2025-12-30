@@ -96,7 +96,7 @@ class ListProductsResponse(BaseModel):
 )
 async def create_product(
     request: CreateProductRequest,
-    handler: CreateProductHandler = handler_dependency(CreateProductHandler),
+    handler: CreateProductHandler = handler_dependency(CreateProductHandler),  # type: ignore
 ) -> ProductResponse:
     """Create a new product."""
     command = CreateProductCommand(
@@ -120,7 +120,7 @@ async def create_product(
     summary="List products",
 )
 async def list_products(
-    handler: ListProductsHandler = handler_dependency(ListProductsHandler),
+    handler: ListProductsHandler = handler_dependency(ListProductsHandler),  # type: ignore
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     category_id: str | None = Query(None),
@@ -149,7 +149,7 @@ async def list_products(
 )
 async def get_product(
     product_id: str,
-    handler: GetProductHandler = handler_dependency(GetProductHandler),
+    handler: GetProductHandler = handler_dependency(GetProductHandler),  # type: ignore
 ) -> dict[str, Any]:
     """Get a product by ID."""
     from bento.core.exceptions import ApplicationException
@@ -173,7 +173,7 @@ async def get_product(
 async def update_product(
     product_id: str,
     request: UpdateProductRequest,
-    handler: UpdateProductHandler = handler_dependency(UpdateProductHandler),
+    handler: UpdateProductHandler = handler_dependency(UpdateProductHandler),  # type: ignore
 ) -> dict[str, Any]:
     """Update a product."""
     command = UpdateProductCommand(
@@ -208,7 +208,7 @@ async def ping() -> dict[str, str]:
 )
 async def delete_product(
     product_id: str,
-    handler: DeleteProductHandler = handler_dependency(DeleteProductHandler),
+    handler: DeleteProductHandler = handler_dependency(DeleteProductHandler),  # type: ignore
 ) -> None:
     """Delete a product (soft delete)."""
     from bento.core.exceptions import ApplicationException

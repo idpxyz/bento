@@ -30,6 +30,8 @@ class HandlerProtocol(Protocol):
     """Protocol for Handler classes that accept UoW in constructor.
 
     All CommandHandler and QueryHandler classes follow this protocol.
+    Note: Observable handlers may also accept an ObservabilityProvider parameter,
+    which is handled dynamically at runtime via reflection in handler_dependency().
     """
 
     def __init__(self, uow: UnitOfWork) -> None: ...

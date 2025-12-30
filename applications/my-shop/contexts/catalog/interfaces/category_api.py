@@ -1,6 +1,5 @@
 """Category API routes (FastAPI) - Thin Interface Layer"""
 
-from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
@@ -98,7 +97,7 @@ async def create_category(
     summary="List categories",
 )
 async def list_categories(
-    handler: ListCategoriesHandler = handler_dependency(ListCategoriesHandler),
+    handler: ListCategoriesHandler = handler_dependency(ListCategoriesHandler),  # type: ignore
     parent_id: str | None = Query(None, description="Filter by parent category"),
 ) -> ListCategoriesResponse:
     """List categories with optional parent filter."""
@@ -119,7 +118,7 @@ async def list_categories(
 )
 async def get_category(
     category_id: str,
-    handler: GetCategoryHandler = handler_dependency(GetCategoryHandler),
+    handler: GetCategoryHandler = handler_dependency(GetCategoryHandler),  # type: ignore
 ) -> CategoryResponse:
     """Get a category by ID."""
     query = GetCategoryQuery(category_id=category_id)
@@ -135,7 +134,7 @@ async def get_category(
 async def update_category(
     category_id: str,
     request: UpdateCategoryRequest,
-    handler: UpdateCategoryHandler = handler_dependency(UpdateCategoryHandler),
+    handler: UpdateCategoryHandler = handler_dependency(UpdateCategoryHandler),  # type: ignore
 ) -> CategoryResponse:
     """Update a category."""
     command = UpdateCategoryCommand(
@@ -156,7 +155,7 @@ async def update_category(
 )
 async def delete_category(
     category_id: str,
-    handler: DeleteCategoryHandler = handler_dependency(DeleteCategoryHandler),
+    handler: DeleteCategoryHandler = handler_dependency(DeleteCategoryHandler),  # type: ignore
 ) -> None:
     """Delete a category (soft delete)."""
     command = DeleteCategoryCommand(category_id=category_id)
