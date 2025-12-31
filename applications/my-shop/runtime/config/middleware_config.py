@@ -49,15 +49,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info("✅ Security middleware registered (authenticator: StubAuthenticator)")
 
-    # 2. Locale Context - i18n support (Optional)
-    app.add_middleware(
-        LocaleMiddleware,
-        default_locale="zh-CN",
-        supported_locales=["en-US", "zh-CN"],
-    )
-    logger.info("✅ Locale middleware registered (default: zh-CN, supported: en-US, zh-CN)")
-
-    # 3. Tenant Context - Multi-tenant identification
+    # 2. Tenant Context - Multi-tenant identification
     add_tenant_middleware(
         app,
         resolver=HeaderTenantResolver(header_name="X-Tenant-ID"),
@@ -69,7 +61,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
         "✅ Tenant middleware registered (header: X-Tenant-ID, auto-synced to SecurityContext)"
     )
 
-    # 4. CORS - Cross-Origin Resource Sharing (added early for proper order)
+    # 3. CORS - Cross-Origin Resource Sharing (added early for proper order)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -79,7 +71,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info(f"✅ CORS middleware registered (origins: {settings.cors_origins})")
 
-    # 5. Idempotency - Prevent duplicate operations
+    # 4. Idempotency - Prevent duplicate operations
     app.add_middleware(
         IdempotencyMiddleware,
         header_name="X-Idempotency-Key",
@@ -87,6 +79,15 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
         tenant_id="default",
     )
     logger.info("✅ Idempotency middleware registered (TTL: 24h, header: X-Idempotency-Key)")
+
+    # 5. Locale Context - i18n support (MUST be after Idempotency for proper execution order)
+    # Note: FastAPI middleware executes in reverse order, so this runs BEFORE Idempotency
+    app.add_middleware(
+        LocaleMiddleware,
+        default_locale="zh-CN",
+        supported_locales=["en-US", "zh-CN"],
+    )
+    logger.info("✅ Locale middleware registered (default: zh-CN, supported: en-US, zh-CN)")
 
     # 6. Rate Limiting - Protect API from abuse
     if os.getenv("TESTING") != "true":
