@@ -97,12 +97,13 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
 
     # 根据错误类型映射 HTTP 状态码
     status_code = status.HTTP_400_BAD_REQUEST
-    error_message = str(app_exc)
 
     # Resource not found 应该返回 404
-    if app_exc.reason_code == "NOT_FOUND" or "not found" in error_message.lower():
+    if app_exc.reason_code == "NOT_FOUND":
         status_code = status.HTTP_404_NOT_FOUND
-        error_message = "Resource not found"
+
+    # Use the exception's message (already translated by i18n system)
+    error_message = app_exc.message or str(app_exc)
 
     return JSONResponse(
         status_code=status_code,
