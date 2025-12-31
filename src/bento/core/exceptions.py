@@ -45,6 +45,9 @@ class ExceptionCategory(str, Enum):
 _global_catalog = None
 _framework_catalog_loaded = False
 
+# Global message renderer reference (optional i18n support)
+_global_message_renderer = None
+
 
 def _load_framework_catalog():
     """Load framework's built-in reason codes."""
@@ -85,6 +88,37 @@ def set_global_catalog(catalog) -> None:
 def get_global_catalog():
     """Get the global reason code catalog."""
     return _global_catalog
+
+
+def set_global_message_renderer(renderer) -> None:
+    """Set the global message renderer for i18n support (Optional).
+
+    Called during application startup to enable i18n support.
+    If not set, exceptions will use default messages from contracts.
+
+    Args:
+        renderer: IMessageRenderer instance or None to clear
+
+    Example:
+        ```python
+        from bento.core.i18n import set_global_message_renderer
+        from myapp.i18n import MessageRenderer
+
+        renderer = MessageRenderer(catalog)
+        set_global_message_renderer(renderer)
+        ```
+    """
+    global _global_message_renderer
+    _global_message_renderer = renderer
+
+
+def get_global_message_renderer():
+    """Get the global message renderer.
+
+    Returns:
+        Registered IMessageRenderer instance or None
+    """
+    return _global_message_renderer
 
 
 def _resolve_reason_code(code: str) -> ReasonCode | None:
@@ -130,10 +164,10 @@ class BentoException(Exception):
     def __post_init__(self):
         # Try to resolve from contracts
         rc = _resolve_reason_code(self.reason_code)
+        contract_message = None
         if rc is not None:
-            # Fill from contract if not explicitly provided
-            if not self.message:
-                self.message = rc.message
+            # Store contract message but don't set it yet
+            contract_message = rc.message
             if self.http_status == 500:  # default value
                 self.http_status = rc.http_status
             self.retryable = rc.retryable
@@ -148,6 +182,27 @@ class BentoException(Exception):
                     "CLIENT": ExceptionCategory.APPLICATION,
                 }
                 self.category = cat_map.get(rc.category, self.category)
+
+        # Priority: explicit message > i18n renderer > contract message > reason_code
+        if not self.message:
+            # Try to render message with i18n (optional)
+            if _global_message_renderer is not None:
+                try:
+                    # Import here to avoid circular dependency
+                    from bento.core.i18n import LocaleContext
+
+                    locale = LocaleContext.get()
+                    fallback = contract_message or self.reason_code
+                    self.message = _global_message_renderer.render(
+                        self.reason_code, fallback, locale, **self.details
+                    )
+                except Exception:
+                    # Silently fall back if i18n rendering fails
+                    pass
+
+            # If i18n didn't work, use contract message or reason_code
+            if not self.message:
+                self.message = contract_message or self.reason_code
 
         # Set exception message
         super().__init__(self.message or self.reason_code)

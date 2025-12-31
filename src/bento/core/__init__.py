@@ -24,8 +24,13 @@ from bento.core.exceptions import (
     InfrastructureException,
     InterfaceException,
     get_global_catalog,
+    get_global_message_renderer,
     set_global_catalog,
+    set_global_message_renderer,
 )
+
+# i18n system (optional)
+from bento.core.i18n import ILocaleResolver, IMessageRenderer, LocaleContext
 from bento.core.guard import require
 from bento.core.ids import ID, EntityId
 from bento.core.result import Err, Ok, Result
@@ -40,6 +45,12 @@ __all__ = [
     "ExceptionCategory",
     "set_global_catalog",
     "get_global_catalog",
+    "set_global_message_renderer",
+    "get_global_message_renderer",
+    # i18n - Optional internationalization support
+    "IMessageRenderer",
+    "ILocaleResolver",
+    "LocaleContext",
     # Exception handler
     "register_exception_handlers",
     "get_exception_responses_schema",

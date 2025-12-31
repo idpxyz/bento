@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 
+from bento.core import set_global_message_renderer
 from bento.runtime import BentoRuntime
 from bento.runtime.builder.runtime_builder import RuntimeBuilder
 from bento.runtime.modules.observability import ObservabilityModule
@@ -17,6 +18,7 @@ from runtime.modules.identity import IdentityModule
 from runtime.modules.infra import InfraModule
 from runtime.modules.ordering import OrderingModule
 from runtime.modules.service_discovery import create_service_discovery_module
+from shared.i18n import CATALOG, MessageRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,11 @@ def build_runtime() -> BentoRuntime:
     Returns:
         Configured but not yet initialized BentoRuntime
     """
+    # Register i18n message renderer (Optional)
+    renderer = MessageRenderer(CATALOG, default_locale="zh-CN")
+    set_global_message_renderer(renderer)
+    logger.info("✅ i18n message renderer registered (default locale: zh-CN)")
+
     # Build module list
     modules = [
         InfraModule(),

@@ -13,6 +13,7 @@ from bento.runtime import BentoRuntime
 from bento.runtime.integrations import setup_security
 from bento.runtime.middleware import (
     IdempotencyMiddleware,
+    LocaleMiddleware,
     RateLimitingMiddleware,
     RequestIDMiddleware,
     StructuredLoggingMiddleware,
@@ -48,7 +49,15 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info("✅ Security middleware registered (authenticator: StubAuthenticator)")
 
-    # 2. Tenant Context - Multi-tenant identification
+    # 2. Locale Context - i18n support (Optional)
+    app.add_middleware(
+        LocaleMiddleware,
+        default_locale="zh-CN",
+        supported_locales=["en-US", "zh-CN"],
+    )
+    logger.info("✅ Locale middleware registered (default: zh-CN, supported: en-US, zh-CN)")
+
+    # 3. Tenant Context - Multi-tenant identification
     add_tenant_middleware(
         app,
         resolver=HeaderTenantResolver(header_name="X-Tenant-ID"),
@@ -60,7 +69,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
         "✅ Tenant middleware registered (header: X-Tenant-ID, auto-synced to SecurityContext)"
     )
 
-    # 3. CORS - Cross-Origin Resource Sharing (added early for proper order)
+    # 4. CORS - Cross-Origin Resource Sharing (added early for proper order)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -70,7 +79,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info(f"✅ CORS middleware registered (origins: {settings.cors_origins})")
 
-    # 4. Idempotency - Prevent duplicate operations
+    # 5. Idempotency - Prevent duplicate operations
     app.add_middleware(
         IdempotencyMiddleware,
         header_name="X-Idempotency-Key",
@@ -79,7 +88,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info("✅ Idempotency middleware registered (TTL: 24h, header: X-Idempotency-Key)")
 
-    # 5. Rate Limiting - Protect API from abuse
+    # 6. Rate Limiting - Protect API from abuse
     if os.getenv("TESTING") != "true":
         app.add_middleware(
             RateLimitingMiddleware,
@@ -92,7 +101,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     else:
         logger.info("⚠️ RateLimiting middleware disabled (testing mode)")
 
-    # 6. Structured Logging - Log all requests with structured data
+    # 7. Structured Logging - Log all requests with structured data
     app.add_middleware(
         StructuredLoggingMiddleware,
         logger_name="my-shop",
@@ -102,7 +111,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
     )
     logger.info("✅ StructuredLogging middleware registered (logger: my-shop)")
 
-    # 7. Tracing - Automatic distributed tracing for all HTTP requests
+    # 8. Tracing - Automatic distributed tracing for all HTTP requests
     try:
         observability = runtime.container.get("observability")
         app.add_middleware(
@@ -115,7 +124,7 @@ def configure_middleware(app: FastAPI, runtime: BentoRuntime) -> None:
         # TracingMiddleware will be added after runtime initialization
         logger.warning("⚠️ TracingMiddleware skipped (observability not available yet)")
 
-    # 8. Request ID - Generate unique ID for each request (MUST be last to execute first)
+    # 9. Request ID - Generate unique ID for each request (MUST be last to execute first)
     app.add_middleware(
         RequestIDMiddleware,
         header_name="X-Request-ID",
