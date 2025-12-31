@@ -26,6 +26,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from bento.core import LocaleContext, get_global_message_renderer
 from bento.persistence.idempotency.record import (
     IdempotencyConflictException,
     SqlAlchemyIdempotency,
@@ -118,17 +119,16 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
         # Get database session factory
         if self.session_factory is None:
-            # Try to get from app.state.bento_runtime (preferred)
+            # Get from app.state.bento_runtime (required)
             try:
                 runtime = getattr(request.app.state, "bento_runtime", None)
                 if runtime is None:
-                    # Fallback: try to get from bootstrap module
-                    from runtime.bootstrap_v2 import get_runtime
-
-                    runtime = get_runtime()
+                    # No runtime available, skip idempotency check
+                    # This is expected in test environments or minimal apps
+                    return await call_next(request)
                 session_factory = runtime.container.get("db.session_factory")
             except Exception:
-                # No runtime or session factory available, skip idempotency check
+                # No session factory available, skip idempotency check
                 return await call_next(request)
         else:
             session_factory = self.session_factory
@@ -228,10 +228,26 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
             except IdempotencyConflictException as e:
                 # Idempotency key conflict (same key, different request)
+                # Try to render message with i18n if available
+                error_message = str(e)
+                renderer = get_global_message_renderer()
+                if renderer is not None:
+                    try:
+                        locale = LocaleContext.get()
+                        error_message = renderer.render(
+                            "IDEMPOTENCY_CONFLICT",
+                            fallback=str(e),
+                            locale=locale,
+                            **e.details,
+                        )
+                    except Exception:
+                        # Fall back to original message if i18n fails
+                        pass
+
                 return JSONResponse(
                     content={
                         "error": "IDEMPOTENCY_CONFLICT",
-                        "message": str(e),
+                        "message": error_message,
                         "details": e.details,
                     },
                     status_code=409,
