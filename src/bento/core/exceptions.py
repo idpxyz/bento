@@ -183,24 +183,28 @@ class BentoException(Exception):
                 }
                 self.category = cat_map.get(rc.category, self.category)
 
+        # Capture locale early (before it's cleared by middleware)
+        _locale_at_exception_time = None
+        try:
+            from bento.core.i18n import LocaleContext
+            _locale_at_exception_time = LocaleContext.get()
+        except Exception:
+            pass
+
+        # Store locale in exception for later use in exception handler
+        self._captured_locale = _locale_at_exception_time
+
         # Priority: explicit message > i18n renderer > contract message > reason_code
         if not self.message:
             # Try to render message with i18n (optional)
             if _global_message_renderer is not None:
                 try:
-                    # Import here to avoid circular dependency
-                    from bento.core.i18n import LocaleContext
-
-                    locale = LocaleContext.get()
+                    locale = _locale_at_exception_time
                     fallback = contract_message or self.reason_code
                     self.message = _global_message_renderer.render(
                         self.reason_code, fallback, locale, **self.details
                     )
-                except Exception as ex:
-                    # Debug: log the exception
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"❌ BentoException i18n failed: {ex}", exc_info=True)
+                except Exception:
                     # Silently fall back if i18n rendering fails
                     pass
 

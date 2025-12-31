@@ -103,24 +103,27 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         status_code = status.HTTP_404_NOT_FOUND
 
     # Use the exception's message (already translated by i18n system)
+    # If message is still in contract language, try to re-render using captured locale
     error_message = app_exc.message
-    if not error_message:
+
+    if error_message and error_message == str(app_exc):
+        # Message is still the default contract message, try to re-render
         try:
-            from bento.core.i18n import LocaleContext, _global_message_renderer
+            from bento.core.i18n import _global_message_renderer
+
             if _global_message_renderer is not None:
-                locale = LocaleContext.get()
-                error_message = _global_message_renderer.render(
-                    app_exc.reason_code,
-                    str(app_exc),
-                    locale,
-                    **app_exc.details
-                )
+                # Use the locale captured at exception time (before middleware cleared it)
+                locale = getattr(app_exc, '_captured_locale', None)
+
+                if locale:
+                    error_message = _global_message_renderer.render(
+                        app_exc.reason_code,
+                        str(app_exc),
+                        locale,
+                        **app_exc.details
+                    )
         except Exception:
             pass
-
-    # Final fallback
-    if not error_message:
-        error_message = str(app_exc)
 
     return JSONResponse(
         status_code=status_code,
