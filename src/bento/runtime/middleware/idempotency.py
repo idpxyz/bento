@@ -22,6 +22,8 @@ import hashlib
 import json
 from collections.abc import Awaitable, Callable
 
+from typing import Any
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -169,7 +171,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     # Try different ways to get response body
                     if hasattr(response, "body_iterator"):
                         # StreamingResponse - iterate through chunks
-                        async for chunk in response.body_iterator:
+                        # Type checker doesn't know about body_iterator, but it exists at runtime
+                        body_iter: Any = response.body_iterator  # type: ignore[attr-defined]
+                        async for chunk in body_iter:
                             if isinstance(chunk, bytes):
                                 response_body_bytes += chunk
                             else:
