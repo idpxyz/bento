@@ -192,11 +192,23 @@ class BentoException(Exception):
                     from bento.core.i18n import LocaleContext
 
                     locale = LocaleContext.get()
+
+                    # Debug logging
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"🔤 BentoException: reason_code={self.reason_code}, locale={locale}, renderer={_global_message_renderer.__class__.__name__}")
+
                     fallback = contract_message or self.reason_code
                     self.message = _global_message_renderer.render(
                         self.reason_code, fallback, locale, **self.details
                     )
-                except Exception:
+
+                    logger.info(f"📝 BentoException: rendered message={self.message}")
+                except Exception as ex:
+                    # Debug: log the exception
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"❌ BentoException i18n failed: {ex}", exc_info=True)
                     # Silently fall back if i18n rendering fails
                     pass
 
