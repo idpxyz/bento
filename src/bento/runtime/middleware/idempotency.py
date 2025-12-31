@@ -238,15 +238,25 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 if renderer is not None:
                     try:
                         locale = LocaleContext.get()
+
+                        # Logging
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"🔄 IdempotencyMiddleware: locale from LocaleContext={locale}")
+
                         error_message = renderer.render(
                             "IDEMPOTENCY_CONFLICT",
                             fallback=str(e),
                             locale=locale,
                             **e.details,
                         )
-                    except Exception:
+
+                        logger.info(f"📝 IdempotencyMiddleware: rendered message={error_message}")
+                    except Exception as ex:
                         # Fall back to original message if i18n fails
-                        pass
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"IdempotencyMiddleware: i18n rendering failed: {ex}")
 
                 return JSONResponse(
                     content={

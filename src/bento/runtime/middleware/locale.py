@@ -127,6 +127,11 @@ class LocaleMiddleware(BaseHTTPMiddleware):
         accept_language = request.headers.get(self.header_name)
         locale = self._detect_locale(accept_language)
 
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🌍 LocaleMiddleware: Accept-Language={accept_language}, detected locale={locale}")
+
         # Set locale context
         LocaleContext.set(locale)
 
