@@ -127,7 +127,7 @@ class CreateOrderHandler(ObservableCommandHandler[CreateOrderCommand, Order]):
                         details={
                             "resource": "product",
                             "unavailable_products": unavailable_ids,
-                            "message": f"Products not found or unavailable: {', '.join(unavailable_ids)}",
+                            # message removed - let i18n system handle the translation
                         },
                     )
 
