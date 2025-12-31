@@ -16,9 +16,10 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
     """Customize OpenAPI schema to add Bento Framework headers.
 
     This adds custom headers to all endpoints in Swagger UI:
-    - X-Idempotency-Key: For idempotent operations
+    - X-Idempotency-Key: For idempotent operations (write operations only)
     - X-Tenant-ID: For multi-tenant operations
     - X-Request-ID: For request tracing
+    - Accept-Language: For i18n (internationalization)
 
     Args:
         app: FastAPI application instance
@@ -90,6 +91,19 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
             },
             "description": "Request ID for tracing and logging. Auto-generated if not provided.",
         },
+        "Accept-Language": {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": False,
+            "schema": {
+                "type": "string",
+                "enum": ["zh-CN", "en-US"],
+                "example": "zh-CN",
+            },
+            "description": "Preferred language for response messages (i18n). "
+            "Supported values: zh-CN (Chinese), en-US (English). "
+            "Defaults to zh-CN if not specified.",
+        },
     }
 
     # Add custom headers to operations
@@ -120,6 +134,9 @@ def customize_openapi_for_bento(app: FastAPI) -> dict:
             # Add X-Request-ID to all operations (for request tracing)
             operation["parameters"].append({"$ref": "#/components/parameters/X-Request-ID"})
 
+            # Add Accept-Language to all operations (for i18n)
+            operation["parameters"].append({"$ref": "#/components/parameters/Accept-Language"})
+
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -129,9 +146,10 @@ def setup_bento_openapi(app: FastAPI) -> None:
 
     This configures the FastAPI application to use Bento's custom OpenAPI schema
     which includes support for:
-    - Idempotency headers
-    - Multi-tenant headers
-    - Request tracing headers
+    - Idempotency headers (X-Idempotency-Key)
+    - Multi-tenant headers (X-Tenant-ID)
+    - Request tracing headers (X-Request-ID)
+    - i18n language headers (Accept-Language)
 
     Args:
         app: FastAPI application instance
